@@ -1,0 +1,7 @@
+.vscode/
+data/
+sk-dev/
+__pycache__/
+script_*.py
+notes.md
+.pytest_cache/
