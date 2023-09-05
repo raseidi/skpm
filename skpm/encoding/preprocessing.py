@@ -13,6 +13,26 @@ strategies = {
 
 
 class TraceAggregator(TransformerMixin, BaseEstimator):
+    """Sequence encoding transformer.
+    Method to encode a sequence of events into a single
+    vector. Adapted from [1].
+
+    From the paper:
+    "Another approach is to consider all events since
+    the beginning of the case, but ignore the order of
+    the events. This abstraction method paves the way
+    to several aggregation functions [...]. Frequency-based
+    for activities and general statistics (avg, sum, etc)
+    for numeric attributes are the most common aggregation
+    functions."
+
+
+    References
+    ----------
+    [1] Teinemaa, I., Dumas, M., Maggi, F. M., & La Rosa, M. (2019).
+
+    """
+
     def __init__(self, strategy="mean", case_id="case_id", ignore="timestamp") -> None:
         self.case_id = case_id
         self.ignore = ignore

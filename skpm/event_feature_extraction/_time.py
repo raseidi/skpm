@@ -1,37 +1,59 @@
-import inspect
 from typing import Union
 from pandas import DataFrame
+
+from sklearn.utils import check_pandas_support
 from sklearn.base import (
     BaseEstimator,
     TransformerMixin,
     ClassNamePrefixFeaturesOutMixin,
-    check_array,
     check_is_fitted,
 )
-from sklearn.utils import check_pandas_support
 
-class Timestamp(
+from skpm.utils import check_features
+
+
+class TimestampExtractor(
     ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
 ):
     def __init__(
         self,
-        case_col="case_id",
-        time_col="timestamp",
+        case_col: str = "case_id",
+        time_col: str = "timestamp",
         features: Union[list, str] = "all",
     ):
-        # in the future we can tune time unit by testing, secs, hours, days, etc
-        # self.time_unit = time_unit
+        """_summary_
 
-        self.time_col = time_col
-        self.case_col = case_col
+        Args:
+            case_col: {str}, default='case_id'
+                Name of the column containing the case ids.
+            time_col: {str}, default='timestamp'
+                Name of the column containing the timestamps.
+            features (Union[list, str], optional): list of features. Defaults to "all".
+        """
+        # TODO: time unit (secs, hours, days, etc)
         self.features = features
 
-    def fit(self, X: DataFrame, y=None):
+        # according to the docs, the constructor should only receive data-independent parameters, i.e. 'tunable parameters'
+        # thus, I believe passing the column names are not tunable parameters but the features are
+        # still, imo it is cleaner to pass the column names as parameters here. Declare the variable name with a trailing underscore to denote that it is not a tunable parameter
+        self.case_col_ = case_col
+        self.time_col_ = time_col
+
+    def fit(
+        self,
+        X: DataFrame,
+        y=None,
+    ):
         """Fit transformer.
+        Checks if the input is a dataframe, if it
+        contains the required columns, validates
+        the timestamp column, and the desired features.
 
         Parameters
         ----------
             X : {DataFrame} of shape (n_samples, 2)
+                The data must contain a column with case ids and
+                a column with timestamps.
             y : None.
                 Ignored.
 
@@ -40,26 +62,8 @@ class Timestamp(
             self : object
                 Fitted transformer.
         """
-        assert isinstance(X, DataFrame), "Input must be a dataframe."
-        assert set([self.case_col, self.time_col]).issubset(
-            X.columns
-        ), "Input must contain a case id column and a timestamp column."
-        
-        # tuples (name, fn)
-        available_features = inspect.getmembers(
-            TimestampExtractor, predicate=inspect.ismethod
-        )
-        self.features_ = []
-        if self.features == "all":
-            self.features_ = available_features
-        else:
-            if not isinstance(self.features, str):
-                self.features = [self.features]
-            for f in available_features:
-                if f[0] in self.features:
-                    self.features_.append(f)
-            
-        # validate self.features_
+        _ = self._validate_data(X)
+        self.features_ = check_features(self.features, Timestamp)
         self._n_features_out = len(self.features_)
         return self
 
@@ -80,69 +84,87 @@ class Timestamp(
         check_is_fitted(self, "_n_features_out")
 
         # data validation
-        X = self._check_data(X)
+        X = self._validate_data(X)
+
+        self.group_ = X.groupby(self.case_col_, group_keys=False)
+
+        # TODO: preprocess features and kwargs for each class
+        # method; otherwise, we gotta pass **kwargs to all methods;
+        # this is not a problem for now, but it might be in the
+        # future since each class method might have different kwargs
+        kwargs = {
+            "group": self.group_,
+            "ix_list": X.index,
+            "time_col": self.time_col_,
+            "X": X,
+        }
 
         # feature extraction
-        
-        # groupby is not done in .fit to avoid users to fit with a train set and transform with a test set
-        self.group_ = X.groupby(self.case_col, group_keys=False)
-
         for feature_name, feature_fn in self.features_:
-            X[feature_name] = feature_fn(self.group_, X.index, self.time_col)
+            X[feature_name] = feature_fn(**kwargs)
 
         # features_ is a list of tuples (name, fn)
         return X.loc[:, [feature[0] for feature in self.features_]]
 
-    def _check_data(self, X: DataFrame):
-        # TODO: https://numpy.org/doc/stable/reference/arrays.datetime.html
-        # X must be DataFrame (for now) due to the timestamp support.
-        # But apparently numpy supports timestamps, so we can use it in the future
-        # plus, if we manage to use numpy, we can use numba to speed up the process and avoid pandas overhead
-
+    def _validate_data(self, X):
         assert isinstance(X, DataFrame), "Input must be a dataframe."
-        X.columns = self._check_columns(X.columns)
-
+        assert set([self.case_col_, self.time_col_]).issubset(
+            X.columns
+        ), "Input must contain a case id column and a timestamp column."
         x = X.copy()
-        pd = check_pandas_support(
-            "'pandas' not found. Please install it to use 'TimeStampExtractor'."
-        )
-        x[self.time_col] = pd.to_datetime(x[self.time_col])
-        return x[[self.case_col, self.time_col]]
+        x.columns = self._check_columns(x.columns)
+
+        # check if it is a datetime column
+        if not x[self.time_col_].dtype == "datetime64[ns]":
+            pd = check_pandas_support(
+                "'pandas' not found. Please install it to use this method."
+            )
+            try:
+                x[self.time_col_] = pd.to_datetime(x[self.time_col_])
+            except:
+                raise ValueError(
+                    f"Column '{self.time_col_}' is not a valid datetime column."
+                )
+        return x[[self.case_col_, self.time_col_]]
 
     def _check_columns(self, cols):
-        # if the transformer is used in a pipeline, the columns are going to be renamed like this
+        # if the transformer is used in a sklearn pipeline,
+        # the columns are going to be renamed like this
         # case_col = self.case_col.replace("remainder__", "")
         # time_col = self.time_col.replace("remainder__", "")
-        # copy cols
         cols = [col.replace("remainder__", "") for col in cols]
-        assert set([self.case_col, self.time_col]).issubset(
+        assert set([self.case_col_, self.time_col_]).issubset(
             cols
         ), "Input must contain a case id column and a timestamp column."
         return cols
-        
 
-class TimestampExtractor:
-    @classmethod
-    def execution_time(cls, group, ix_list, time_col="timestamp"):
-        return group[time_col] \
-            .diff()\
-            .loc[ix_list]\
-            # .dt.total_seconds()\
-            # .fillna(0)
-            
-    @classmethod
-    def accumulated_time(cls, group, ix_list, time_col="timestamp"):
-        return group[time_col] \
-            .apply(lambda x: x - x.min())\
-            .loc[ix_list]\
-            # .dt.total_seconds()
-    
-    @classmethod
-    def remaining_time(cls, group, ix_list, time_col="timestamp"):
-        return group[time_col] \
-            .apply(lambda x: x.max() - x)\
-            .loc[ix_list]\
-            # .dt.total_seconds()
-            
 
+class Timestamp:
+    @classmethod
+    def execution_time(cls, group, ix_list, time_col="timestamp", **kwargs):
+        return group[time_col].diff().loc[ix_list].dt.total_seconds().fillna(0)
+
+    @classmethod
+    def accumulated_time(cls, group, ix_list, time_col="timestamp", **kwargs):
+        return (
+            group[time_col].apply(lambda x: x - x.min()).loc[ix_list].dt.total_seconds()
+        )
+
+    @classmethod
+    def remaining_time(cls, group, ix_list, time_col="timestamp", **kwargs):
+        return (
+            group[time_col].apply(lambda x: x.max() - x).loc[ix_list].dt.total_seconds()
+        )
+
+    @classmethod
+    def within_day(cls, X, time_col="timestamp", **kwargs):
+        pd = check_pandas_support(
+            "'pandas' not found. Please install it to use this method."
+        )
+        return (
+            pd.to_timedelta(X[time_col].dt.time.astype(str)).dt.total_seconds().values
+        )
+
+
+# class Resource:
 # https://github.com/AdaptiveBProcess/GenerativeLSTM/blob/master/support_modules/role_discovery.py#L10

@@ -1,16 +1,20 @@
 # Scikit-PM
 
-"scikit"nizing event log preprocessing
+"scikit"nizing ml pipelines for process mining. **Under development**.
 
 ---
 
 ## Usage
 
 ```python
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from skpm.event_feature_extraction import TimestampExtractor
+
 # timestamp transformer
 time_transformer = Pipeline(
     steps=[
-        ("time", Timestamp(case_col="case_id", time_col="timestamp", features="execution_time")),
+        ("time", TimestampExtractor(case_col="case_id", time_col="timestamp", features="execution_time")),
         ("scale", StandardScaler()),
     ]
 )
@@ -20,7 +24,7 @@ cat_transformer = Pipeline(
     steps=[("encoder", OneHotEncoder(sparse_output=False, handle_unknown="ignore"))]
 )
 
-# column transformer (embedding pipelines)
+# column transformer (concating pipelines)
 preprocessor = ColumnTransformer(
     transformers=[
         ("cat", cat_transformer, ["activity"]),               # categorical features
@@ -30,11 +34,11 @@ preprocessor = ColumnTransformer(
 ).set_output(transform="pandas")
 
 # complete learning pipeline 
-clf = Pipeline(
+reg = Pipeline(
     steps=[
         ("preprocessor", preprocessor),
         ("classifier", RandomForestRegressor(n_jobs=-1))
     ]
 )
-clf.fit(log, log["resource"]) # resource as a toy example of numerical target
+reg.fit(log, log["resource"]) # resource as a toy example of numerical target
 ```

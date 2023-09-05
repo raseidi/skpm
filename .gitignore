@@ -2,6 +2,6 @@
 data/
 sk-dev/
 __pycache__/
-script_*.py
+script*.py
 notes.md
 .pytest_cache/

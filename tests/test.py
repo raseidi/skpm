@@ -1,3 +1,4 @@
+import inspect
 import numpy as np
 import pandas as pd
 import datetime as dt
@@ -20,10 +21,31 @@ def test():
     )
 
     # test TimeStampExtractor
-    t = event_feature_extraction.Timestamp(
-        case_col="case_id", time_col="timestamp", features="execution_time"
+    features = "execution_time"
+    n_features = 1
+    t = event_feature_extraction.TimestampExtractor(
+        case_col="case_id", time_col="timestamp", features=features
     )
     t.fit(dummy_data)
     out = t.transform(dummy_data)
-    assert out.shape[1] == 1
+    assert out.shape[1] == n_features
+    assert isinstance(out, pd.DataFrame)
+
+    features = "all"
+    t = event_feature_extraction.TimestampExtractor(
+        case_col="case_id", time_col="timestamp", features=features
+    )
+    t.fit(dummy_data)
+    out = t.transform(dummy_data)
+    # assert out.shape[1] == 1
+    assert isinstance(out, pd.DataFrame)
+
+    features = ["execution_time", "remaining_time"]
+    n_features = len(features)
+    t = event_feature_extraction.TimestampExtractor(
+        case_col="case_id", time_col="timestamp", features=features
+    )
+    t.fit(dummy_data)
+    out = t.transform(dummy_data)
+    assert out.shape[1] == n_features
     assert isinstance(out, pd.DataFrame)
