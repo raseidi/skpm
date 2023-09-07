@@ -1,3 +1,3 @@
-from ._time import TimestampExtractor
+from .time import TimestampExtractor
 
 __all__ = ["TimestampExtractor"]

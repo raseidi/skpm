@@ -1,4 +1,3 @@
-import inspect
 import numpy as np
 import pandas as pd
 import datetime as dt
@@ -29,12 +28,12 @@ def test():
     t.fit(dummy_data)
     out = t.transform(dummy_data)
     assert out.shape[1] == n_features
-    assert isinstance(out, pd.DataFrame)
+    assert isinstance(out, np.ndarray)
 
     features = "all"
     t = event_feature_extraction.TimestampExtractor(
         case_col="case_id", time_col="timestamp", features=features
-    )
+    ).set_output(transform="pandas")
     t.fit(dummy_data)
     out = t.transform(dummy_data)
     # assert out.shape[1] == 1
@@ -44,7 +43,7 @@ def test():
     n_features = len(features)
     t = event_feature_extraction.TimestampExtractor(
         case_col="case_id", time_col="timestamp", features=features
-    )
+    ).set_output(transform="pandas")
     t.fit(dummy_data)
     out = t.transform(dummy_data)
     assert out.shape[1] == n_features

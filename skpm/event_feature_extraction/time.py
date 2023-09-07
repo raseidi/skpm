@@ -1,43 +1,43 @@
 from typing import Union
-from pandas import DataFrame
 
-from sklearn.utils import check_pandas_support
+from pandas import DataFrame
 from sklearn.base import (
     BaseEstimator,
-    TransformerMixin,
     ClassNamePrefixFeaturesOutMixin,
+    TransformerMixin,
     check_is_fitted,
 )
+from sklearn.utils import check_pandas_support
 
-from skpm.utils import check_features
+from skpm.utils import validate_columns, validate_features_from_class
 
 
 class TimestampExtractor(
     ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
 ):
+    """Extract features from a timestamp column.
+
+    The class needs a column with case ids and a column with timestamps. The validation of the columns is done in the fit method.
+
+    Args:
+        case_col: {str}, default='case_id'
+            Name of the column containing the case ids.
+        time_col: {str}, default='timestamp'
+            Name of the column containing the timestamps.
+        features (Union[list, str], optional): list of features. Defaults to "all".
+    """
+
     def __init__(
         self,
         case_col: str = "case_id",
         time_col: str = "timestamp",
         features: Union[list, str] = "all",
     ):
-        """_summary_
-
-        Args:
-            case_col: {str}, default='case_id'
-                Name of the column containing the case ids.
-            time_col: {str}, default='timestamp'
-                Name of the column containing the timestamps.
-            features (Union[list, str], optional): list of features. Defaults to "all".
-        """
         # TODO: time unit (secs, hours, days, etc)
         self.features = features
 
-        # according to the docs, the constructor should only receive data-independent parameters, i.e. 'tunable parameters'
-        # thus, I believe passing the column names are not tunable parameters but the features are
-        # still, imo it is cleaner to pass the column names as parameters here. Declare the variable name with a trailing underscore to denote that it is not a tunable parameter
-        self.case_col_ = case_col
-        self.time_col_ = time_col
+        self.case_col = case_col
+        self.time_col = time_col
 
     def fit(
         self,
@@ -63,11 +63,12 @@ class TimestampExtractor(
                 Fitted transformer.
         """
         _ = self._validate_data(X)
-        self.features_ = check_features(self.features, Timestamp)
+        self.features_ = validate_features_from_class(self.features, Timestamp)
+        del self.features
         self._n_features_out = len(self.features_)
         return self
 
-    def transform(self, X, y=None):
+    def transform(self, X: DataFrame, y=None):
         """Extract features from timestamp column.
 
         Parameters
@@ -80,13 +81,15 @@ class TimestampExtractor(
         X_tr : {dataframe} of shape (n_samples, n_features)
             Transformed array.
         """
-        # Check is fit had been called
+        # Check if fit had been called
         check_is_fitted(self, "_n_features_out")
 
         # data validation
         X = self._validate_data(X)
 
-        self.group_ = X.groupby(self.case_col_, group_keys=False)
+        self.group_ = X.groupby(
+            self.case_col, as_index=False, group_keys=False, observed=True
+        )
 
         # TODO: preprocess features and kwargs for each class
         # method; otherwise, we gotta pass **kwargs to all methods;
@@ -94,55 +97,70 @@ class TimestampExtractor(
         # future since each class method might have different kwargs
         kwargs = {
             "group": self.group_,
-            "ix_list": X.index,
-            "time_col": self.time_col_,
+            "ix_list": X.index.values,
+            "time_col": self.time_col,
             "X": X,
         }
 
-        # feature extraction
         for feature_name, feature_fn in self.features_:
             X[feature_name] = feature_fn(**kwargs)
 
         # features_ is a list of tuples (name, fn)
-        return X.loc[:, [feature[0] for feature in self.features_]]
+        # TODO: TimestampExtractor().fit().get_feature_names_out()
+        return X.loc[:, [feature[0] for feature in self.features_]].values
 
-    def _validate_data(self, X):
+    def _validate_data(self, X: DataFrame):
         assert isinstance(X, DataFrame), "Input must be a dataframe."
-        assert set([self.case_col_, self.time_col_]).issubset(
-            X.columns
-        ), "Input must contain a case id column and a timestamp column."
         x = X.copy()
-        x.columns = self._check_columns(x.columns)
+        x.reset_index(drop=True, inplace=True)
+        # x.columns = self._validate_columns(x.columns)
+        x.columns = validate_columns(
+            input_columns=x.columns, required=[self.case_col, self.time_col]
+        )
 
         # check if it is a datetime column
-        if not x[self.time_col_].dtype == "datetime64[ns]":
+        x[self.time_col] = self._validate_timestamp_format(x)
+
+        return x
+
+    def _validate_timestamp_format(
+        self, x: DataFrame, timestamp_format: str = "%Y-%m-%d %H:%M:%S"
+    ):
+        if not x[self.time_col].dtype == "datetime64[ns]":
             pd = check_pandas_support(
                 "'pandas' not found. Please install it to use this method."
             )
             try:
-                x[self.time_col_] = pd.to_datetime(x[self.time_col_])
+                # for now, since we are only employing the BPI event logs,
+                # we are assuming that the datetime format is '%Y-%m-%d %H:%M:%S'.
+                # TODO: validate alternative datetime formats.
+                # '%Y-%m-%d %H:%M:%S' format should be mandatory
+                x[self.time_col] = pd.to_datetime(x[self.time_col])
             except:
                 raise ValueError(
-                    f"Column '{self.time_col_}' is not a valid datetime column."
+                    f"Column '{self.time_col}' is not a valid datetime column."
                 )
-        return x[[self.case_col_, self.time_col_]]
 
-    def _check_columns(self, cols):
-        # if the transformer is used in a sklearn pipeline,
-        # the columns are going to be renamed like this
-        # case_col = self.case_col.replace("remainder__", "")
-        # time_col = self.time_col.replace("remainder__", "")
-        cols = [col.replace("remainder__", "") for col in cols]
-        assert set([self.case_col_, self.time_col_]).issubset(
-            cols
-        ), "Input must contain a case id column and a timestamp column."
-        return cols
+        # TODO: ensure datetime format
+        # try:
+        #     # Attempt to parse the datetime string with the specified format
+        #     datetime_obj = datetime.strptime(x, '%Y-%m-%d %H:%M:%S')
+        #     print(f"'{x}' is a valid datetime with the correct format: {datetime_obj}")
+        # except ValueError:
+        #     print(f"'{x}' is not in the correct format '%Y-%m-%d %H:%M:%S'")
+        #     pass
+        return x[self.time_col]
 
 
 class Timestamp:
     @classmethod
     def execution_time(cls, group, ix_list, time_col="timestamp", **kwargs):
-        return group[time_col].diff().loc[ix_list].dt.total_seconds().fillna(0)
+        # diff returns a df, so we need to
+        # select the column (i.e., as series) to
+        # convert to seconds
+        return (
+            group[time_col].diff().loc[ix_list, time_col].dt.total_seconds().fillna(0)
+        )
 
     @classmethod
     def accumulated_time(cls, group, ix_list, time_col="timestamp", **kwargs):
@@ -164,7 +182,3 @@ class Timestamp:
         return (
             pd.to_timedelta(X[time_col].dt.time.astype(str)).dt.total_seconds().values
         )
-
-
-# class Resource:
-# https://github.com/AdaptiveBProcess/GenerativeLSTM/blob/master/support_modules/role_discovery.py#L10
