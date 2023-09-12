@@ -14,31 +14,36 @@ from skpm.event_feature_extraction import TimestampExtractor
 # timestamp transformer
 time_transformer = Pipeline(
     steps=[
-        ("time", TimestampExtractor(case_col="case_id", time_col="timestamp", features="execution_time")),
+        ("time", TimestampExtractor(case_col="case_id", time_col="timestamp", features="all")),
         ("scale", StandardScaler()),
     ]
 )
 
-# categorical transformer
+# activity encoding
 cat_transformer = Pipeline(
     steps=[("encoder", OneHotEncoder(sparse_output=False, handle_unknown="ignore"))]
 )
 
-# column transformer (concating pipelines)
+# preprocessing pipeline
 preprocessor = ColumnTransformer(
     transformers=[
-        ("cat", cat_transformer, ["activity"]),               # categorical features
-        ("time", time_transformer, ["case_id", "timestamp"]), # case_id and timestamp
+        ("oh", cat_transformer, ["activity"]),
+        ("time", time_transformer, ["case_id", "timestamp"]),
+        ("case_id", "passthrough", ["case_id"]), 
     ],
-    remainder="drop",
+    remainder="passthrough",
 ).set_output(transform="pandas")
 
-# complete learning pipeline 
-reg = Pipeline(
+# classification pipeline
+clf = Pipeline(
     steps=[
         ("preprocessor", preprocessor),
-        ("classifier", RandomForestRegressor(n_jobs=-1))
+        ("aggregator", TraceAggregator(case_col="case_id", method="mean")),
+        ("classifier", RandomForestClassifier(n_jobs=-1))
     ]
-)
-reg.fit(log, log["resource"]) # resource as a toy example of numerical target
+).set_output(transform="pandas")
+
+# running pipeline
+clf.fit(log_train, log_train)
+print(clf.score(log_test, log_test))
 ```

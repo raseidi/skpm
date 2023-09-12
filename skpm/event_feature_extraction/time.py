@@ -64,9 +64,12 @@ class TimestampExtractor(
         """
         _ = self._validate_data(X)
         self.features_ = validate_features_from_class(self.features, Timestamp)
-        del self.features
+        # del self.features
         self._n_features_out = len(self.features_)
         return self
+
+    def get_feature_names_out(self):
+        return [f[0] for f in self.features_]
 
     def transform(self, X: DataFrame, y=None):
         """Extract features from timestamp column.
