@@ -7,6 +7,7 @@ from sklearn.base import BaseEstimator, TransformerMixin, OneToOneFeatureMixin, 
 from skpm.utils import validate_columns
 
 from warnings import warn
+
 class ResourcePoolExtractor(BaseEstimator, TransformerMixin):
     """
         Proposed in [1]. Adapted from [2].
@@ -85,7 +86,7 @@ class ResourcePoolExtractor(BaseEstimator, TransformerMixin):
         self.resource_to_roles_ = dict()
         for role_ix, role in enumerate(sub_graphs):
             for user_id in role:
-                self.resource_to_roles_[self.itor_[user_id]] = role_ix        
+                self.resource_to_roles_[user_id] = role_ix        
 
         return self
     
@@ -99,9 +100,10 @@ class ResourcePoolExtractor(BaseEstimator, TransformerMixin):
         assert isinstance(X, DataFrame), "Input must be a dataframe."
         x = X.copy()
         x.reset_index(drop=True, inplace=True)
-        x.columns = validate_columns(
+        columns = validate_columns(
             input_columns=x.columns, required=[self.activity_col, self.resource_col]
         )
+        x = x[columns]
 
         if x[self.activity_col].isnull().any():
             raise ValueError("Activity column contains null values.")
@@ -123,7 +125,7 @@ class ResourcePoolExtractor(BaseEstimator, TransformerMixin):
         if unkown:
             warn(f"Found unkown {name}: {unkown}")
         
-        input = ["UNK" if x in input else x for x in input]
+        input = np.array(["UNK" if x in unkown else x for x in input])
         # input = input.replace(unkown, "UNK")
         return input
     

@@ -99,7 +99,7 @@ class TraceAggregator(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEst
         if self.features:
             cols = validate_columns(
                 input_columns=x.columns,
-                required=self.features,
+                required=[self.case_col] + self.features,
             )
         else:
             cols = x.columns

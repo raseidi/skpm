@@ -49,7 +49,7 @@ def validate_columns(input_columns: Iterable, required: list) -> list:
     diff = set(required) - set(input_columns)
     if diff:
         raise ValueError(f"Input is missing the following columns: {diff}.")
-    return input_columns
+    return required
 
 
 def ensure_list(input: Any) -> list:
