@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 from pandas import DataFrame
 from scipy.sparse.csgraph import connected_components
@@ -60,13 +61,16 @@ class ResourcePoolExtractor(BaseEstimator, TransformerMixin):
         
         # matrix profile: rows = resources, columns = activities
         # the unown labels are generating a row of zeros, and this is throwing a warning when calculating the correlation matrix: TODO
+        # https://stackoverflow.com/questions/45897003/python-numpy-corrcoef-runtimewarning-invalid-value-encountered-in-true-divide
         profiles = np.zeros((len(self.rtoi_), len(self.atoi_)), dtype=int)
         for pair_ar, freq in freq_matrix.items():
             # pair_ar = (activity, resource); order defined by groupby 
             profiles[pair_ar[1], pair_ar[0]] = freq
         
         # correlation matrix
-        corr = np.corrcoef(profiles) #TODO: include similarity/correlation metric parameter
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            corr = np.corrcoef(profiles) #TODO: include similarity/correlation metric parameter
         
         np.fill_diagonal(corr, 0) # the original paper does not consider self-relationship
         

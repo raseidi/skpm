@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import datetime as dt
-from skpm import event_feature_extraction
+from skpm.event_feature_extraction import TimestampExtractor
 
 
 def test():
@@ -22,7 +22,7 @@ def test():
     # test TimeStampExtractor
     features = "execution_time"
     n_features = 1
-    t = event_feature_extraction.TimestampExtractor(
+    t = TimestampExtractor(
         case_col="case_id", time_col="timestamp", features=features
     )
     t.fit(dummy_data)
@@ -31,7 +31,7 @@ def test():
     assert isinstance(out, np.ndarray)
 
     features = "all"
-    t = event_feature_extraction.TimestampExtractor(
+    t = TimestampExtractor(
         case_col="case_id", time_col="timestamp", features=features
     ).set_output(transform="pandas")
     t.fit(dummy_data)
@@ -41,10 +41,11 @@ def test():
 
     features = ["execution_time", "remaining_time"]
     n_features = len(features)
-    t = event_feature_extraction.TimestampExtractor(
+    t = TimestampExtractor(
         case_col="case_id", time_col="timestamp", features=features
     ).set_output(transform="pandas")
     t.fit(dummy_data)
     out = t.transform(dummy_data)
     assert out.shape[1] == n_features
     assert isinstance(out, pd.DataFrame)
+    assert out.columns.tolist() == features
