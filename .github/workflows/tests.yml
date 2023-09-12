@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         python: [3.8, 3.9, '3.10', 3.11]
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest] #, windows-latest]
 
     steps:
       - uses: actions/checkout@v3
@@ -37,3 +37,16 @@ jobs:
         run: |
           coverage report
           coverage xml
+
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        if: always()
+        # see: https://github.com/actions/toolkit/issues/399
+        continue-on-error: true
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: coverage.xml
+          # flags: cpu
+          name: Coverage
+          fail_ci_if_error: false

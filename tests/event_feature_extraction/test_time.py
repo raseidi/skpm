@@ -1,10 +1,12 @@
 import numpy as np
 import pandas as pd
 import datetime as dt
+
+import pytest
 from skpm.event_feature_extraction import TimestampExtractor
 
 
-def test():
+def test_time():
     dummy_data = pd.DataFrame(
         {
             "case_id": [1, 1, 1, 2, 2, 2],
@@ -49,3 +51,16 @@ def test():
     assert out.shape[1] == n_features
     assert isinstance(out, pd.DataFrame)
     assert out.columns.tolist() == features
+    
+    dummy_data = pd.DataFrame(
+        {
+            "case_id": [1, 1, 1, 2, 2, 2],
+            "timestamp": ["aaaaa", "bbbbb", "ccccc", "ddddd", "eeeee", ""],
+        }
+    )
+    t = TimestampExtractor(
+        case_col="case_id", time_col="timestamp", features=features
+    )
+    with pytest.raises(Exception) as exc_info:
+        t.fit(dummy_data[["case_id", "timestamp"]])
+    

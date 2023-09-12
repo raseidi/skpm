@@ -84,7 +84,7 @@ class TraceAggregator(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEst
         if self.method == "mean":
             X = group.expanding().mean()
         elif self.method == "sum":
-            X[self.features] = group.expanding().sum()
+            X = group.expanding().sum()
 
         return X
 
@@ -93,7 +93,9 @@ class TraceAggregator(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEst
         assert isinstance(X, DataFrame), "Input must be a dataframe."
         x = X.copy()
 
-        self._ensure_case_id(x.columns)
+        if not self._ensure_case_id(x.columns):
+            raise ValueError(f"Column {self.case_col} is not present in the input dataframe.")
+
         if self.features:
             cols = validate_columns(
                 input_columns=x.columns,
@@ -108,8 +110,5 @@ class TraceAggregator(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEst
         for col in columns:
             if col.endswith(self.case_col):
                 self.case_col = col
-                return
-
-        raise ValueError(
-            f"Column {self.case_col} is not present in the input dataframe."
-        )
+                return True
+        return False

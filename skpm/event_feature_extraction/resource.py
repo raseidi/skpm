@@ -82,17 +82,17 @@ class ResourcePoolExtractor(BaseEstimator, TransformerMixin):
             sub_graphs.append(set(np.where(labels == i)[0]))
             
         # role definition
-        self.resrouce_to_roles_ = dict()
+        self.resource_to_roles_ = dict()
         for role_ix, role in enumerate(sub_graphs):
             for user_id in role:
-                self.resrouce_to_roles_[self.itor_[user_id]] = role_ix        
+                self.resource_to_roles_[self.itor_[user_id]] = role_ix        
 
         return self
     
     def transform(self, X: DataFrame, y=None):
-        check_is_fitted(self, "resrouce_to_roles_")
+        check_is_fitted(self, "resource_to_roles_")
         X = self._validate_data(X)
-        resource_roles = X[self.resource_col].map(self.resrouce_to_roles_).values
+        resource_roles = X[self.resource_col].map(self.resource_to_roles_).values
         return resource_roles
     
     def _validate_data(self, X: DataFrame):
@@ -111,7 +111,7 @@ class ResourcePoolExtractor(BaseEstimator, TransformerMixin):
         # i.e. if fitted, check unkown labels 
         if hasattr(self, "resource_to_roles_"):
             x[self.resource_col] = self._check_unknown(x[self.resource_col].values, self.rtoi_.keys(), "resource")
-            x[self.activity_col] = self._check_unknown(x[self.activity_col].values, self.atoi_.keys(), "resource")
+            x[self.activity_col] = self._check_unknown(x[self.activity_col].values, self.atoi_.keys(), "activity")
             
             x[self.activity_col] = x[self.activity_col].map(self.atoi_)
             x[self.resource_col] = x[self.resource_col].map(self.rtoi_)
@@ -119,11 +119,12 @@ class ResourcePoolExtractor(BaseEstimator, TransformerMixin):
         return x
     
     def _check_unknown(self, input: np.ndarray, vocab: np.ndarray, name: str):
-        unkown = set(input.unique()) - set(vocab)
+        unkown = set(input) - set(vocab)
         if unkown:
             warn(f"Found unkown {name}: {unkown}")
         
-        input = input.replace(unkown, "UNK")
+        input = ["UNK" if x in input else x for x in input]
+        # input = input.replace(unkown, "UNK")
         return input
     
     def _define_vocabs(self, unique_labels: np.ndarray):
