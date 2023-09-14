@@ -24,9 +24,7 @@ def test_time():
     # test TimeStampExtractor
     features = "execution_time"
     n_features = 1
-    t = TimestampExtractor(
-        case_col="case_id", time_col="timestamp", features=features
-    )
+    t = TimestampExtractor(case_col="case_id", time_col="timestamp", features=features)
     t.fit(dummy_data)
     out = t.transform(dummy_data)
     assert out.shape[1] == n_features
@@ -51,16 +49,13 @@ def test_time():
     assert out.shape[1] == n_features
     assert isinstance(out, pd.DataFrame)
     assert out.columns.tolist() == features
-    
+
     dummy_data = pd.DataFrame(
         {
             "case_id": [1, 1, 1, 2, 2, 2],
             "timestamp": ["aaaaa", "bbbbb", "ccccc", "ddddd", "eeeee", ""],
         }
     )
-    t = TimestampExtractor(
-        case_col="case_id", time_col="timestamp", features=features
-    )
+    t = TimestampExtractor(case_col="case_id", time_col="timestamp", features=features)
     with pytest.raises(Exception) as exc_info:
         t.fit(dummy_data[["case_id", "timestamp"]])
-    

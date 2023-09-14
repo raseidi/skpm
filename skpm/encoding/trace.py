@@ -94,7 +94,9 @@ class TraceAggregator(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEst
         x = X.copy()
 
         if not self._ensure_case_id(x.columns):
-            raise ValueError(f"Column {self.case_col} is not present in the input dataframe.")
+            raise ValueError(
+                f"Column {self.case_col} is not present in the input dataframe."
+            )
 
         if self.features:
             cols = validate_columns(
