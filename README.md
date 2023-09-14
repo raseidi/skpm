@@ -1,10 +1,37 @@
 # Scikit-PM
 
-"scikit"nizing ml pipelines for process mining. **Under development**.
+"Scikit"nizing ML pipelines for process mining. **Under development**.
 
 ---
 
-## Usage
+## Installation
+
+Create a local enviroment using `conda` and install the `requirements.txt`.
+
+Conda:
+
+```bash
+conda create --name skpm python=3.10
+pip install -r requirements.txt
+```
+
+**NOTE**: Soon to be on pip.
+
+---
+
+## Tutorials
+
+Please, check out a few use cases in our `use_cases/` directory:
+
+- [Event feature extraction](use_cases/time_features.ipynb)
+- [Implementing ML pipelines](use_cases/pipeline.ipynb)
+- [Tuning and model selection](.) (under dev)
+
+---
+
+## Basic usage
+
+Below, a quick example of how extracting timestamp-realted features:
 
 ```python
 from sklearn.pipeline import Pipeline
@@ -12,38 +39,11 @@ from sklearn.compose import ColumnTransformer
 from skpm.event_feature_extraction import TimestampExtractor
 
 # timestamp transformer
-time_transformer = Pipeline(
-    steps=[
-        ("time", TimestampExtractor(case_col="case_id", time_col="timestamp", features="all")),
-        ("scale", StandardScaler()),
-    ]
-)
-
-# activity encoding
-cat_transformer = Pipeline(
-    steps=[("encoder", OneHotEncoder(sparse_output=False, handle_unknown="ignore"))]
-)
-
-# preprocessing pipeline
-preprocessor = ColumnTransformer(
-    transformers=[
-        ("oh", cat_transformer, ["activity"]),
-        ("time", time_transformer, ["case_id", "timestamp"]),
-        ("case_id", "passthrough", ["case_id"]), 
-    ],
-    remainder="passthrough",
-).set_output(transform="pandas")
-
-# classification pipeline
-clf = Pipeline(
-    steps=[
-        ("preprocessor", preprocessor),
-        ("aggregator", TraceAggregator(case_col="case_id", method="mean")),
-        ("classifier", RandomForestClassifier(n_jobs=-1))
-    ]
-).set_output(transform="pandas")
+tt = TimestampExtractor(
+    features="all"
+).set_output(transformer="pandas") # output as pandas dataframe
 
 # running pipeline
-clf.fit(log_train, log_train)
-print(clf.score(log_test, log_test))
+out = tt.fit_transform(log)
+print(out)
 ```
