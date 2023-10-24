@@ -2,6 +2,8 @@
 data/
 sk-dev/
 __pycache__/
-script*.py
+script*
 notes.md
 .pytest_cache/
+coverage_re/
+use_cases/

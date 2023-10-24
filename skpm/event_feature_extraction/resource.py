@@ -16,7 +16,7 @@ from warnings import warn
 
 class ResourcePoolExtractor(BaseEstimator, TransformerMixin):
     """
-    Proposed in [1]. Adapted from [2].
+    Proposed in [1]. Code adapted from [2].
 
     TODO: implement other distance metrics.
 

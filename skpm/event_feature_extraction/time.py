@@ -99,7 +99,7 @@ class TimestampExtractor(
         # this is not a problem for now, but it might be in the
         # future since each class method might have different kwargs
         kwargs = {
-            "group": self.group_,
+            "case": self.group_,
             "ix_list": X.index.values,
             "time_col": self.time_col,
             "X": X,
@@ -117,9 +117,10 @@ class TimestampExtractor(
         x = X.copy()
         x.reset_index(drop=True, inplace=True)
         # x.columns = self._validate_columns(x.columns)
-        x.columns = validate_columns(
+        valid_cols = validate_columns(
             input_columns=x.columns, required=[self.case_col, self.time_col]
         )
+        x = x[valid_cols]
 
         # check if it is a datetime column
         x[self.time_col] = self._validate_timestamp_format(x)
@@ -157,24 +158,19 @@ class TimestampExtractor(
 
 class Timestamp:
     @classmethod
-    def execution_time(cls, group, ix_list, time_col="timestamp", **kwargs):
-        # diff returns a df, so we need to
-        # select the column (i.e., as series) to
-        # convert to seconds
+    def execution_time(cls, case, ix_list, time_col="timestamp", **kwargs):
+        return case[time_col].diff().loc[ix_list].dt.total_seconds().fillna(0)
+
+    @classmethod
+    def accumulated_time(cls, case, ix_list, time_col="timestamp", **kwargs):
         return (
-            group[time_col].diff().loc[ix_list, time_col].dt.total_seconds().fillna(0)
+            case[time_col].apply(lambda x: x - x.min()).loc[ix_list].dt.total_seconds()
         )
 
     @classmethod
-    def accumulated_time(cls, group, ix_list, time_col="timestamp", **kwargs):
+    def remaining_time(cls, case, ix_list, time_col="timestamp", **kwargs):
         return (
-            group[time_col].apply(lambda x: x - x.min()).loc[ix_list].dt.total_seconds()
-        )
-
-    @classmethod
-    def remaining_time(cls, group, ix_list, time_col="timestamp", **kwargs):
-        return (
-            group[time_col].apply(lambda x: x.max() - x).loc[ix_list].dt.total_seconds()
+            case[time_col].apply(lambda x: x.max() - x).loc[ix_list].dt.total_seconds()
         )
 
     @classmethod
