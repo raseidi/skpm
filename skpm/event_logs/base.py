@@ -1,16 +1,32 @@
 import os
+from typing import Any, Union
 from urllib.error import URLError
-import pandas as pd
+from pandas import DataFrame
 
 from skpm.event_logs.utils import download_and_extract_archive
 
 
 class EventLog:
+    """
+    Base class for event logs.
+    It provides the basic structure for downloading, preprocessing, and splitting.
+    Furthermore, it provides the basic structure for caching the logs.
+
+    Args:
+        root_path (str, optional): Path where the event log will be stored.
+            Defaults to "./data".
+        config (Union[str, dict], optional): Configuration of the event log.
+            Defaults to "default" (it just renames a few columns in the current version).
+        transforms (Any, optional): Transformations to be applied to the event log.
+            Defaults to None. To be implemented.
+        kwargs: Additional arguments to be passed to the base class.
+    """
+
     def __init__(
         self,
-        root_path="./data",
-        config="default",  # ToDo
-        transforms=None,  # ToDo
+        root_path: str = "./data",
+        config: Union[str, dict] = "default",  # ToDo
+        transforms: Any = None,  # ToDo
         **kwargs,
     ) -> None:
         self.root_path = root_path
@@ -34,7 +50,7 @@ class EventLog:
         lines = [head] + [" " * 4 + line for line in body]
         return "\n".join(lines)
 
-    def download(self, url) -> None:
+    def download(self, url: str) -> None:
         if self._check_raw():
             return
 
@@ -53,7 +69,7 @@ class EventLog:
     def _check_raw(self):
         return os.path.exists(self.raw_log)
 
-    def _base_preprocess(self, log):
+    def _base_preprocess(self, log: DataFrame):
         log = log.rename(columns=self.config)
         return log
 
@@ -62,7 +78,7 @@ class EventLog:
         return self.__class__.__name__
 
     @property
-    def raw_folder(self) -> str:
+    def raw_folder(self):
         return os.path.join(self.root_path, self.__class__.__name__, "raw")
 
     @property
@@ -70,7 +86,7 @@ class EventLog:
         return os.path.join(self.raw_folder, "log.parquet")
 
     @property
-    def cache_folder(self) -> str:
+    def cache_folder(self):
         return os.path.join(self.root_path, self.__class__.__name__, "cache")
 
     @property

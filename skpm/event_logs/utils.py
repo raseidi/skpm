@@ -59,7 +59,16 @@ def download_url(
             raise e
 
 
-def extract_data(from_path: str, to_path: Optional[str] = None) -> str:
+def extract_data(from_path: str, to_path: Optional[str] = None) -> None:
+    """
+    Extracts data from a compressed file (zip or tar) to a given path.
+    If no path is given, it will extract to the same folder as the compressed file.
+
+    Args:
+        from_path (str): Path to the compressed file
+        to_path (str, optional): Path to extract the file. Defaults to None.
+    """
+
     if to_path is None:
         to_path = os.path.dirname(from_path)
 
@@ -96,7 +105,16 @@ def download_and_extract_archive(
     url: str,
     root: str,
     filename: Optional[str] = None,
-) -> None:   
+) -> None:
+    """
+    Modified from torchvision.datasets.utils.download_and_extract_archive
+    It downloads and extracts an archive file from a URL.
+
+    Args:
+        url (str): URL to download the file from
+        root (str): Directory to place downloaded file in
+        filename (str, optional): Name to save the file under. If None, use the basename of the URL
+    """
     root = os.path.expanduser(root)
 
     if not filename:
