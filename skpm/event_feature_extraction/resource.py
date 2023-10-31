@@ -14,7 +14,7 @@ from skpm.utils import validate_columns
 from warnings import warn
 
 
-class ResourcePoolExtractor(BaseEstimator, TransformerMixin):
+class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
     """
     Proposed in [1]. Code adapted from [2].
 

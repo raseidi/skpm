@@ -2,6 +2,7 @@ import os
 from typing import Any, Union
 from urllib.error import URLError
 from pandas import DataFrame
+import pandas as pd
 
 from skpm.event_logs.utils import download_and_extract_archive
 
@@ -32,9 +33,10 @@ class EventLog:
         self.root_path = root_path
         if config == "default":
             self.config = {
-                "case_col": "case:concept:name",
-                "activity_col": "concept:name",
-                "timestamp_col": "time:timestamp",
+                "case:concept:name": "case_id",
+                "concept:name": "activity",
+                "time:timestamp": "timestamp",
+                "org:resource": "resource",
             }
         else:
             self.config = config
@@ -65,13 +67,14 @@ class EventLog:
             print(f"Failed to download (trying next):\n{error}")
         finally:
             print()
-
-    def _check_raw(self):
-        return os.path.exists(self.raw_log)
-
+            
     def _base_preprocess(self, log: DataFrame):
         log = log.rename(columns=self.config)
         return log
+
+
+    def _check_raw(self):
+        return os.path.exists(self.raw_log)
 
     @property
     def log_name(self):
@@ -96,3 +99,33 @@ class EventLog:
     @property
     def test_file(self):
         return os.path.join(self.cache_folder, "split", "test.parquet")
+
+class LogXES(EventLog):
+    pass
+
+
+class LogOCEL(EventLog):
+    pass
+
+
+class AsDataframeMixin:
+    event_id_col: str = "event_id"
+    case_id_col: str = "case_id"
+    activity_col: str = "activity"
+    timestamp_col: str = "timestamp"
+    resource_col: str = "resource"
+    
+    cols_to_rename = {
+        "case:concept:name": case_id_col,
+        "concept:name": activity_col,
+        "time:timestamp": timestamp_col,
+        "org:resource": resource_col,
+    }
+    
+    def __init_subclass__(cls) -> None:
+        cls.base_preprocess()
+        
+    
+    def base_preprocess(cls):
+        cls.log = cls.log.rename(columns=cls.cols_to_rename)
+        cls.log[cls.timestamp_col] = pd.to_datetime(cls.log[cls.timestamp_col], format='mixed')

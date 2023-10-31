@@ -1,8 +1,94 @@
 import os
-from typing import Iterator, Optional
+import pathlib
+from typing import Dict, Iterator, Optional, Tuple
 from urllib import error, request
 import tarfile
 import zipfile
+import gzip
+
+import json
+from pm4py import read_xes, read_ocel
+from pandas import read_parquet
+
+def _extract_tar(from_path: str, to_path: str) -> None:
+    with tarfile.open(from_path, f"r:*") as tar:
+        tar.extractall(to_path)
+
+def _extract_gzip(from_path: str, to_path: str) -> None:
+    with gzip.open(from_path, "rb") as rfh, open(to_path, "wb") as wfh:
+        wfh.write(rfh.read())
+
+_LOG_READERS = {
+    ".xes": read_xes,
+    ".parquet": read_parquet,
+    ".ocel": read_ocel,
+}
+
+_FILE_EXTRACTORS = {
+    ".tar": _extract_tar,
+    ".gz": _extract_gzip,
+}
+
+_LOG_TYPES = {
+    ".xes": ("xes", "xml"),
+    ".jsonocel": ("jsonocel"),
+    ".parquet": ("parquet"),
+}
+
+_COMPRESSED_TYPES = {
+    ".tar": (".tar"),
+    ".gz": (".gz", ".gzip"),
+    # ".zip": (".zip")
+}
+
+def _detect_file_type(file: str) -> Tuple[str, Optional[str], Optional[str]]:
+    """Detect the type of a file.
+
+    Args:
+        file (str): the filename
+
+    Returns:
+        (tuple): file type and reader/opener
+
+    Raises:
+        RuntimeError: if file has no suffix or suffix is not supported
+    """
+    suffixes = pathlib.Path(file).suffixes
+    if not suffixes:
+        raise RuntimeError(
+            f"File '{file}' has no suffixes that could be used to detect the archive type and compression."
+        )
+    suffix = suffixes[-1]
+
+    # check if the suffix is a log
+    for log_type, suffixes in _LOG_TYPES.items():
+        if suffix in suffixes:
+            return log_type, _LOG_READERS[log_type]
+
+    # check if the suffix is a compressed archive
+    for archive_type, suffixes in _COMPRESSED_TYPES.items():
+        if suffix in suffixes:
+            return archive_type, _COMPRESSED_TYPES[archive_type]
+
+    valid_suffixes = sorted(set(_LOG_TYPES) | set(_COMPRESSED_TYPES))
+    raise RuntimeError(f"Unknown compression or archive type: '{suffix}'.\nKnown suffixes are: '{valid_suffixes}'.")
+
+
+file="data/BPI17OCEL/raw/BPI17OCEL.jsonocel"
+suffixes = pathlib.Path(file).suffixes
+
+_detect_file_type(file)
+
+
+
+
+
+
+
+
+
+
+
 
 
 def _save_response_content(
@@ -81,7 +167,11 @@ def extract_data(from_path: str, to_path: Optional[str] = None) -> None:
         with zipfile.ZipFile(from_path, "r") as zip:
             zip.extractall(temp)
     else:
-        raise ValueError(f"Unknown file format: {from_path}")
+        try: # TODO: if gzip and other formats
+            with gzip.open(from_path, "rb") as rfh, open(os.path.join(temp, "output.temp"), "wb") as wfh:
+                wfh.write(rfh.read())
+        except:
+            raise ValueError(f"Unknown file format: {from_path}")
 
     # cleaning temp folder and renaming extracted file
     os.remove(from_path)

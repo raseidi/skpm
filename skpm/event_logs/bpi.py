@@ -1,6 +1,6 @@
 import os
 from typing import Any
-from pandas import read_parquet
+from pandas import read_parquet, read_csv
 from .base import EventLog
 
 
@@ -36,8 +36,10 @@ class BPI12(EventLog):
 
         if not self._check_raw():
             self.download(self.url)
+            self.log = self._load_log(raw=True)
+        else:
+            self.log = self._load_log(raw=False)
 
-        self.log = self._load_log()
 
     def __len__(self):
         return len(self.log)
@@ -51,9 +53,18 @@ class BPI12(EventLog):
         log = self._base_preprocess(log)
         return log
 
-    def _load_log(self):
-        log = read_parquet(self.log_file)
+    def _load_log(self, raw=False):
+        if raw:
+            recently_downloaded = os.path.join(self.raw_folder, self.log_name + ".temp")
+            import pm4py
+            log = pm4py.read_xes(recently_downloaded)
+            log.to_parquet(self.raw_log)
+            os.remove(recently_downloaded)
+        else:
+            log = read_parquet(self.raw_log)
+        
         log = self._base_preprocess(log)
+        # return log
         train, test = self.split_log(log)
         train.to_parquet(self.train_file, index=False)
         test.to_parquet(self.test_file, index=False)
