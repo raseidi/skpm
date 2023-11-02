@@ -117,9 +117,10 @@ class TimestampExtractor(
         x = X.copy()
         x.reset_index(drop=True, inplace=True)
         # x.columns = self._validate_columns(x.columns)
-        x.columns = validate_columns(
+        columns = validate_columns(
             input_columns=x.columns, required=[self.case_col, self.time_col]
         )
+        x = x[columns]
 
         # check if it is a datetime column
         x[self.time_col] = self._validate_timestamp_format(x)
@@ -162,7 +163,7 @@ class Timestamp:
         # select the column (i.e., as series) to
         # convert to seconds
         return (
-            group[time_col].diff().loc[ix_list, time_col].dt.total_seconds().fillna(0)
+            group[time_col].diff().loc[ix_list].dt.total_seconds().fillna(0)
         )
 
     @classmethod

@@ -5,3 +5,4 @@ __pycache__/
 script*.py
 notes.md
 .pytest_cache/
+demo/

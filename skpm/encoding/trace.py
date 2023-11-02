@@ -80,7 +80,7 @@ class TraceAggregator(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEst
         X = self._validate_data(X)
 
         # TODO: pandarallel
-        group = X.groupby(self.case_col)[self.features]
+        group = X.groupby(self.case_col, observed=True)[self.features]
         if self.method == "mean":
             X = group.expanding().mean()
         elif self.method == "sum":
