@@ -1,11 +1,10 @@
 import os
-from typing import Any
-from pandas import read_parquet, read_csv
-from .base import EventLog
+
+from .base import TUEventLog
 
 
-class BPI12(EventLog):
-    """BPI Challenge 2012
+class BPI12(TUEventLog):
+    """BPI Challenge 2012 event log.
 
     DOI: 10.4121/uuid:3926db30-f712-4394-aebc-75976070e91f
 
@@ -15,96 +14,72 @@ class BPI12(EventLog):
     information added by a process mining tool.
 
     Args:
-        root_path (str, optional): Path where the event log will be stored.
-            Defaults to "./data".
-        train (bool, optional): If True, returns the training set. Otherwise,
-            returns the test set. Defaults to True.
-        kwargs: Additional arguments to be passed to the base class.
+        root_folder (str, optional): Path where the event log will be stored.
+            Defaults to "data/".
+        save_as_pandas (bool, optional): Whether to save the event log as a pandas parquet file.
+            Defaults to True.
+        train_set (bool, optional): Whether to use the train set or the test set.
+            If True, use the train set. If False, use the test set. Defaults to True.
     """
 
-    url = "https://data.4tu.nl/file/533f66a4-8911-4ac7-8612-1235d65d1f37/3276db7f-8bee-4f2b-88ee-92dbffb5a893"
+    url: str = "https://data.4tu.nl/file/533f66a4-8911-4ac7-8612-1235d65d1f37/3276db7f-8bee-4f2b-88ee-92dbffb5a893"
+    md5: str = "74c7ba9aba85bfcb181a22c9d565e5b5"
+    file_name: str = "BPI_Challenge_2012.xes.gz"
 
-    def __init__(
-        self, root_path: str = "./data", train: bool = True, **kwargs: Any
-    ) -> None:
-        super().__init__(root_path=root_path, **kwargs)
-        self.train = train
-
-        if self._check_cache():
-            self.log = self._load_cache_log()
-            return
-
-        if not self._check_raw():
-            self.download(self.url)
-            self.log = self._load_log(raw=True)
-        else:
-            self.log = self._load_log(raw=False)
-
-
-    def __len__(self):
-        return len(self.log)
-
-    def _check_cache(self):
-        return os.path.exists(self.train_file)
-
-    def _load_cache_log(self):
-        file_path = self.train_file if self.train else self.test_file
-        log = read_parquet(file_path)
-        log = self._base_preprocess(log)
-        return log
-
-    def _load_log(self, raw=False):
-        if raw:
-            recently_downloaded = os.path.join(self.raw_folder, self.log_name + ".temp")
-            import pm4py
-            log = pm4py.read_xes(recently_downloaded)
-            log.to_parquet(self.raw_log)
-            os.remove(recently_downloaded)
-        else:
-            log = read_parquet(self.raw_log)
-        
-        log = self._base_preprocess(log)
-        # return log
-        train, test = self.split_log(log)
-        train.to_parquet(self.train_file, index=False)
-        test.to_parquet(self.test_file, index=False)
-
-        return train if self.train else test
-
-
-class BPI17OCEL(EventLog):
-    """BPI Challenge 2017 OCEL
-
-    DOI: 10.4121/6889ca3f-97cf-459a-b630-3b0b0d8664b5.v1
-
-    This dataset contains the result of transforming the BPI Challenge 2017
-    event log from Event Graph format to Object-Centric Event Log (OCEL) format.
-    The transformation is defined in the "Transforming Event Knowledge Graph
-    to Object-Centric Event Logs: A Comparative Study for Multi-dimensional
-    Process Analysis" paper.
-
-    Args:
-        root_path (str, optional): Path where the event log will be stored.
-            Defaults to "./data".
-        train (bool, optional): If True, returns the training set. Otherwise,
-            returns the test set. Defaults to True.
-        kwargs: Additional arguments to be passed to the base class.
-    """
-
-    url = "https://data.4tu.nl/file/6889ca3f-97cf-459a-b630-3b0b0d8664b5/5d5b9f89-7fa6-4c92-b6ac-04f854bdf92e"
-
-    def __init__(
-        self, root_path: str = "./data", train: bool = True, **kwargs: Any
-    ) -> None:
-        super().__init__(root_path=root_path, **kwargs)
-        self.train = train
-
-        if not self._check_raw():
-            self.download(self.url)
-
-    def _load_log(self):
+    def preprocess(self):
         raise NotImplementedError
 
-    @property
-    def raw_log(self):
-        return os.path.join(self.raw_folder, f"{self.__class__.__name__}.jsonocel")
+
+class BPI13ClosedProblems(TUEventLog):
+    """BPI Challenge 2013 Closed problems."""
+
+    url: str = "https://data.4tu.nl/file/1987a2a6-9f5b-4b14-8d26-ab7056b17929/8b99119d-9525-452e-bc8f-236ac76fa9c9"
+    md5: str = "4f9c35942f42cb90d911ee4936bbad87"
+    file_name: str = "BPI_Challenge_2013_closed_problems.xes.gz"
+
+    def preprocess(self):
+        raise NotImplementedError
+
+
+class BPI13Incidents(TUEventLog):
+    """BPI Challenge 2013 Incidents."""
+
+    url: str = "https://data.4tu.nl/file/0fc5c579-e544-4fab-9143-fab1f5192432/aa51ffbb-25fd-4b5a-b0b8-9aba659b7e8c"
+    md5: str = "d4809bd55e3e1c15b017ab4e58228297"
+    file_name: str = "BPI_Challenge_2013_incidents.xes.gz"
+
+    def preprocess(self):
+        raise NotImplementedError
+
+
+class BPI13Incidents(TUEventLog):
+    """BPI Challenge 2013 open problems."""
+
+    url: str = "https://data.4tu.nl/file/7aafbf5b-97ae-48ba-bd0a-4d973a68cd35/0647ad1a-fa73-4376-bdb4-1b253576c3a1"
+    md5: str = "9663e544a2292edf1fe369747736e7b4"
+    file_name: str = "BPI_Challenge_2013_open_problems.xes.gz"
+
+    def preprocess(self):
+        raise NotImplementedError
+
+
+class BPI17(TUEventLog):
+    """BPI Challenge 2013 open problems."""
+
+    url: str = "https://data.4tu.nl/file/34c3f44b-3101-4ea9-8281-e38905c68b8d/f3aec4f7-d52c-4217-82f4-57d719a8298c"
+    md5: str = "10b37a2f78e870d78406198403ff13d2"
+    file_name: str = "BPI Challenge 2017.xes.gz"
+
+    def preprocess(self):
+        raise NotImplementedError
+
+
+class BPI19(TUEventLog):
+    """BPI Challenge 2019."""
+
+    url: str = "https://data.4tu.nl/file/35ed7122-966a-484e-a0e1-749b64e3366d/864493d1-3a58-47f6-ad6f-27f95f995828"
+    md5: str = "4eb909242351193a61e1c15b9c3cc814"
+    file_name: str = "BPI_Challenge_2019.xes"
+
+    def preprocess(self):
+        raise NotImplementedError

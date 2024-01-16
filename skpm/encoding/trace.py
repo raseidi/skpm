@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Dict
 
 import numpy as np
 from pandas import DataFrame
@@ -10,6 +10,17 @@ from sklearn.base import (
 )
 
 from skpm.utils import ensure_list, validate_columns
+
+
+_NUMERICAL_AGGREGATORS = {
+    "sum": "sum",
+    "mean": "mean",
+}
+
+_CATEGORICAL_AGGREGATORS = {"frequency": "frequency"}
+
+ColumnTypes: Dict
+# {"numerical": [], "categorical": []}
 
 
 class TraceAggregator(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
