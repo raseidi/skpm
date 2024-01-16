@@ -2,7 +2,10 @@
 data/
 sk-dev/
 __pycache__/
-script*.py
+script*
 notes.md
 .pytest_cache/
-demo/
+coverage_re/
+use_cases/
+trash/
+docs/

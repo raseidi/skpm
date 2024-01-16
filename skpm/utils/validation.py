@@ -23,7 +23,7 @@ def validate_features_from_class(
         if not isinstance(features, (tuple, list)):
             features = [features]
         for f in available_features:
-            if f[0] in features:
+            if f[0] in features and not f[0].startswith("_"):
                 out_features.append(f)
 
     return out_features
