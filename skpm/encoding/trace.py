@@ -1,5 +1,3 @@
-from functools import partial
-from numpy import ndarray
 from sklearn.base import (
     OneToOneFeatureMixin,
     TransformerMixin,
