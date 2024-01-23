@@ -1,4 +1,9 @@
-from skpm import event_feature_extraction
-from skpm import event_logs
+__version__ = '0.0.1'
+__author__ = 'Rafael Oyamada'
 
-__all__ = ["event_feature_extraction", "event_logs"]
+__all__ = [
+    "encoding",
+    "event_feature_extraction",
+    "event_logs",
+    "utils",
+]

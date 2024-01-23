@@ -1,17 +1,17 @@
 import warnings
+from warnings import warn
+
 import numpy as np
 from pandas import DataFrame
 from scipy.sparse.csgraph import connected_components
 from sklearn.base import (
     BaseEstimator,
-    TransformerMixin,
     OneToOneFeatureMixin,
+    TransformerMixin,
     check_is_fitted,
 )
 
 from skpm.utils import validate_columns
-
-from warnings import warn
 
 
 class ResourcePoolExtractor(TransformerMixin, BaseEstimator):

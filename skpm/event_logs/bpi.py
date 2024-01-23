@@ -26,9 +26,6 @@ class BPI12(TUEventLog):
     md5: str = "74c7ba9aba85bfcb181a22c9d565e5b5"
     file_name: str = "BPI_Challenge_2012.xes.gz"
 
-    def preprocess(self):
-        raise NotImplementedError
-
 
 class BPI13ClosedProblems(TUEventLog):
     """BPI Challenge 2013 Closed problems."""
@@ -36,9 +33,6 @@ class BPI13ClosedProblems(TUEventLog):
     url: str = "https://data.4tu.nl/file/1987a2a6-9f5b-4b14-8d26-ab7056b17929/8b99119d-9525-452e-bc8f-236ac76fa9c9"
     md5: str = "4f9c35942f42cb90d911ee4936bbad87"
     file_name: str = "BPI_Challenge_2013_closed_problems.xes.gz"
-
-    def preprocess(self):
-        raise NotImplementedError
 
 
 class BPI13Incidents(TUEventLog):
@@ -48,9 +42,6 @@ class BPI13Incidents(TUEventLog):
     md5: str = "d4809bd55e3e1c15b017ab4e58228297"
     file_name: str = "BPI_Challenge_2013_incidents.xes.gz"
 
-    def preprocess(self):
-        raise NotImplementedError
-
 
 class BPI13Incidents(TUEventLog):
     """BPI Challenge 2013 open problems."""
@@ -58,9 +49,6 @@ class BPI13Incidents(TUEventLog):
     url: str = "https://data.4tu.nl/file/7aafbf5b-97ae-48ba-bd0a-4d973a68cd35/0647ad1a-fa73-4376-bdb4-1b253576c3a1"
     md5: str = "9663e544a2292edf1fe369747736e7b4"
     file_name: str = "BPI_Challenge_2013_open_problems.xes.gz"
-
-    def preprocess(self):
-        raise NotImplementedError
 
 
 class BPI17(TUEventLog):
@@ -70,9 +58,6 @@ class BPI17(TUEventLog):
     md5: str = "10b37a2f78e870d78406198403ff13d2"
     file_name: str = "BPI Challenge 2017.xes.gz"
 
-    def preprocess(self):
-        raise NotImplementedError
-
 
 class BPI19(TUEventLog):
     """BPI Challenge 2019."""
@@ -81,5 +66,45 @@ class BPI19(TUEventLog):
     md5: str = "4eb909242351193a61e1c15b9c3cc814"
     file_name: str = "BPI_Challenge_2019.xes"
 
-    def preprocess(self):
-        raise NotImplementedError
+
+class BPI20(TUEventLog):
+    """BPI Challenge 2019."""
+
+    versions = ("permit", "request", "domestic", "prepaid", "international")
+    urls: dict = {
+        "permit": "url1",
+        "request": "url2",
+        "domestic": "url3",
+        "prepaid": "url4",
+        "international": "url5",
+    }
+    md5s: dict = {
+        "permit": "md51",
+        "request": "md52",
+        "domestic": "md53",
+        "prepaid": "md54",
+        "international": "md55",
+    }
+    file_names: dict = {
+        "permit": "BPI_Challenge_2020_permit.xes.gz",
+        "request": "BPI_Challenge_2020_request.xes.gz",
+        "domestic": "BPI_Challenge_2020_domestic.xes.gz",
+        "prepaid": "BPI_Challenge_2020_prepaid.xes.gz",
+        "international": "BPI_Challenge_2020_international.xes.gz",
+    }
+
+    def __init__(
+        self,
+        version: str = "permit",
+        root_folder: str = "./data",
+        save_as_pandas: bool = True,
+        train_set: bool = True,
+        file_path: str = None,
+    ) -> None:
+        raise NotImplementedError("TODO: download from 4TU")
+        
+        if version not in self.versions:
+            raise ValueError(f"Version {version} not in {self.versions}")
+        # TODO
+
+        super().__init__(root_folder, save_as_pandas, train_set, file_path)

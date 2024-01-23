@@ -1,15 +1,23 @@
 import re
 import os
-from typing import Any, Union
+import typing as t
 from urllib.error import URLError
-from pandas import DataFrame
+from warnings import warn
 import pandas as pd
 
 from skpm.event_logs.extract import extract_gz
 from skpm.event_logs.download import download_url
+from skpm.config import EventLogConfig as elc
 
 
-class TUEventLog:
+class BasePreprocessing:
+    def preprocess(self):
+        self.log[elc.timestamp] = pd.to_datetime(
+            self.log[elc.timestamp], format="mixed"
+        )
+
+
+class TUEventLog(BasePreprocessing):
     """
     Base class for event logs from the 4TU repository.
 
@@ -43,15 +51,18 @@ class TUEventLog:
         train_set: bool = True,
         file_path: str = None,
     ) -> None:
+        super().__init__()
         self.root_folder = root_folder
         self.save_as_pandas = save_as_pandas
         self.train_set = train_set
 
-        if file_path is not None:
+        if file_path is None:
             self._file_path = os.path.join(
                 self.root_folder,
                 self.__class__.__name__,
-                self.file_name.replace(".gz", "").replace(".xes", ".parquet"),
+                self.file_name.replace(".gz", "").replace(
+                    ".xes", elc.default_file_format
+                ),
             )
         else:
             self._file_path = file_path
@@ -60,12 +71,7 @@ class TUEventLog:
             self.download()
 
         self.log = self.read_log()
-        # self.config = {  # TODO: better design for this
-        #     "concept:name": "activity",
-        #     "org:resource": "resource",
-        #     "time:timestamp": "timestamp",
-        #     "case:concept:name": "case_id",
-        # }
+        self.preprocess()
 
     @property
     def file_path(self) -> str:
@@ -101,20 +107,22 @@ class TUEventLog:
         # TODO: elif other formats
         os.remove(path)
 
-    def read_log(self) -> DataFrame:
+    def read_log(self) -> pd.DataFrame:
         if self.file_path.endswith(".xes"):
             import pm4py
 
             log = pm4py.read_xes(self.file_path)
 
             if self.save_as_pandas:
-                new_file_path = self.file_path.replace(".xes", ".parquet")
+                new_file_path = self.file_path.replace(".xes", elc.default_file_format)
                 log.to_parquet(new_file_path)
                 os.remove(self.file_path)
                 self.file_path = new_file_path
 
-        elif self.file_path.endswith(".parquet"):
-            log = pd.read_parquet(self.file_path)
+        elif self.file_path.endswith(elc.default_file_format):
+            log = pd.read_parquet(self.file_path)#, engine="fastparquet")
+            # which engine is better?
+            # log = pd.read_parquet(self.file_path, engine="fastparquet")
 
         # log = self._base_preprocess(log)
         return log
@@ -126,9 +134,6 @@ class TUEventLog:
         # test.to_parquet(self.test_file, index=False)
 
         # return train if self.train else test
-
-    def preprocess(self):
-        raise NotImplementedError
 
     def __repr__(self) -> str:
         head = "Event Log " + self.__class__.__name__
@@ -142,32 +147,3 @@ class TUEventLog:
 
 class TUOCEL:
     pass
-
-
-# class StandardDataframeMixin:
-#     event_id_col: str = "event_id"
-#     case_id_col: str = "case_id"
-#     activity_col: str = "activity"
-#     timestamp_col: str = "timestamp"
-#     resource_col: str = "resource"
-
-#     cols_to_rename = {
-#         "case:concept:name": case_id_col,
-#         "concept:name": activity_col,
-#         "time:timestamp": timestamp_col,
-#         "org:resource": resource_col,
-#     }
-
-#     def __init_subclass__(cls) -> None:
-#         cls.base_preprocess()
-
-#     def base_preprocess(cls):
-#         cls.log = cls.log.rename(columns=cls.cols_to_rename)
-#         cls.log[cls.timestamp_col] = pd.to_datetime(
-#             cls.log[cls.timestamp_col], format="mixed"
-#         )
-#         cls.log = cls.log.loc[
-#             :,
-#             list(cls.cols_to_rename.values())
-#             + list(set(cls.log.columns) - set(cls.cols_to_rename.values())),
-#         ]
