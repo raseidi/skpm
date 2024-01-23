@@ -120,7 +120,7 @@ class TUEventLog(BasePreprocessing):
                 self.file_path = new_file_path
 
         elif self.file_path.endswith(elc.default_file_format):
-            log = pd.read_parquet(self.file_path)#, engine="fastparquet")
+            log = pd.read_parquet(self.file_path)  # , engine="fastparquet")
             # which engine is better?
             # log = pd.read_parquet(self.file_path, engine="fastparquet")
 

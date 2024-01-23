@@ -9,7 +9,7 @@ from sklearn.base import (
 )
 from sklearn.utils import check_pandas_support
 
-from skpm.utils import validate_columns, validate_features_from_class
+from skpm.utils import validate_columns, validate_methods_from_class
 
 
 class TimestampExtractor(
@@ -63,7 +63,7 @@ class TimestampExtractor(
                 Fitted transformer.
         """
         _ = self._validate_data(X)
-        self.features_ = validate_features_from_class(self.features, Timestamp)
+        self.features_ = validate_methods_from_class(self.features, Timestamp)
         # del self.features
         self._n_features_out = len(self.features_)
         return self

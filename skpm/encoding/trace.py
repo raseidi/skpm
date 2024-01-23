@@ -1,5 +1,7 @@
 from functools import partial
+from numpy import ndarray
 from sklearn.base import (
+    OneToOneFeatureMixin,
     TransformerMixin,
     check_is_fitted,
 )
@@ -9,7 +11,8 @@ from skpm.base import BaseProcessEstimator
 from skpm.config import EventLogConfig as elc
 from skpm.utils.helpers import infer_column_types
 
-class Aggregation(TransformerMixin, BaseProcessEstimator):
+
+class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     """Sequence Encoding Transformer.
 
     This module implements a method for encoding sequences by
@@ -76,7 +79,13 @@ class Aggregation(TransformerMixin, BaseProcessEstimator):
             StrOptions({"sum", "mean", "median"}),
         ],
         "cat_method": [
-            StrOptions({"sum", "mean", "median", }),
+            StrOptions(
+                {
+                    "sum",
+                    "mean",
+                    "median",
+                }
+            ),
         ],
     }
 
@@ -91,7 +100,25 @@ class Aggregation(TransformerMixin, BaseProcessEstimator):
         # self.n_jobs = n_jobs
 
     def fit(self, X, y=None):
-        self._validate_params()
+        """Fit transformer.
+
+        Checks if the input is a dataframe, if it
+        contains the required columns, validates
+        the timestamp column, and the desired features.
+
+        Parameters
+        ----------
+            X : {DataFrame} of shape (n_samples, n_features+1)
+                The data must contain `n_features` plus a column with case ids.
+            y : None.
+                Ignored.
+
+        Returns
+        -------
+            self : object
+                Fitted aggregator.
+
+        """
         self.features_ = X.columns.drop(elc.case_id).tolist()
         self.n_features_ = len(self.features_)
 
@@ -103,56 +130,63 @@ class Aggregation(TransformerMixin, BaseProcessEstimator):
         # if num_cols:
         #     self.num_ = num_cols
         self.cat_, self.num_, _ = infer_column_types(X[self.features_], int_as_cat=True)
-        
+
         self.feature_aggregations_ = {
             **{cat_col: self.cat_method for cat_col in self.cat_},
             **{num_col: self.num_method for num_col in self.num_},
         }
-        
+
         return self
 
     def transform(self, X, y=None):
-        check_is_fitted(self, "n_features_")
-        X = self._validate_log(X)
+        """Performs the aggregation of event features from a trace.
 
-        group = X.groupby(elc.case_id, observed=True, as_index=False)
-    
-        # TODO: major bottleneck; polars is 50x faster for this operation       
-        X[self.features_] = (
-            group
-            .expanding()
-            .agg(
-                self.feature_aggregations_
-            )
-            .values
-        )
-        return X
+        Parameters
+        ----------
+        X : {DataFrame} of shape (n_samples, n_features+1)
+            An event log. It must contain n_features + 1 columns,
+            representing the case id and the event features.
+
+        Returns
+        -------
+        X : {DataFrame} of shape (n_samples, n_features)
+            The aggregated event log.
+        """
+        check_is_fitted(self, "n_features_")
+        X = self._validate_log(X, reset=False)
+
+        group = X.groupby(elc.case_id, observed=True, as_index=True)
+
+        # TODO: major bottleneck; polars is 50x faster for this operation
+        # X[self.features_] =
+        for col, method in self.feature_aggregations_.items():
+            X[col] = group[col].expanding().agg(method).values
+        # X = ( # TODO: this changes the order of the columns withing the TransformerMixin
+        #     group.expanding()
+        #     .agg(self.feature_aggregations_)
+        #     .reset_index(level=elc.case_id)
+        #     .values
+        # )
+        return X.values
+
 
 class WindowAggregation(Aggregation):
-    def __init__(self, window_size=2, min_events=1, num_method="mean", cat_method="sum") -> None:
+    def __init__(
+        self, window_size=2, min_events=1, num_method="mean", cat_method="sum"
+    ) -> None:
         self.num_method = num_method
         self.cat_method = cat_method
         self.window_size = window_size
-        self.min_events = min_events        
-        
+        self.min_events = min_events
+
     def transform(self, X, y=None):
         check_is_fitted(self, "n_features_")
         X = self._validate_log(X)
 
-        group = (
-            X
-            .groupby(
-                elc.case_id, 
-                observed=True, 
-                as_index=False)
-            .rolling(
-                window=self.window_size, 
-                min_periods=self.min_events)
+        group = X.groupby(elc.case_id, observed=True, as_index=False).rolling(
+            window=self.window_size, min_periods=self.min_events
         )
-        
-        X[self.features_] = (
-            group
-            .agg(self.feature_aggregations_)
-            .values
-        )
+
+        for col, method in self.feature_aggregations_.items():
+            X[col] = group[col].agg(method).values
         return X

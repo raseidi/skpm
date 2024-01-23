@@ -102,7 +102,7 @@ class BPI20(TUEventLog):
         file_path: str = None,
     ) -> None:
         raise NotImplementedError("TODO: download from 4TU")
-        
+
         if version not in self.versions:
             raise ValueError(f"Version {version} not in {self.versions}")
         # TODO

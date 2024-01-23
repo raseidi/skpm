@@ -15,7 +15,16 @@ class BaseProcessEstimator(BaseEstimator):
     For instance, all event logs must have a `case_id` column.
     """
 
-    def _validate_log(self, X: DataFrame, copy: bool = True):
+    def _validate_log(
+        self,
+        X: DataFrame,
+        y: DataFrame = None,
+        reset: bool = True,
+        cast_to_ndarray: bool = False,
+        copy: bool = True,
+    ):
+        self._validate_params()
+
         # TODO: the validation of a dataframe might be done
         # through the `pd.api.extensions`.
         # This would decrease the dependency between data validation
@@ -23,15 +32,19 @@ class BaseProcessEstimator(BaseEstimator):
         # See: https://pandas.pydata.org/pandas-docs/stable/development/extending.html#extending-pandas
         data = X.copy() if copy else X
 
-        # TODO: only when we perform groupby on np.array
-        # X = super()._validate_data(X)
-
         # despite the bottlenecks, event logs are better handled as dataframes
         assert isinstance(data, DataFrame), "Input must be a dataframe."
         cols = ensure_list(data.columns)
 
         if not self._ensure_case_id(data.columns):
             raise ValueError(f"Column `{elc.case_id}` not found.")
+
+        self._validate_data(
+            X=X,
+            y=y,
+            reset=reset,
+            cast_to_ndarray=cast_to_ndarray,
+        )
 
         if cols:
             cols = validate_columns(

@@ -2,10 +2,10 @@ import inspect
 from typing import Iterable, Union, Any
 
 
-def validate_features_from_class(
+def validate_methods_from_class(
     features: Union[str, list[str]], class_obj: Any
 ) -> list[tuple[str, callable]]:
-    """Validate features.
+    """Validate methods from a class.
 
     Args:
         features (Union[str, list[str]]): features to be extracted from a class.

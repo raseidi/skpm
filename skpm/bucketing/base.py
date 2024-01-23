@@ -5,10 +5,11 @@ from skpm.config import EventLogConfig as elc
 
 class Bucketing(TransformerMixin, BaseProcessEstimator):
     """Event Bucketing Transformer.
-    
+
     This class implements a method for bucketing traces
-    
+
     """
+
     def __init__(self, method="single"):
         assert method in ["single", "prefix", "clustering"]
         self.method = method
