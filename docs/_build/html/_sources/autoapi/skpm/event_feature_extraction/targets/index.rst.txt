@@ -1,0 +1,42 @@
+:py:mod:`skpm.event_feature_extraction.targets`
+===============================================
+
+.. py:module:: skpm.event_feature_extraction.targets
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   skpm.event_feature_extraction.targets.next_activity
+   skpm.event_feature_extraction.targets.remaining_time
+
+
+
+.. py:function:: next_activity(log: pandas.DataFrame)
+
+   Returns the next activity of each trace.
+
+   :param log: An event log.
+   :type log: pd.DataFrame
+
+   :returns: A dataframe with the next activity of each trace.
+   :rtype: pd.DataFrame
+
+
+.. py:function:: remaining_time(log: pandas.DataFrame)
+
+   Returns the remaining time of each trace.
+
+   :param log: An event log.
+   :type log: pd.DataFrame
+
+   :returns: A dataframe with the remaining time of each trace.
+   :rtype: pd.DataFrame
+
+

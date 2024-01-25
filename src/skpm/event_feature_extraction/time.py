@@ -1,19 +1,12 @@
 from typing import Union
 
 from pandas import DataFrame
-from sklearn.base import (
-    BaseEstimator,
-    ClassNamePrefixFeaturesOutMixin,
-    TransformerMixin,
-    check_is_fitted,
-)
+from sklearn.base import (BaseEstimator, ClassNamePrefixFeaturesOutMixin,
+                          TransformerMixin, check_is_fitted)
+from sklearn.utils import check_pandas_support
 
 from skpm.config import EventLogConfig as elc
-from skpm.utils import (
-    check_pandas_support,
-    validate_columns,
-    validate_methods_from_class,
-)
+from skpm.utils import validate_columns, validate_methods_from_class
 
 
 class TimestampExtractor(

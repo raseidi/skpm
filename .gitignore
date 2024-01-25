@@ -8,7 +8,7 @@ notes*
 coverage_re/
 use_cases/
 trash/
-docs/
 df.pkl
 MVP.md
 results.csv
+.coverage

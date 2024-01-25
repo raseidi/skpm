@@ -2,7 +2,7 @@ from sklearn.base import TransformerMixin
 
 from skpm.config import EventLogConfig as elc
 
-from .base import BaseProcessEstimator
+from skpm.base import BaseProcessEstimator
 
 
 class Bucketing(TransformerMixin, BaseProcessEstimator):

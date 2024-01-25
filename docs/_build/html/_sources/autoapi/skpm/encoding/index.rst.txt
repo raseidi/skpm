@@ -1,0 +1,168 @@
+:py:mod:`skpm.encoding`
+=======================
+
+.. py:module:: skpm.encoding
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   ngrams/index.rst
+   trace/index.rst
+
+
+Package Contents
+----------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   skpm.encoding.Aggregation
+   skpm.encoding.EncodedNgrams
+
+
+
+
+.. py:class:: Aggregation(num_method='mean', cat_method='sum')
+
+
+   Bases: :py:obj:`sklearn.base.OneToOneFeatureMixin`, :py:obj:`sklearn.base.TransformerMixin`, :py:obj:`skpm.base.BaseProcessEstimator`
+
+   Sequence Encoding Transformer.
+
+   This module implements a method for encoding sequences by
+   aggregating features. It adapts the approach from a
+   research paper [1] that abstracts event sequences by
+   disregarding their order and using aggregation functions.
+   Common aggregation functions include frequency-based
+   methods for categorical features and general statistics
+   (average, sum, etc.) for numeric attributes.
+
+   In our implementation, we assume that categorical
+   features are already encoded categorical features and
+   apply aggregation methods accordingly: frequency
+   aggregation for integer (categorical) features and
+   general statistical measures for float (numerical)
+   features. This design choice allows flexibility in
+   aggregating user-engineered features, not limited to
+   one-hot encoding as described in the original
+   paper [1].
+
+
+   :param num_method: The method to aggregate numerical features.
+                      Possible values: "sum", "mean".
+   :type num_method: str, default="mean"
+   :param cat_method: The method to aggregate categorical features.
+                      Possible values: "frequency", "sum".
+   :type cat_method: str, default="sum"
+
+   .. attribute:: n_features_
+
+      The number of features to encode.
+
+      :type: int
+
+   .. attribute:: features_
+
+      The features to encode.
+
+      :type: list[str]
+
+   .. attribute:: cat_
+
+      The categorical features to encode.
+
+      :type: list[str]
+
+   .. attribute:: num_
+
+      The numerical features to encode.
+
+      :type: list[str]
+
+   .. rubric:: References
+
+   [1] Outcome-Oriented Predictive Process Monitoring: Review and Benchmark, Teinemaa, I., Dumas, M., Maggi, F. M., & La Rosa, M. (2019).
+
+   .. rubric:: Examples
+
+   >>> import numpy as npd
+   >>> import pandas as pd
+   >>> from skpm.encoding import Aggregation
+   >>> df = pd.DataFrame({
+   ...     "timestamp": np.arange(10),
+   ...     "activity": np.random.randint(0, 10, 10),
+   ...     "resource": np.random.randint(0, 3, 10),
+   ...     "case_id": np.random.randint(0, 3, 10)
+   ... }).sort_values(by=["case_id", "timestamp"])
+   >>> df = pd.get_dummies(df, columns=[elc.activity, elc.resource], dtype=int)
+   >>> df = df.drop("timestamp", axis=1)
+   >>> Aggregation().fit_transform(df)
+
+   .. py:attribute:: _parameter_constraints
+
+      
+
+   .. py:method:: fit(X, y=None)
+
+      Fit transformer.
+
+      Checks if the input is a dataframe, if it
+      contains the required columns, validates
+      the timestamp column, and the desired features.
+
+      :param X: The data must contain `n_features` plus a column with case ids.
+      :type X: {DataFrame} of shape (n_samples, n_features+1)
+      :param y: Ignored.
+      :type y: None.
+
+      :returns: **self** -- Fitted aggregator.
+      :rtype: object
+
+
+   .. py:method:: transform(X, y=None)
+
+      Performs the aggregation of event features from a trace.
+
+      :param X: An event log. It must contain n_features + 1 columns,
+                representing the case id and the event features.
+      :type X: {DataFrame} of shape (n_samples, n_features+1)
+
+      :returns: **X** -- The aggregated event log.
+      :rtype: {DataFrame} of shape (n_samples, n_features)
+
+
+
+.. py:class:: EncodedNgrams(N: int = 3)
+
+
+   Bases: :py:obj:`sklearn.base.TransformerMixin`, :py:obj:`sklearn.base.BaseEstimator`
+
+   Mixin class for all transformers in scikit-learn.
+
+   If :term:`get_feature_names_out` is defined, then :class:`BaseEstimator` will
+   automatically wrap `transform` and `fit_transform` to follow the `set_output`
+   API. See the :ref:`developer_api_set_output` for details.
+
+   :class:`OneToOneFeatureMixin` and
+   :class:`ClassNamePrefixFeaturesOutMixin` are helpful mixins for
+   defining :term:`get_feature_names_out`.
+
+   .. py:method:: get_feature_names_out()
+
+
+   .. py:method:: fit(X, y=None)
+
+
+   .. py:method:: transform(X, y=None)
+
+
+   .. py:method:: _check_is_fitted()
+
+
+

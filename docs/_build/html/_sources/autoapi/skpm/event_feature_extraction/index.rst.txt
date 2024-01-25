@@ -1,0 +1,301 @@
+:py:mod:`skpm.event_feature_extraction`
+=======================================
+
+.. py:module:: skpm.event_feature_extraction
+
+.. autoapi-nested-parse::
+
+   Notes on inter-case features:
+       Inter-case features are features that can be leveraged by cases in parallel. For instance, the availability of a resource at a time window `t_0` can be represented as a binary variable.
+       This brings up an observation, not an issue I believe, that `fit` methods in this module will just return self, and all the logic should be within `transform`. This is due to the temporal splits, expected for temporal process data.
+       We cannot `fit` on the train set and `transform` on the test
+       set, i.e. define the bins based on `freq`, since in a temporal
+       split the test set will have unkown bins. TODO: further explore
+       if this is an issue.
+       For TimestampExtractor, if we have on the training set a trace [t_0, ..., t_n] whereas on the test set we have the remaining trace, i.e., [t_{n+1}, ..., t_m], the `accumulated_time` feature should take this info into consideration.
+
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   inter/index.rst
+   meta/index.rst
+   resource/index.rst
+   targets/index.rst
+   time/index.rst
+
+
+Package Contents
+----------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   skpm.event_feature_extraction.TimestampExtractor
+   skpm.event_feature_extraction.ResourcePoolExtractor
+   skpm.event_feature_extraction.WorkInProgress
+
+
+
+
+.. py:class:: TimestampExtractor(features: Union[list, str] = 'all')
+
+
+   Bases: :py:obj:`sklearn.base.ClassNamePrefixFeaturesOutMixin`, :py:obj:`sklearn.base.TransformerMixin`, :py:obj:`sklearn.base.BaseEstimator`
+
+   Extract features from a timestamp column.
+
+   The class needs a column with case ids and a column with timestamps. The validation of the columns is done in the fit method.
+
+   :param case_col: {str}, default='case_id'
+                    Name of the column containing the case ids.
+   :param elc.timestamp: {str}, default='timestamp'
+                         Name of the column containing the timestamps.
+   :param features: list of features. Defaults to "all".
+   :type features: Union[list, str], optional
+
+   .. py:method:: fit(X: pandas.DataFrame, y=None)
+
+      Fit transformer.
+      Checks if the input is a dataframe, if it
+      contains the required columns, validates
+      the timestamp column, and the desired features.
+
+      :param X: The data must contain a column with case ids and
+                a column with timestamps.
+      :type X: {DataFrame} of shape (n_samples, 2)
+      :param y: Ignored.
+      :type y: None.
+
+      :returns: **self** -- Fitted transformer.
+      :rtype: object
+
+
+   .. py:method:: get_feature_names_out()
+
+      Get output feature names for transformation.
+
+      The feature names out will prefixed by the lowercased class name. For
+      example, if the transformer outputs 3 features, then the feature names
+      out are: `["class_name0", "class_name1", "class_name2"]`.
+
+      :param input_features: Only used to validate feature names with the names seen in `fit`.
+      :type input_features: array-like of str or None, default=None
+
+      :returns: **feature_names_out** -- Transformed feature names.
+      :rtype: ndarray of str objects
+
+
+   .. py:method:: transform(X: pandas.DataFrame, y=None)
+
+      Extract features from timestamp column.
+
+      :param X: The data must contain a column with case ids and a column with timestamps.
+      :type X: {dataframe} of shape (n_samples, 2)
+
+      :returns: **X_tr** -- Transformed array.
+      :rtype: {dataframe} of shape (n_samples, n_features)
+
+
+   .. py:method:: _validate_data(X: pandas.DataFrame)
+
+      Validate input data and set or check the `n_features_in_` attribute.
+
+      :param X: The input samples.
+                If `'no_validation'`, no validation is performed on `X`. This is
+                useful for meta-estimator which can delegate input validation to
+                their underlying estimator(s). In that case `y` must be passed and
+                the only accepted `check_params` are `multi_output` and
+                `y_numeric`.
+      :type X: {array-like, sparse matrix, dataframe} of shape                 (n_samples, n_features), default='no validation'
+      :param y: The targets.
+
+                - If `None`, `check_array` is called on `X`. If the estimator's
+                  requires_y tag is True, then an error will be raised.
+                - If `'no_validation'`, `check_array` is called on `X` and the
+                  estimator's requires_y tag is ignored. This is a default
+                  placeholder and is never meant to be explicitly set. In that case
+                  `X` must be passed.
+                - Otherwise, only `y` with `_check_y` or both `X` and `y` are
+                  checked with either `check_array` or `check_X_y` depending on
+                  `validate_separately`.
+      :type y: array-like of shape (n_samples,), default='no_validation'
+      :param reset: Whether to reset the `n_features_in_` attribute.
+                    If False, the input will be checked for consistency with data
+                    provided when reset was last True.
+                    .. note::
+                       It is recommended to call reset=True in `fit` and in the first
+                       call to `partial_fit`. All other methods that validate `X`
+                       should set `reset=False`.
+      :type reset: bool, default=True
+      :param validate_separately: Only used if y is not None.
+                                  If False, call validate_X_y(). Else, it must be a tuple of kwargs
+                                  to be used for calling check_array() on X and y respectively.
+
+                                  `estimator=self` is automatically added to these dicts to generate
+                                  more informative error message in case of invalid input data.
+      :type validate_separately: False or tuple of dicts, default=False
+      :param cast_to_ndarray: Cast `X` and `y` to ndarray with checks in `check_params`. If
+                              `False`, `X` and `y` are unchanged and only `feature_names_in_` and
+                              `n_features_in_` are checked.
+      :type cast_to_ndarray: bool, default=True
+      :param \*\*check_params: Parameters passed to :func:`sklearn.utils.check_array` or
+                               :func:`sklearn.utils.check_X_y`. Ignored if validate_separately
+                               is not False.
+
+                               `estimator=self` is automatically added to these params to generate
+                               more informative error message in case of invalid input data.
+      :type \*\*check_params: kwargs
+
+      :returns: **out** -- The validated input. A tuple is returned if both `X` and `y` are
+                validated.
+      :rtype: {ndarray, sparse matrix} or tuple of these
+
+
+   .. py:method:: _validate_timestamp_format(x: pandas.DataFrame, timestamp_format: str = '%Y-%m-%d %H:%M:%S')
+
+
+
+.. py:class:: ResourcePoolExtractor(threshold=0.7)
+
+
+   Bases: :py:obj:`sklearn.base.TransformerMixin`, :py:obj:`sklearn.base.BaseEstimator`
+
+   Proposed in [1]. Code adapted from [2].
+
+   TODO: implement other distance metrics.
+
+   .. rubric:: References
+
+   [1] Minseok Song, Wil M.P. van der Aalst. Towards comprehensive support for organizational mining, Decision Support Systems (2008).
+   [2] https://github.com/AdaptiveBProcess/GenerativeLSTM
+
+   .. rubric:: Notes
+
+   - distance metrics: (dis)similarity between two vectors (variables). It must
+   satisfy the following mathematical properties: d(x,x) = 0, d(x,y) >= 0,
+   d(x,y) = d(y,x), d(x,z) <= d(x,y) + d(y,z)
+   - correlation coeficients: statistical relationships between vectors (variables)
+   that quantify how much they are related.
+
+   The original paper mentions Pearson correlation as a distance metric. For
+   academic purposes, it's crucial to grasp the distinction since correlation
+   does not satisfy the triangular inequality. Yet, there are instances where
+   I think correlation can be informally employed as a 'similarity' measure.
+   In the context of organizational mining, I believe statistical relationships
+   and similarity ultimately serve the same purpose.
+
+   .. py:method:: get_feature_names_out()
+
+
+   .. py:method:: fit(X: pandas.DataFrame, y=None)
+
+
+   .. py:method:: transform(X: pandas.DataFrame, y=None)
+
+
+   .. py:method:: _validate_data(X: pandas.DataFrame)
+
+      Validate input data and set or check the `n_features_in_` attribute.
+
+      :param X: The input samples.
+                If `'no_validation'`, no validation is performed on `X`. This is
+                useful for meta-estimator which can delegate input validation to
+                their underlying estimator(s). In that case `y` must be passed and
+                the only accepted `check_params` are `multi_output` and
+                `y_numeric`.
+      :type X: {array-like, sparse matrix, dataframe} of shape                 (n_samples, n_features), default='no validation'
+      :param y: The targets.
+
+                - If `None`, `check_array` is called on `X`. If the estimator's
+                  requires_y tag is True, then an error will be raised.
+                - If `'no_validation'`, `check_array` is called on `X` and the
+                  estimator's requires_y tag is ignored. This is a default
+                  placeholder and is never meant to be explicitly set. In that case
+                  `X` must be passed.
+                - Otherwise, only `y` with `_check_y` or both `X` and `y` are
+                  checked with either `check_array` or `check_X_y` depending on
+                  `validate_separately`.
+      :type y: array-like of shape (n_samples,), default='no_validation'
+      :param reset: Whether to reset the `n_features_in_` attribute.
+                    If False, the input will be checked for consistency with data
+                    provided when reset was last True.
+                    .. note::
+                       It is recommended to call reset=True in `fit` and in the first
+                       call to `partial_fit`. All other methods that validate `X`
+                       should set `reset=False`.
+      :type reset: bool, default=True
+      :param validate_separately: Only used if y is not None.
+                                  If False, call validate_X_y(). Else, it must be a tuple of kwargs
+                                  to be used for calling check_array() on X and y respectively.
+
+                                  `estimator=self` is automatically added to these dicts to generate
+                                  more informative error message in case of invalid input data.
+      :type validate_separately: False or tuple of dicts, default=False
+      :param cast_to_ndarray: Cast `X` and `y` to ndarray with checks in `check_params`. If
+                              `False`, `X` and `y` are unchanged and only `feature_names_in_` and
+                              `n_features_in_` are checked.
+      :type cast_to_ndarray: bool, default=True
+      :param \*\*check_params: Parameters passed to :func:`sklearn.utils.check_array` or
+                               :func:`sklearn.utils.check_X_y`. Ignored if validate_separately
+                               is not False.
+
+                               `estimator=self` is automatically added to these params to generate
+                               more informative error message in case of invalid input data.
+      :type \*\*check_params: kwargs
+
+      :returns: **out** -- The validated input. A tuple is returned if both `X` and `y` are
+                validated.
+      :rtype: {ndarray, sparse matrix} or tuple of these
+
+
+   .. py:method:: _check_unknown(input: numpy.ndarray, vocab: numpy.ndarray, name: str)
+
+
+   .. py:method:: _define_vocabs(unique_labels: numpy.ndarray)
+
+
+
+.. py:class:: WorkInProgress(window_size='1D')
+
+
+   Bases: :py:obj:`sklearn.base.TransformerMixin`, :py:obj:`sklearn.base.BaseEstimator`
+
+   Work in progress (WIP) feature extractor.
+
+   The class needs a column with case ids and a column with timestamps. The validation of the columns is done in the fit method.
+
+   :param window_size: {str}, default='1D'
+                       Frequency of the bins to count the number of cases (work) in progress. See https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
+   :param case_col: {str}, default='case_id'
+                    Name of the column containing the case ids.
+   :param time_col: {str}, default='timestamp'
+                    Name of the column containing the timestamps.
+
+   :returns: WIP feature array of shape (n_samples, 1)
+   :rtype: ndarray
+
+   .. py:method:: get_feature_names_out()
+
+
+   .. py:method:: fit(X: pandas.DataFrame, y=None, case_col: str = 'case:concept:name', time_col: str = 'case:time:timestamp')
+
+
+   .. py:method:: transform(X: pandas.DataFrame)
+
+      1. _grouped_wip counts the number of cases within each bin
+      2. pd.cut creates a new dataframe to identify to which bin each event timestamp belongs
+      3. from the bins dataframe we can map the _grouped_wip to get the number of active cases at each bin (time step)
+      4. fill na since the pd.cut does not consider the last bin (it works with open interval, i.e. `[)`)
+
+
+   .. py:method:: get_bins()
+
+
+

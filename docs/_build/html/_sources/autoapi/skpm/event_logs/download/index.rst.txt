@@ -1,0 +1,44 @@
+:py:mod:`skpm.event_logs.download`
+==================================
+
+.. py:module:: skpm.event_logs.download
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   skpm.event_logs.download.download_url
+   skpm.event_logs.download._save_response_content
+   skpm.event_logs.download._urlretrieve
+
+
+
+.. py:function:: download_url(url: str, folder: Optional[str] = None, file_name: Optional[str] = None) -> str
+
+   Download a file from a `url` and place it in `folder`.
+
+   :param url: URL to download file from
+   :type url: str
+   :param folder: Folder to download file to.
+                  If None, use the current working directory. Defaults to None.
+   :type folder: str, optional
+   :param file_name: Name to save the file under.
+                     If None, use the basename of the URL. Defaults to None.
+   :type file_name: str, optional
+
+   :returns: Path to downloaded file
+   :rtype: folder (str)
+
+
+.. py:function:: _save_response_content(content: Iterator[bytes], destination: str) -> None
+
+
+.. py:function:: _urlretrieve(url: str, destination: str, chunk_size: int = 1024 * 32) -> None
+
+

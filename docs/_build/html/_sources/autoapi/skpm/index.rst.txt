@@ -1,0 +1,36 @@
+:py:mod:`skpm`
+==============
+
+.. py:module:: skpm
+
+
+Subpackages
+-----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 3
+
+   bucketing/index.rst
+   encoding/index.rst
+   event_feature_extraction/index.rst
+   event_logs/index.rst
+   utils/index.rst
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   base/index.rst
+   config/index.rst
+
+
+Package Contents
+----------------
+
+.. py:data:: __version__
+
+   
+
