@@ -1,49 +1,25 @@
-# Scikit-PM
+# skpm
 
-"Scikit"nizing ML pipelines for process mining. **Under development**.
-
----
+A process mining library built upon scikit-learn!
 
 ## Installation
 
-Create a local enviroment using `conda` and install the `requirements.txt`.
-
-Conda:
-
 ```bash
-conda create --name skpm python=3.10
-pip install -r requirements.txt
+$ pip install skpm
 ```
 
-**NOTE**: Soon to be on pip.
+## Usage
 
----
+- TODO
 
-## Tutorials
+## Contributing
 
-Please, check out a few use cases in our `use_cases/` directory:
+Interested in contributing? Check out the contributing guidelines. Please note that this project is released with a Code of Conduct. By contributing to this project, you agree to abide by its terms.
 
-- [Event feature extraction](use_cases/time_features.ipynb)
-- [Implementing ML pipelines](use_cases/pipeline.ipynb)
-- [Tuning and model selection](.) (under dev)
+## License
 
----
+`skpm` was created by Rafael Oyamada. It is licensed under the terms of the MIT license.
 
-## Basic usage
+## Credits
 
-Below, a quick example of how extracting timestamp-realted features:
-
-```python
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from skpm.event_feature_extraction import TimestampExtractor
-
-# timestamp transformer
-tt = TimestampExtractor(
-    features="all"
-).set_output(transformer="pandas") # output as pandas dataframe
-
-# running pipeline
-out = tt.fit_transform(log)
-print(out)
-```
+`skpm` was created with [`cookiecutter`](https://cookiecutter.readthedocs.io/en/latest/) and the `py-pkgs-cookiecutter` [template](https://github.com/py-pkgs/py-pkgs-cookiecutter).

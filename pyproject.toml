@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "skpm"
+version = "0.0.1"
+description = "A process mining library built upon scikit-learn!"
+authors = ["Rafael Oyamada"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
