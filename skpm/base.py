@@ -40,7 +40,7 @@ class BaseProcessEstimator(BaseEstimator):
             raise ValueError(f"Column `{elc.case_id}` not found.")
 
         self._validate_data(
-            X=X,
+            X=X.drop(columns=elc.case_id, axis=1),
             y=y,
             reset=reset,
             cast_to_ndarray=cast_to_ndarray,

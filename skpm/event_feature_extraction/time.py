@@ -10,7 +10,7 @@ from sklearn.base import (
 from sklearn.utils import check_pandas_support
 
 from skpm.utils import validate_columns, validate_methods_from_class
-
+from skpm.config import EventLogConfig as elc
 
 class TimestampExtractor(
     ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
@@ -22,22 +22,17 @@ class TimestampExtractor(
     Args:
         case_col: {str}, default='case_id'
             Name of the column containing the case ids.
-        time_col: {str}, default='timestamp'
+        elc.timestamp: {str}, default='timestamp'
             Name of the column containing the timestamps.
         features (Union[list, str], optional): list of features. Defaults to "all".
     """
 
     def __init__(
         self,
-        case_col: str = "case_id",
-        time_col: str = "timestamp",
         features: Union[list, str] = "all",
     ):
         # TODO: time unit (secs, hours, days, etc)
         self.features = features
-
-        self.case_col = case_col
-        self.time_col = time_col
 
     def fit(
         self,
@@ -91,7 +86,7 @@ class TimestampExtractor(
         X = self._validate_data(X)
 
         self.group_ = X.groupby(
-            self.case_col, as_index=False, group_keys=False, observed=True
+            elc.case_id, as_index=False, group_keys=False, observed=True
         )
 
         # TODO: preprocess features and kwargs for each class
@@ -101,7 +96,6 @@ class TimestampExtractor(
         kwargs = {
             "case": self.group_,
             "ix_list": X.index.values,
-            "time_col": self.time_col,
             "X": X,
         }
 
@@ -118,19 +112,19 @@ class TimestampExtractor(
         x.reset_index(drop=True, inplace=True)
         # x.columns = self._validate_columns(x.columns)
         valid_cols = validate_columns(
-            input_columns=x.columns, required=[self.case_col, self.time_col]
+            input_columns=x.columns, required=[elc.case_id, elc.timestamp]
         )
         x = x[valid_cols]
 
         # check if it is a datetime column
-        x[self.time_col] = self._validate_timestamp_format(x)
+        x[elc.timestamp] = self._validate_timestamp_format(x)
 
         return x
 
     def _validate_timestamp_format(
         self, x: DataFrame, timestamp_format: str = "%Y-%m-%d %H:%M:%S"
     ):
-        if not x[self.time_col].dtype == "datetime64[ns]":
+        if not x[elc.timestamp].dtype == "datetime64[ns]":
             pd = check_pandas_support(
                 "'pandas' not found. Please install it to use this method."
             )
@@ -139,10 +133,10 @@ class TimestampExtractor(
                 # we are assuming that the datetime format is '%Y-%m-%d %H:%M:%S'.
                 # TODO: validate alternative datetime formats.
                 # '%Y-%m-%d %H:%M:%S' format should be mandatory
-                x[self.time_col] = pd.to_datetime(x[self.time_col])
+                x[elc.timestamp] = pd.to_datetime(x[elc.timestamp])
             except:
                 raise ValueError(
-                    f"Column '{self.time_col}' is not a valid datetime column."
+                    f"Column '{elc.timestamp}' is not a valid datetime column."
                 )
 
         # TODO: ensure datetime format
@@ -153,31 +147,31 @@ class TimestampExtractor(
         # except ValueError:
         #     print(f"'{x}' is not in the correct format '%Y-%m-%d %H:%M:%S'")
         #     pass
-        return x[self.time_col]
+        return x[elc.timestamp]
 
 
 class Timestamp:
     @classmethod
-    def execution_time(cls, case, ix_list, time_col="timestamp", **kwargs):
-        return case[time_col].diff().loc[ix_list].dt.total_seconds().fillna(0)
+    def execution_time(cls, case, ix_list, **kwargs):
+        return case[elc.timestamp].diff().loc[ix_list].dt.total_seconds().fillna(0)
 
     @classmethod
-    def accumulated_time(cls, case, ix_list, time_col="timestamp", **kwargs):
+    def accumulated_time(cls, case, ix_list, **kwargs):
         return (
-            case[time_col].apply(lambda x: x - x.min()).loc[ix_list].dt.total_seconds()
+            case[elc.timestamp].apply(lambda x: x - x.min()).loc[ix_list].dt.total_seconds()
         )
 
     @classmethod
-    def remaining_time(cls, case, ix_list, time_col="timestamp", **kwargs):
+    def remaining_time(cls, case, ix_list, **kwargs):
         return (
-            case[time_col].apply(lambda x: x.max() - x).loc[ix_list].dt.total_seconds()
+            case[elc.timestamp].apply(lambda x: x.max() - x).loc[ix_list].dt.total_seconds()
         )
 
     @classmethod
-    def within_day(cls, X, time_col="timestamp", **kwargs):
+    def within_day(cls, X, **kwargs):
         pd = check_pandas_support(
             "'pandas' not found. Please install it to use this method."
         )
         return (
-            pd.to_timedelta(X[time_col].dt.time.astype(str)).dt.total_seconds().values
+            pd.to_timedelta(X[elc.timestamp].dt.time.astype(str)).dt.total_seconds().values
         )

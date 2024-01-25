@@ -1,5 +1,4 @@
 import warnings
-from warnings import warn
 
 import numpy as np
 from pandas import DataFrame
@@ -12,7 +11,7 @@ from sklearn.base import (
 )
 
 from skpm.utils import validate_columns
-
+from skpm.config import EventLogConfig as elc
 
 class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
     """
@@ -42,10 +41,7 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
 
     """
 
-    def __init__(self, activity_col="activity", resource_col="resource", threshold=0.7):
-        self.activity_col = activity_col
-        self.resource_col = resource_col
-
+    def __init__(self, threshold=0.7):
         # the original implementation uses 0.7 as threshold but in the argparser they set 0.85
         self.threshold = threshold
 
@@ -56,15 +52,15 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
         X = self._validate_data(X)
 
         # defining vocabs for activities and resources
-        self.atoi_, self.itoa_ = self._define_vocabs(X[self.activity_col].unique())
-        self.rtoi_, self.itor_ = self._define_vocabs(X[self.resource_col].unique())
+        self.atoi_, self.itoa_ = self._define_vocabs(X[elc.activity].unique())
+        self.rtoi_, self.itor_ = self._define_vocabs(X[elc.resource].unique())
 
-        X[self.activity_col] = X[self.activity_col].map(self.atoi_)
-        X[self.resource_col] = X[self.resource_col].map(self.rtoi_)
+        X[elc.activity] = X[elc.activity].map(self.atoi_)
+        X[elc.resource] = X[elc.resource].map(self.rtoi_)
 
         # building a pairwise frequency matrix
         freq_matrix = (
-            X.groupby([self.activity_col, self.resource_col]).value_counts().to_dict()
+            X.groupby([elc.activity, elc.resource]).value_counts().to_dict()
         )
 
         # building an activity profile for each resource
@@ -108,7 +104,7 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
     def transform(self, X: DataFrame, y=None):
         check_is_fitted(self, "resource_to_roles_")
         X = self._validate_data(X)
-        resource_roles = X[self.resource_col].map(self.resource_to_roles_).values
+        resource_roles = X[elc.resource].map(self.resource_to_roles_).values
         return resource_roles
 
     def _validate_data(self, X: DataFrame):
@@ -116,33 +112,37 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
         x = X.copy()
         x.reset_index(drop=True, inplace=True)
         columns = validate_columns(
-            input_columns=x.columns, required=[self.activity_col, self.resource_col]
+            input_columns=x.columns, required=[elc.activity, elc.resource]
         )
         x = x[columns]
 
-        if x[self.activity_col].isnull().any():
+        if x[elc.activity].isnull().any():
             raise ValueError("Activity column contains null values.")
-        if x[self.resource_col].isnull().any():
+        if x[elc.resource].isnull().any():
             raise ValueError("Resource column contains null values.")
 
         # i.e. if fitted, check unkown labels
         if hasattr(self, "resource_to_roles_"):
-            x[self.resource_col] = self._check_unknown(
-                x[self.resource_col].values, self.rtoi_.keys(), "resource"
+            x[elc.resource] = self._check_unknown(
+                x[elc.resource].values, self.rtoi_.keys(), "resource"
             )
-            x[self.activity_col] = self._check_unknown(
-                x[self.activity_col].values, self.atoi_.keys(), "activity"
+            x[elc.activity] = self._check_unknown(
+                x[elc.activity].values, self.atoi_.keys(), "activity"
             )
 
-            x[self.activity_col] = x[self.activity_col].map(self.atoi_)
-            x[self.resource_col] = x[self.resource_col].map(self.rtoi_)
+            x[elc.activity] = x[elc.activity].map(self.atoi_)
+            x[elc.resource] = x[elc.resource].map(self.rtoi_)
 
         return x
 
     def _check_unknown(self, input: np.ndarray, vocab: np.ndarray, name: str):
         unkown = set(input) - set(vocab)
         if unkown:
-            warn(f"Found unkown {name}: {unkown}")
+            warnings.warn(
+                message=(f"Unknown {name} labels: {unkown}"),
+                category=UserWarning,
+                stacklevel=2,
+            )
 
         input = np.array(["UNK" if x in unkown else x for x in input])
         # input = input.replace(unkown, "UNK")

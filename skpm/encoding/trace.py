@@ -165,7 +165,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         #     .reset_index(level=elc.case_id)
         #     .values
         # )
-        return X.values
+        return X.drop(elc.case_id, axis=1)
 
 
 class WindowAggregation(Aggregation):
