@@ -1,13 +1,10 @@
-import warnings
 import numpy as np
-from pandas import DataFrame
-from scipy.sparse.csgraph import connected_components
 from sklearn.base import (
     BaseEstimator,
     TransformerMixin,
     check_is_fitted,
 )
-from skpm.utils.validation import validate_columns, validate_features_from_class
+from skpm.utils.validation import validate_methods_from_class
 
 
 class DigraphFeaturesExtractor(TransformerMixin, BaseEstimator):
@@ -22,7 +19,7 @@ class DigraphFeaturesExtractor(TransformerMixin, BaseEstimator):
             self.itos,
         ) = _DigraphFeatures._frequency_matrix(traces, traces.activity.unique())
 
-        self.features_ = validate_features_from_class(self.features, _DigraphFeatures)
+        self.features_ = validate_methods_from_class(self.features, _DigraphFeatures)
         self._n_features_out = len(self.features_)
         return self
 

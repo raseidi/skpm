@@ -1,3 +1,3 @@
-from skpm.bucketing.base import Bucketing
+from .base import Bucketing
 
 __all__ = ["Bucketing"]

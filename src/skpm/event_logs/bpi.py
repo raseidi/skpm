@@ -1,6 +1,6 @@
 import os
 
-from .base import TUEventLog
+from skpm.base import TUEventLog
 
 
 class BPI12(TUEventLog):

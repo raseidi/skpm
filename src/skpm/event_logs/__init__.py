@@ -1,4 +1,4 @@
-from skpm.event_logs.bpi import (
+from .bpi import (
     BPI12,
     BPI13ClosedProblems,
     BPI13Incidents,

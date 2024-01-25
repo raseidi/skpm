@@ -1,11 +1,10 @@
-from numpy import ndarray
-import pandas as pd
+import warnings
 from typing import Union
+
 import numpy as np
+import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.exceptions import NotFittedError
-from sklearn.preprocessing import LabelBinarizer
-import warnings
 
 
 def _trace_to_ngram(trace: Union[list, np.array], N: int = 3) -> list:

@@ -7,10 +7,14 @@ from sklearn.base import (
     TransformerMixin,
     check_is_fitted,
 )
-from sklearn.utils import check_pandas_support
 
-from skpm.utils import validate_columns, validate_methods_from_class
 from skpm.config import EventLogConfig as elc
+from skpm.utils import (
+    check_pandas_support,
+    validate_columns,
+    validate_methods_from_class,
+)
+
 
 class TimestampExtractor(
     ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
@@ -158,13 +162,19 @@ class Timestamp:
     @classmethod
     def accumulated_time(cls, case, ix_list, **kwargs):
         return (
-            case[elc.timestamp].apply(lambda x: x - x.min()).loc[ix_list].dt.total_seconds()
+            case[elc.timestamp]
+            .apply(lambda x: x - x.min())
+            .loc[ix_list]
+            .dt.total_seconds()
         )
 
     @classmethod
     def remaining_time(cls, case, ix_list, **kwargs):
         return (
-            case[elc.timestamp].apply(lambda x: x.max() - x).loc[ix_list].dt.total_seconds()
+            case[elc.timestamp]
+            .apply(lambda x: x.max() - x)
+            .loc[ix_list]
+            .dt.total_seconds()
         )
 
     @classmethod
@@ -173,5 +183,7 @@ class Timestamp:
             "'pandas' not found. Please install it to use this method."
         )
         return (
-            pd.to_timedelta(X[elc.timestamp].dt.time.astype(str)).dt.total_seconds().values
+            pd.to_timedelta(X[elc.timestamp].dt.time.astype(str))
+            .dt.total_seconds()
+            .values
         )

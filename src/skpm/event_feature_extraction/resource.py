@@ -5,13 +5,13 @@ from pandas import DataFrame
 from scipy.sparse.csgraph import connected_components
 from sklearn.base import (
     BaseEstimator,
-    OneToOneFeatureMixin,
     TransformerMixin,
     check_is_fitted,
 )
 
 from skpm.utils import validate_columns
 from skpm.config import EventLogConfig as elc
+
 
 class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
     """
@@ -59,9 +59,7 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
         X[elc.resource] = X[elc.resource].map(self.rtoi_)
 
         # building a pairwise frequency matrix
-        freq_matrix = (
-            X.groupby([elc.activity, elc.resource]).value_counts().to_dict()
-        )
+        freq_matrix = X.groupby([elc.activity, elc.resource]).value_counts().to_dict()
 
         # building an activity profile for each resource
 

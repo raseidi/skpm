@@ -1,11 +1,7 @@
-from sklearn.base import (
-    OneToOneFeatureMixin,
-    TransformerMixin,
-    check_is_fitted,
-)
+from sklearn.base import OneToOneFeatureMixin, TransformerMixin, check_is_fitted
 from sklearn.utils._param_validation import StrOptions
-from skpm.base import BaseProcessEstimator
 
+from skpm.base import BaseProcessEstimator
 from skpm.config import EventLogConfig as elc
 from skpm.utils.helpers import infer_column_types
 

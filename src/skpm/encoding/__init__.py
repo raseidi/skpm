@@ -1,4 +1,4 @@
-from skpm.encoding.trace import Aggregation
-from skpm.encoding.ngrams import EncodedNgrams
+from .trace import Aggregation
+from .ngrams import EncodedNgrams
 
 __all__ = ["Aggregation", "EncodedNgrams"]
