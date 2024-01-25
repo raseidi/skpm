@@ -3,9 +3,12 @@ data/
 sk-dev/
 __pycache__/
 script*
-notes.md
+notes*
 .pytest_cache/
 coverage_re/
 use_cases/
 trash/
 docs/
+df.pkl
+MVP.md
+results.csv
