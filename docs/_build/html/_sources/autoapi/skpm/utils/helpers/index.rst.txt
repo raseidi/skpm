@@ -13,12 +13,8 @@ Functions
 
 .. autoapisummary::
 
-   skpm.utils.helpers.flatten_list
    skpm.utils.helpers.infer_column_types
 
-
-
-.. py:function:: flatten_list(l: list)
 
 
 .. py:function:: infer_column_types(df, int_as_cat=False) -> tuple

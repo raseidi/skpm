@@ -175,7 +175,7 @@ class WindowAggregation(Aggregation):
 
     def transform(self, X, y=None):
         check_is_fitted(self, "n_features_")
-        X = self._validate_log(X)
+        X = self._validate_log(X, reset=False)
 
         group = X.groupby(elc.case_id, observed=True, as_index=False).rolling(
             window=self.window_size, min_periods=self.min_events
@@ -183,4 +183,4 @@ class WindowAggregation(Aggregation):
 
         for col, method in self.feature_aggregations_.items():
             X[col] = group[col].agg(method).values
-        return X
+        return X.drop(elc.case_id, axis=1)

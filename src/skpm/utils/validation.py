@@ -61,8 +61,6 @@ def ensure_list(input: Any) -> list:
     Returns:
         list: Input as a list.
     """
-    if input is None:
-        input = []
     if not isinstance(input, list):
         if isinstance(input, (str, int)):
             input = [input]

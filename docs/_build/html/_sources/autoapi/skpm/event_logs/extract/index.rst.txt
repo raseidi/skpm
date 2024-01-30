@@ -14,26 +14,12 @@ Functions
 .. autoapisummary::
 
    skpm.event_logs.extract.extract_gz
-   skpm.event_logs.extract.extract_zip
 
 
 
 .. py:function:: extract_gz(path: str, folder: str)
 
    Extracts a gz archive to a specific folder.
-
-   :param path: The path to the tar archive.
-   :type path: str
-   :param folder: The folder.
-   :type folder: str
-   :param log: If :obj:`False`, will not print anything to the
-               console. (default: :obj:`True`)
-   :type log: bool, optional
-
-
-.. py:function:: extract_zip(path: str, folder: str)
-
-   Extracts a zip archive to a specific folder.
 
    :param path: The path to the tar archive.
    :type path: str

@@ -1,4 +1,4 @@
-from .trace import Aggregation
+from .trace import Aggregation, WindowAggregation
 from .ngrams import EncodedNgrams
 
-__all__ = ["Aggregation", "EncodedNgrams"]
+__all__ = ["Aggregation", "WindowAggregation", "EncodedNgrams"]

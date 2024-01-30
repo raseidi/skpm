@@ -211,9 +211,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">file_path</span> <span class="o">=</span> <span class="n">new_file_path</span>
 
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">elc</span><span class="o">.</span><span class="n">default_file_format</span><span class="p">):</span>
-            <span class="n">log</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span>  <span class="c1"># , engine=&quot;fastparquet&quot;)</span>
-            <span class="c1"># which engine is better?</span>
-            <span class="c1"># log = pd.read_parquet(self.file_path, engine=&quot;fastparquet&quot;)</span>
+            <span class="n">log</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span>
 
         <span class="c1"># log = self._base_preprocess(log)</span>
         <span class="k">return</span> <span class="n">log</span></div>

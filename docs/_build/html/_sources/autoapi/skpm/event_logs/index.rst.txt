@@ -30,6 +30,7 @@ Classes
    skpm.event_logs.BPI13Incidents
    skpm.event_logs.BPI17
    skpm.event_logs.BPI19
+   skpm.event_logs.BPI20
 
 
 
@@ -177,6 +178,34 @@ Classes
    .. py:attribute:: file_name
       :type: str
       :value: 'BPI_Challenge_2019.xes'
+
+      
+
+
+.. py:class:: BPI20(version: str = 'permit', root_folder: str = './data', save_as_pandas: bool = True, train_set: bool = True, file_path: str = None)
+
+
+   Bases: :py:obj:`skpm.event_logs.base.TUEventLog`
+
+   BPI Challenge 2019.
+
+   .. py:attribute:: versions
+      :value: ('permit', 'request', 'domestic', 'prepaid', 'international')
+
+      
+
+   .. py:attribute:: urls
+      :type: dict
+
+      
+
+   .. py:attribute:: md5s
+      :type: dict
+
+      
+
+   .. py:attribute:: file_names
+      :type: dict
 
       
 

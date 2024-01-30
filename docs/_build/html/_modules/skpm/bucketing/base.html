@@ -95,8 +95,8 @@
 
 <div class="viewcode-block" id="Bucketing.fit">
 <a class="viewcode-back" href="../../../autoapi/skpm/bucketing/index.html#skpm.bucketing.base.Bucketing.fit">[docs]</a>
-    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="k">pass</span></div>
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
 
 
 <div class="viewcode-block" id="Bucketing.transform">
@@ -109,7 +109,13 @@
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;clustering&quot;</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
-        <span class="k">return</span> <span class="n">X</span></div>
+        <span class="k">return</span> <span class="n">X</span><span class="p">[</span><span class="s2">&quot;bucket&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span></div>
+
+
+<div class="viewcode-block" id="Bucketing.get_feature_names_out">
+<a class="viewcode-back" href="../../../autoapi/skpm/bucketing/index.html#skpm.bucketing.base.Bucketing.get_feature_names_out">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_feature_names_out</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;bucket&quot;</span><span class="p">]</span></div>
 </div>
 
 </pre></div>

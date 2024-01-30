@@ -1,8 +1,12 @@
 from typing import Union
 
 from pandas import DataFrame
-from sklearn.base import (BaseEstimator, ClassNamePrefixFeaturesOutMixin,
-                          TransformerMixin, check_is_fitted)
+from sklearn.base import (
+    BaseEstimator,
+    ClassNamePrefixFeaturesOutMixin,
+    TransformerMixin,
+    check_is_fitted,
+)
 from sklearn.utils import check_pandas_support
 
 from skpm.config import EventLogConfig as elc
@@ -130,7 +134,9 @@ class TimestampExtractor(
                 # we are assuming that the datetime format is '%Y-%m-%d %H:%M:%S'.
                 # TODO: validate alternative datetime formats.
                 # '%Y-%m-%d %H:%M:%S' format should be mandatory
-                x[elc.timestamp] = pd.to_datetime(x[elc.timestamp])
+                x[elc.timestamp] = pd.to_datetime(
+                    x[elc.timestamp], format=timestamp_format
+                )
             except:
                 raise ValueError(
                     f"Column '{elc.timestamp}' is not a valid datetime column."

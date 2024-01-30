@@ -27,10 +27,13 @@ Classes
    This class implements a method for bucketing traces
 
 
-   .. py:method:: fit(y=None)
+   .. py:method:: fit(X, y=None)
 
 
    .. py:method:: transform(X, y=None)
+
+
+   .. py:method:: get_feature_names_out()
 
 
 

@@ -112,7 +112,10 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#skpm.encoding.Aggregation" title="skpm.encoding.Aggregation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Aggregation</span></code></a></p></td>
 <td><p>Sequence Encoding Transformer.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#skpm.encoding.EncodedNgrams" title="skpm.encoding.EncodedNgrams"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EncodedNgrams</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#skpm.encoding.WindowAggregation" title="skpm.encoding.WindowAggregation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WindowAggregation</span></code></a></p></td>
+<td><p>Sequence Encoding Transformer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#skpm.encoding.EncodedNgrams" title="skpm.encoding.EncodedNgrams"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EncodedNgrams</span></code></a></p></td>
 <td><p>Mixin class for all transformers in scikit-learn.</p></td>
 </tr>
 </tbody>
@@ -240,6 +243,118 @@ the timestamp column, and the desired features.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="skpm.encoding.Aggregation.transform">
 <span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/skpm/encoding/trace.html#Aggregation.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#skpm.encoding.Aggregation.transform" title="Link to this definition"></a></dt>
+<dd><p>Performs the aggregation of event features from a trace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>X</strong> (<em>{DataFrame}</em><em> of </em><em>shape</em><em> (</em><em>n_samples</em><em>, </em><em>n_features+1</em><em>)</em>) – An event log. It must contain n_features + 1 columns,
+representing the case id and the event features.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>X</strong> – The aggregated event log.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>{DataFrame} of shape (n_samples, n_features)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="skpm.encoding.WindowAggregation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">skpm.encoding.</span></span><span class="sig-name descname"><span class="pre">WindowAggregation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">window_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_events</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mean'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cat_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'sum'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/skpm/encoding/trace.html#WindowAggregation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#skpm.encoding.WindowAggregation" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#skpm.encoding.Aggregation" title="skpm.encoding.Aggregation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Aggregation</span></code></a></p>
+<p>Sequence Encoding Transformer.</p>
+<p>This module implements a method for encoding sequences by
+aggregating features. It adapts the approach from a
+research paper [1] that abstracts event sequences by
+disregarding their order and using aggregation functions.
+Common aggregation functions include frequency-based
+methods for categorical features and general statistics
+(average, sum, etc.) for numeric attributes.</p>
+<p>In our implementation, we assume that categorical
+features are already encoded categorical features and
+apply aggregation methods accordingly: frequency
+aggregation for integer (categorical) features and
+general statistical measures for float (numerical)
+features. This design choice allows flexibility in
+aggregating user-engineered features, not limited to
+one-hot encoding as described in the original
+paper [1].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_method</strong> (<em>str</em><em>, </em><em>default=&quot;mean&quot;</em>) – The method to aggregate numerical features.
+Possible values: “sum”, “mean”.</p></li>
+<li><p><strong>cat_method</strong> (<em>str</em><em>, </em><em>default=&quot;sum&quot;</em>) – The method to aggregate categorical features.
+Possible values: “frequency”, “sum”.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skpm.encoding.WindowAggregation.n_features_">
+<span class="sig-name descname"><span class="pre">n_features_</span></span><a class="headerlink" href="#skpm.encoding.WindowAggregation.n_features_" title="Link to this definition"></a></dt>
+<dd><p>The number of features to encode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skpm.encoding.WindowAggregation.features_">
+<span class="sig-name descname"><span class="pre">features_</span></span><a class="headerlink" href="#skpm.encoding.WindowAggregation.features_" title="Link to this definition"></a></dt>
+<dd><p>The features to encode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skpm.encoding.WindowAggregation.cat_">
+<span class="sig-name descname"><span class="pre">cat_</span></span><a class="headerlink" href="#skpm.encoding.WindowAggregation.cat_" title="Link to this definition"></a></dt>
+<dd><p>The categorical features to encode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="skpm.encoding.WindowAggregation.num_">
+<span class="sig-name descname"><span class="pre">num_</span></span><a class="headerlink" href="#skpm.encoding.WindowAggregation.num_" title="Link to this definition"></a></dt>
+<dd><p>The numerical features to encode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">References</p>
+<p>[1] Outcome-Oriented Predictive Process Monitoring: Review and Benchmark, Teinemaa, I., Dumas, M., Maggi, F. M., &amp; La Rosa, M. (2019).</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">npd</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">skpm.encoding</span> <span class="kn">import</span> <span class="n">Aggregation</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+<span class="gp">... </span>    <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="s2">&quot;activity&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="s2">&quot;resource&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="s2">&quot;case_id&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gp">... </span><span class="p">})</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;case_id&quot;</span><span class="p">,</span> <span class="s2">&quot;timestamp&quot;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="n">elc</span><span class="o">.</span><span class="n">activity</span><span class="p">,</span> <span class="n">elc</span><span class="o">.</span><span class="n">resource</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s2">&quot;timestamp&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Aggregation</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="skpm.encoding.WindowAggregation.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/skpm/encoding/trace.html#WindowAggregation.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#skpm.encoding.WindowAggregation.transform" title="Link to this definition"></a></dt>
 <dd><p>Performs the aggregation of event features from a trace.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>

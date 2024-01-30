@@ -16,8 +16,8 @@ class Bucketing(TransformerMixin, BaseProcessEstimator):
         assert method in ["single", "prefix", "clustering"]
         self.method = method
 
-    def fit(X, y=None):
-        pass
+    def fit(self, X, y=None):
+        return self
 
     def transform(self, X, y=None):
         if self.method == "single":  # TODO: not needed imo
@@ -27,4 +27,7 @@ class Bucketing(TransformerMixin, BaseProcessEstimator):
         elif self.method == "clustering":
             raise NotImplementedError
 
-        return X
+        return X["bucket"].values
+
+    def get_feature_names_out(self):
+        return ["bucket"]

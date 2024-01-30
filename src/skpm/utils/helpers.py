@@ -1,5 +1,5 @@
-def flatten_list(l: list):
-    return [item for sublist in l for item in sublist]
+# def flatten_list(l: list):
+#     return [item for sublist in l for item in sublist]
 
 
 def infer_column_types(df, int_as_cat=False) -> tuple:

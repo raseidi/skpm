@@ -30,10 +30,10 @@ def download_url(
     if os.path.exists(path):
         return path
 
-    try:
-        os.makedirs(os.path.expanduser(os.path.normpath(folder)), exist_ok=True)
-    except OSError as e:
-        raise e
+    # try:
+    os.makedirs(os.path.expanduser(os.path.normpath(folder)), exist_ok=True)
+    # except OSError as e:
+    #     raise e
 
     _urlretrieve(url=url, destination=path)
     return path
@@ -46,8 +46,8 @@ def _save_response_content(
     with open(destination, "wb") as fh:
         for chunk in content:
             # filter out keep-alive new chunks
-            if not chunk:
-                continue
+            # if not chunk:
+            #     continue
 
             fh.write(chunk)
 

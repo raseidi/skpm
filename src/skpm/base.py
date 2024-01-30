@@ -46,13 +46,13 @@ class BaseProcessEstimator(BaseEstimator):
             cast_to_ndarray=cast_to_ndarray,
         )
 
-        if cols:
-            cols = validate_columns(
-                input_columns=data.columns,
-                required=[elc.case_id] + self.features_,
-            )
-        else:
-            cols = data.columns
+        # if cols:
+        cols = validate_columns(
+            input_columns=data.columns,
+            required=[elc.case_id] + self.features_,
+        )
+        # else:
+        #     cols = data.columns
 
         return data[cols]
 

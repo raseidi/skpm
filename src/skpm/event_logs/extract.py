@@ -21,17 +21,17 @@ def extract_gz(path: str, folder: str):
     return file_path
 
 
-def extract_zip(path: str, folder: str):
-    r"""Extracts a zip archive to a specific folder.
+# def extract_zip(path: str, folder: str):
+#     r"""Extracts a zip archive to a specific folder.
 
-    Args:
-        path (str): The path to the tar archive.
-        folder (str): The folder.
-        log (bool, optional): If :obj:`False`, will not print anything to the
-            console. (default: :obj:`True`)
-    """
-    with zipfile.ZipFile(path, "r") as f:
-        f.extractall(folder)
+#     Args:
+#         path (str): The path to the tar archive.
+#         folder (str): The folder.
+#         log (bool, optional): If :obj:`False`, will not print anything to the
+#             console. (default: :obj:`True`)
+#     """
+#     with zipfile.ZipFile(path, "r") as f:
+#         f.extractall(folder)
 
 
 # commenting out the following functions because
