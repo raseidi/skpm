@@ -1,4 +1,5 @@
 .vscode/
+.idea/
 .pytest_cache/
 .mypy_cache/
 data/
