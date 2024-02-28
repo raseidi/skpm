@@ -1,6 +1,0 @@
-:py:mod:`skpm.event_logs.bpi_ocel`
-==================================
-
-.. py:module:: skpm.event_logs.bpi_ocel
-
-
