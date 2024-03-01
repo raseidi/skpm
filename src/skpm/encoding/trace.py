@@ -54,16 +54,17 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
 
     Examples
     --------
-    >>> import numpy as npd
+    >>> import numpy as np
     >>> import pandas as pd
     >>> from skpm.encoding import Aggregation
     >>> df = pd.DataFrame({
     ...     "timestamp": np.arange(10),
     ...     "activity": np.random.randint(0, 10, 10),
     ...     "resource": np.random.randint(0, 3, 10),
-    ...     "case_id": np.random.randint(0, 3, 10)
+    ...     "case_id": np.random.randint(0, 3, 10),
+    ...     "case:concept:name": np.random.randint(0, 3, 10),
     ... }).sort_values(by=["case_id", "timestamp"])
-    >>> df = pd.get_dummies(df, columns=[elc.activity, elc.resource], dtype=int)
+    >>> df = pd.get_dummies(df, dtype=int)
     >>> df = df.drop("timestamp", axis=1)
     >>> Aggregation().fit_transform(df)
     """
@@ -165,6 +166,61 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
 
 
 class WindowAggregation(Aggregation):
+    """
+    Transformer to perform windowed aggregation on event features.
+
+    Extends the `Aggregation` transformer to provide functionality
+    for windowed aggregation on event features.
+
+    Parameters
+    ----------
+    window_size : int, default=2
+        The size of the window for windowed aggregation.
+    min_events : int, default=1
+        The minimum number of events required to form a window.
+    num_method : str, default="mean"
+        The method to aggregate numerical features.
+        Possible values: "sum", "mean".
+    cat_method : str, default="sum"
+        The method to aggregate categorical features.
+        Possible values: "frequency", "sum".
+
+    Attributes
+    ----------
+    n_features_ : int
+        The number of features to encode.
+    features_ : list[str]
+        The features to encode.
+    cat_ : list[str]
+        The categorical features to encode.
+    num_ : list[str]
+        The numerical features to encode.
+    window_size : int
+        The size of the window for windowed aggregation.
+    min_events : int
+        The minimum number of events required to form a window.
+
+    See Also
+    --------
+    Aggregation : Base class for aggregation transformers.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import pandas as pd
+    >>> from skpm.encoding import WindowAggregation
+    >>> df = pd.DataFrame({
+    ...     "timestamp": np.arange(10),
+    ...     "activity": np.random.randint(0, 10, 10),
+    ...     "resource": np.random.randint(0, 3, 10),
+    ...     "case_id": np.random.randint(0, 3, 10),
+    ...     "case:concept:name": np.random.randint(0, 3, 10),
+    ... }).sort_values(by=["case_id", "timestamp"])
+    >>> df = pd.get_dummies(df, dtype=int)
+    >>> df = df.drop("timestamp", axis=1)
+    >>> WindowAggregation().fit_transform(df)
+    """
+
     def __init__(
         self, window_size=2, min_events=1, num_method="mean", cat_method="sum"
     ) -> None:
@@ -174,6 +230,20 @@ class WindowAggregation(Aggregation):
         self.min_events = min_events
 
     def transform(self, X, y=None):
+        """Performs the windows aggregation of event features from a trace.
+
+        Parameters
+        ----------
+        X : {DataFrame} of shape (n_samples, n_features+1)
+            The event log data.
+        y : None
+            Ignored.
+
+        Returns
+        -------
+        X : {DataFrame} of shape (n_samples, n_features)
+            The transformed data.
+        """
         check_is_fitted(self, "n_features_")
         X = self._validate_log(X, reset=False)
 
