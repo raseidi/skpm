@@ -64,7 +64,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     ...     elc.resource: np.random.randint(0, 3, 10),
     ...     elc.case_id: np.random.randint(0, 3, 10),
     ... }).sort_values(by=[elc.case_id, elc.timestamp])
-    >>> df = pd.get_dummies(df, columns=[elc.activity,elc.resource] dtype=int)
+    >>> df = pd.get_dummies(df, columns=[elc.activity,elc.resource], dtype=int)
     >>> df = df.drop("timestamp", axis=1)
     >>> Aggregation().fit_transform(df)
     """
