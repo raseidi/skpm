@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.exceptions import NotFittedError
-from skpm.config import EventLogConfig as elc
 
 
 def _trace_to_ngram(trace: Union[list, np.array], N: int = 3) -> list:
@@ -86,11 +85,10 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
     Examples
     --------
     >>> import pandas as pd
-    >>> from skpm.config import EventLogConfig as elc
     >>> dummy_log = pd.DataFrame(
     ...     {
-    ...         elc.case_id: [1, 1, 1, 2, 2, 2, 3, 3, 3],
-    ...         elc.activity: [10, 20, 30, 10, 20, 30, 10, 20, 30],
+    ...         "caseid": [1, 1, 1, 2, 2, 2, 3, 3, 3],
+    ...         "activity": [10, 20, 30, 10, 20, 30, 10, 20, 30],
     ...     }
     ... )
     >>> ng = EncodedNgrams(N=2).fit(dummy_log)
@@ -185,8 +183,8 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
 
 dummy_log = pd.DataFrame(
     {
-        elc.case_id: [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        elc.activity: [10, 20, 30, 10, 20, 30, 10, 20, 30],
+        "caseid": [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        "activity": [10, 20, 30, 10, 20, 30, 10, 20, 30],
     }
 )
 
