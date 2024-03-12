@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.exceptions import NotFittedError
+from skpm.config import EventLogConfig as elc
 
 
 def _trace_to_ngram(trace: Union[list, np.array], N: int = 3) -> list:
@@ -85,10 +86,11 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
     Examples
     --------
     >>> import pandas as pd
+    >>> from skpm.config import EventLogConfig as elc
     >>> dummy_log = pd.DataFrame(
     ...     {
-    ...         "caseid": [1, 1, 1, 2, 2, 2, 3, 3, 3],
-    ...         "activity": [10, 20, 30, 10, 20, 30, 10, 20, 30],
+    ...         elc.case_id: [1, 1, 1, 2, 2, 2, 3, 3, 3],
+    ...         elc.activity: [10, 20, 30, 10, 20, 30, 10, 20, 30],
     ...     }
     ... )
     >>> ng = EncodedNgrams(N=2).fit(dummy_log)
@@ -128,7 +130,7 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
         self
             Returns the instance itself.
         """
-        ngrams = X.groupby("caseid").activity.apply(_trace_to_ngram, N=self.N)
+        ngrams = X.groupby(elc.case_id).activity.apply(_trace_to_ngram, N=self.N)
         # cant use _unique from sklearn.utils._encode
         # because it only works for 1D arrays
         unique_ngrams = set([gram for trace in ngrams for gram in trace])
@@ -159,7 +161,7 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
                 "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator."
             )
 
-        ngrams = X.groupby("caseid").activity.apply(_trace_to_ngram, N=self.N)
+        ngrams = X.groupby(elc.case_id).activity.apply(_trace_to_ngram, N=self.N)
         unique_ngrams = set([gram for trace in ngrams for gram in trace])
 
         # check for new ngrams
@@ -183,8 +185,8 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
 
 dummy_log = pd.DataFrame(
     {
-        "caseid": [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        "activity": [10, 20, 30, 10, 20, 30, 10, 20, 30],
+        elc.case_id: [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        elc.activity: [10, 20, 30, 10, 20, 30, 10, 20, 30],
     }
 )
 
