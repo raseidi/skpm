@@ -27,7 +27,7 @@ def _trace_to_ngram(trace: Union[list, np.array], N: int = 3) -> list:
     Examples
     --------
     >>> _trace_to_ngram([1, 2, 3, 4, 5], N=2)
-    [(1, 2), (2, 3), (3, 4), (4, 5)]
+    [(-1, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, -1)]
     """
     if not isinstance(trace, np.ndarray):
         trace = np.array(trace, dtype=np.int32)
@@ -130,7 +130,7 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
         self
             Returns the instance itself.
         """
-        ngrams = X.groupby(elc.case_id).activity.apply(_trace_to_ngram, N=self.N)
+        ngrams = X.groupby(elc.case_id)[elc.activity].apply(_trace_to_ngram, N=self.N)
         # cant use _unique from sklearn.utils._encode
         # because it only works for 1D arrays
         unique_ngrams = set([gram for trace in ngrams for gram in trace])
@@ -161,7 +161,7 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
                 "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator."
             )
 
-        ngrams = X.groupby(elc.case_id).activity.apply(_trace_to_ngram, N=self.N)
+        ngrams = X.groupby(elc.case_id)[elc.activity].apply(_trace_to_ngram, N=self.N)
         unique_ngrams = set([gram for trace in ngrams for gram in trace])
 
         # check for new ngrams
@@ -173,7 +173,7 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
 
         # args to control this behavior
         ngrams = ngrams.explode().reset_index()
-        ngrams.activity = ngrams.activity.map(self.vocab_ngrams_)
+        ngrams[elc.activity] = ngrams[elc.activity].map(self.vocab_ngrams_)
 
         return ngrams
 
