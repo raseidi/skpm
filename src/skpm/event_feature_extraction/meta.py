@@ -5,6 +5,7 @@ from sklearn.base import (
     check_is_fitted,
 )
 from skpm.utils.validation import validate_methods_from_class
+from skpm.config import EventLogConfig as elc
 
 
 class DigraphFeaturesExtractor(TransformerMixin, BaseEstimator):
@@ -37,9 +38,10 @@ class DigraphFeaturesExtractor(TransformerMixin, BaseEstimator):
     Examples:
     ---------
     >>> from skpm.event_feature_extraction.meta import DigraphFeaturesExtractor
+    >>> from skpm.config import EventLogConfig as elc
     >>> import pandas as pd
     >>> # Assuming X is your dataframe containing event data with columns 'caseid' and 'activity'
-    >>> X = pd.DataFrame({'caseid': [1, 1, 2, 2], 'activity': ['A', 'B', 'A', 'C']})
+    >>> X = pd.DataFrame({elc.case_id: [1, 1, 2, 2], elc.timestamp: ['A', 'B', 'A', 'C']})
     >>> feature_extractor = DigraphFeaturesExtractor()
     >>> feature_extractor.fit_transform(X)
     """
@@ -62,12 +64,13 @@ class DigraphFeaturesExtractor(TransformerMixin, BaseEstimator):
         self : DigraphFeaturesExtractor
             Returns the instance itself.
         """
-        traces = X.groupby("caseid").activity.apply(list)
+        traces = X.groupby(elc.case_id)[elc.activity].apply(list)
         (
             self.frequency_matrix,
             self.stoi,
             self.itos,
-        ) = _DigraphFeatures._frequency_matrix(traces, traces.activity.unique())
+            # TODO: the bottom line has key error on elc.activity.
+        ) = _DigraphFeatures._frequency_matrix(traces, traces[elc.activity].unique())
 
         self.features_ = validate_methods_from_class(self.features, _DigraphFeatures)
         self._n_features_out = len(self.features_)
