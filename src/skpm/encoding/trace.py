@@ -65,7 +65,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     ...     elc.case_id: np.random.randint(0, 3, 10),
     ... }).sort_values(by=[elc.case_id, elc.timestamp])
     >>> df = pd.get_dummies(df, columns=[elc.activity,elc.resource], dtype=int)
-    >>> df = df.drop("timestamp", axis=1)
+    >>> df = df.drop(elc.timestamp, axis=1)
     >>> Aggregation().fit_transform(df)
     """
 
@@ -209,15 +209,15 @@ class WindowAggregation(Aggregation):
     >>> import numpy as np
     >>> import pandas as pd
     >>> from skpm.encoding import WindowAggregation
+    >>> from skpm.config import EventLogConfig as elc
     >>> df = pd.DataFrame({
-    ...     "timestamp": np.arange(10),
-    ...     "activity": np.random.randint(0, 10, 10),
-    ...     "resource": np.random.randint(0, 3, 10),
-    ...     "case_id": np.random.randint(0, 3, 10),
-    ...     "case:concept:name": np.random.randint(0, 3, 10),
-    ... }).sort_values(by=["case_id", "timestamp"])
-    >>> df = pd.get_dummies(df, dtype=int)
-    >>> df = df.drop("timestamp", axis=1)
+    ...     elc.timestamp: np.arange(10),
+    ...     elc.activity: np.random.randint(0, 10, 10),
+    ...     elc.resource: np.random.randint(0, 3, 10),
+    ...     elc.case_id: np.random.randint(0, 3, 10),
+    ... }).sort_values(by=[elc.case_id, elc.timestamp])
+    >>> df = pd.get_dummies(df, columns=[elc.activity,elc.resource], dtype=int)
+    >>> df = df.drop(elc.timestamp, axis=1)
     >>> WindowAggregation().fit_transform(df)
     """
 
