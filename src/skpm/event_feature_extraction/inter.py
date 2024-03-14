@@ -29,21 +29,13 @@ class WorkInProgress(TransformerMixin, BaseEstimator):
     >>> import pandas as pd
     >>> from sklearn.pipeline import Pipeline
     >>> from skpm.event_feature_extraction import WorkInProgress
+    >>> from skpm.config import EventLogConfig as elc
     >>> # Assuming X is your dataframe containing event data with columns 'timestamp' and 'case_id'
-    >>> X = pd.DataFrame({'timestamp': pd.date_range(start='2024-01-01', end='2024-01-10', freq='H'),
-                         'case_id': [1, 1, 2, 3, 4, 4, 4, 5, 6, 6]})
+    >>> X = pd.DataFrame({elc.timestamp: pd.date_range(start='2024-01-01', end='2024-01-10', freq='D'),
+    ...                     elc.case_id: [1, 1, 2, 3, 4, 4, 4, 5, 6, 6]})
     >>> wip_transformer = WorkInProgress(window_size='2D')  # Calculate WIP over 2-day windows
     >>> wip_transformer.fit_transform(X)
-    [[1]
-     [1]
-     [1]
-     [2]
-     [3]
-     [3]
-     [3]
-     [2]
-     [2]
-     [2]]
+    array([2., 1., 1., 2., 2., 1., 1., 2., 2., 2.])
     """
 
     # see https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
