@@ -4,7 +4,7 @@ from urllib import error, request
 
 
 def download_url(
-    url: str, folder: t.Optional[str] = None, file_name: t.Optional[str] = None
+        url: str, folder: t.Optional[str] = None, file_name: t.Optional[str] = None
 ) -> str:
     """Download a file from a `url` and place it in `folder`.
 
@@ -40,9 +40,23 @@ def download_url(
 
 
 def _save_response_content(
-    content: t.Iterator[bytes],
-    destination: str,
+        content: t.Iterator[bytes],
+        destination: str,
 ) -> None:
+    """
+    Save the content received from an HTTP response to a file.
+
+    Parameters
+    ----------
+    content : Iterator[bytes]
+        Iterator yielding binary data chunks from the HTTP response.
+    destination : str
+        Path to the file where the content will be saved.
+
+    Returns
+    -------
+    None
+    """
     with open(destination, "wb") as fh:
         for chunk in content:
             # filter out keep-alive new chunks
@@ -53,6 +67,23 @@ def _save_response_content(
 
 
 def _urlretrieve(url: str, destination: str, chunk_size: int = 1024 * 32) -> None:
+    """
+    Retrieve a URL and save its contents to a file.
+
+    Parameters
+    ----------
+    url : str
+        The URL of the resource to retrieve.
+    destination : str
+        Path to the file where the content will be saved.
+    chunk_size : int, optional
+        Size of the chunks to read from the response at a time, in bytes.
+        Defaults to 32KB.
+
+    Returns
+    -------
+    None
+    """
     with request.urlopen(request.Request(url)) as response:
         _save_response_content(
             iter(lambda: response.read(chunk_size), b""),

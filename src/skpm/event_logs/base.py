@@ -1,17 +1,17 @@
-import re
 import os
-import typing as t
-from urllib.error import URLError
-from warnings import warn
+
 import pandas as pd
 
-from .extract import extract_gz
-from .download import download_url
 from skpm.config import EventLogConfig as elc
+from .download import download_url
+from .extract import extract_gz
 
 
 class BasePreprocessing:
     def preprocess(self):
+        """
+        Preprocess the event log by converting the timestamp column to datetime format.
+        """
         self.log[elc.timestamp] = pd.to_datetime(
             self.log[elc.timestamp], format="mixed"
         )
@@ -45,12 +45,26 @@ class TUEventLog(BasePreprocessing):
     meta_data: str = None  # TODO: download DATA.xml from the 4TU repository
 
     def __init__(
-        self,
-        root_folder: str = "./data",
-        save_as_pandas: bool = True,
-        train_set: bool = True,
-        file_path: str = None,
+            self,
+            root_folder: str = "./data",
+            save_as_pandas: bool = True,
+            train_set: bool = True,
+            file_path: str = None,
     ) -> None:
+        """
+        Initialize the TUEventLog object.
+
+        Parameters
+        ----------
+        root_folder : str, optional
+            Path where the event log will be stored. Defaults to "./data".
+        save_as_pandas : bool, optional
+            Whether to save the event log as a Pandas DataFrame. Defaults to True.
+        train_set : bool, optional
+            Whether the event log is for the training set. Defaults to True.
+        file_path : str, optional
+            Path to the event log file. If None, the file will be downloaded. Defaults to None.
+        """
         super().__init__()
         self.root_folder = root_folder
         self.save_as_pandas = save_as_pandas
@@ -75,6 +89,9 @@ class TUEventLog(BasePreprocessing):
 
     @property
     def file_path(self) -> str:
+        """
+        str: Path to the event log file.
+        """
         return self._file_path
 
     @file_path.setter
@@ -82,6 +99,14 @@ class TUEventLog(BasePreprocessing):
         self._file_path = value
 
     def __len__(self):
+        """
+        Get the number of events in the event log.
+
+        Returns
+        -------
+        int
+            Number of events in the event log.
+        """
         return len(self.log)
 
     def download(self) -> None:
@@ -108,6 +133,14 @@ class TUEventLog(BasePreprocessing):
         os.remove(path)
 
     def read_log(self) -> pd.DataFrame:
+        """
+        Read the event log from the file.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame containing the event log data.
+        """
         if self.file_path.endswith(".xes"):
             import pm4py
 
@@ -134,6 +167,14 @@ class TUEventLog(BasePreprocessing):
         # return train if self.train else test
 
     def __repr__(self) -> str:
+        """
+        Return a string representation of the TUEventLog object.
+
+        Returns
+        -------
+        str
+            String representation of the TUEventLog object.
+        """
         head = "Event Log " + self.__class__.__name__
         body = [f"Number of events: {self.__len__()}"]
         if self.file_path is not None:

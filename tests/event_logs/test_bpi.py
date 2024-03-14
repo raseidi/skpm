@@ -4,6 +4,7 @@ import pandas as pd
 from skpm.event_logs import BPI20, BPI13ClosedProblems, BPI19
 
 
+@pytest.mark.timeout(300)
 def test_bpi():
     # TODO: deactivate warnings from pm4py
     # TODO: the download is fast but the reading (pm4py) is slow

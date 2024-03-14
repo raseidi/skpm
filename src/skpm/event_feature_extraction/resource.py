@@ -15,14 +15,30 @@ from skpm.config import EventLogConfig as elc
 
 class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
     """
-    Proposed in [1]. Code adapted from [2].
+    Extracts resource roles based on resource-activity correlations.
 
-    TODO: implement other distance metrics.
+    This class identifies resource roles within a process based on correlations
+    between resources and activities in event logs. It computes a correlation
+    matrix between resources and activities and then identifies subgraphs
+    representing roles based on a user-defined threshold.
+    This approach proposed in [1], and code adapted from [2].
 
-    References
-    ----------
-    [1] Minseok Song, Wil M.P. van der Aalst. Towards comprehensive support for organizational mining, Decision Support Systems (2008).
-    [2] https://github.com/AdaptiveBProcess/GenerativeLSTM
+    Todo:
+    ------
+    implement other distance metrics.
+
+
+    Parameters:
+    -----------
+    threshold : float, default=0.7
+        The correlation threshold for identifying resource roles.
+        Resources with correlation coefficients above this threshold
+        are considered to belong to the same role.
+
+    References:
+    -----------
+    - [1] Minseok Song, Wil M.P. van der Aalst. "Towards comprehensive support for organizational mining," Decision Support Systems (2008).
+    - [2] Code adapted from https://github.com/AdaptiveBProcess/GenerativeLSTM
 
     Notes
     -----
@@ -39,16 +55,56 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
     In the context of organizational mining, I believe statistical relationships
     and similarity ultimately serve the same purpose.
 
+    Examples:
+    ---------
+    >>> from skpm.event_feature_extraction.resource import ResourcePoolExtractor
+    >>> import pandas as pd
+    >>> # Assuming X is your dataframe containing event data with columns 'activity' and 'resource'
+    >>> X = pd.DataFrame({'activity': ['A', 'B', 'A', 'B'], 'resource': ['R1', 'R2', 'R1', 'R2']})
+    >>> # Initialize and fit the extractor
+    >>> extractor = ResourcePoolExtractor(threshold=0.7)
+    >>> extractor.fit(X)
+    >>> # Transform the data to extract resource roles
+    >>> resource_roles = extractor.transform(X)
+    >>> print(resource_roles)
+    [0 1 0 1]
     """
 
     def __init__(self, threshold=0.7):
+        """
+        Initialize the ResourcePoolExtractor.
+
+        Parameters:
+        -----------
+        threshold : float, default=0.7
+            The correlation threshold for identifying resource roles.
+        """
         # the original implementation uses 0.7 as threshold but in the argparser they set 0.85
         self.threshold = threshold
 
     def get_feature_names_out(self):
+        """Return the feature names.
+
+        Returns:
+        --------
+        feature_names : list
+            List containing the feature names.
+        """
         return ["resource_roles"]
 
     def fit(self, X: DataFrame, y=None):
+        """Fit the ResourcePoolExtractor.
+
+        Parameters:
+        -----------
+        X : DataFrame, shape (n_samples, n_features)
+            The input data containing activity and resource columns.
+
+        Returns:
+        --------
+        self : object
+            Returns self.
+        """
         X = self._validate_data(X)
 
         # defining vocabs for activities and resources
@@ -100,12 +156,36 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
         return self
 
     def transform(self, X: DataFrame, y=None):
+        """Transform the input data to extract resource roles.
+
+        Parameters:
+        -----------
+        X : DataFrame, shape (n_samples, n_features)
+            The input data containing activity and resource columns.
+
+        Returns:
+        --------
+        resource_roles : numpy.ndarray, shape (n_samples,)
+            An array containing the resource roles for each sample.
+        """
         check_is_fitted(self, "resource_to_roles_")
         X = self._validate_data(X)
         resource_roles = X[elc.resource].map(self.resource_to_roles_).values
         return resource_roles
 
     def _validate_data(self, X: DataFrame):
+        """Validate the input data.
+
+        Parameters:
+        -----------
+        X : DataFrame, shape (n_samples, n_features)
+            The input data containing activity and resource columns.
+
+        Returns:
+        --------
+        x : DataFrame
+            The validated input data.
+        """
         assert isinstance(X, DataFrame), "Input must be a dataframe."
         x = X.copy()
         x.reset_index(drop=True, inplace=True)
@@ -134,6 +214,22 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
         return x
 
     def _check_unknown(self, input: np.ndarray, vocab: np.ndarray, name: str):
+        """Check for unknown labels in the input data.
+
+        Parameters:
+        -----------
+        input : numpy.ndarray
+            The input data containing labels.
+        vocab : numpy.ndarray
+            The vocabulary of known labels.
+        name : str
+            The name of the label (e.g., 'activity' or 'resource').
+
+        Returns:
+        --------
+        input : numpy.ndarray
+            The input data with unknown labels replaced by 'UNK'.
+        """
         unkown = set(input) - set(vocab)
         if unkown:
             warnings.warn(
@@ -147,6 +243,20 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
         return input
 
     def _define_vocabs(self, unique_labels: np.ndarray):
+        """Define vocabularies for unique labels.
+
+        Parameters:
+        -----------
+        unique_labels : numpy.ndarray
+            An array containing unique labels.
+
+        Returns:
+        --------
+        stoi : dict
+            A dictionary mapping labels to indices.
+        itos : dict
+            A dictionary mapping indices to labels.
+        """
         stoi, itos = {"UNK": 0}, {0: "UNK"}
         stoi.update({label: i + 1 for i, label in enumerate(unique_labels)})
         itos.update({i + 1: label for i, label in enumerate(unique_labels)})

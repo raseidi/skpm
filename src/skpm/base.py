@@ -16,13 +16,40 @@ class BaseProcessEstimator(BaseEstimator):
     """
 
     def _validate_log(
-        self,
-        X: DataFrame,
-        y: DataFrame = None,
-        reset: bool = True,
-        cast_to_ndarray: bool = False,
-        copy: bool = True,
+            self,
+            X: DataFrame,
+            y: DataFrame = None,
+            reset: bool = True,
+            cast_to_ndarray: bool = False,
+            copy: bool = True,
     ):
+        """
+        Validate and preprocess the input event log DataFrame.
+
+        Parameters
+        ----------
+        X : DataFrame
+            The input DataFrame representing the event log.
+        y : DataFrame, default=None
+            The target DataFrame associated with the event log.
+        reset : bool, default=True
+            Whether to reset the index of the DataFrame after validation.
+        cast_to_ndarray : bool, default=False
+            Whether to cast the DataFrame to a NumPy ndarray after validation.
+        copy : bool, default=True
+            Whether to create a copy of the DataFrame before validation.
+
+        Returns
+        -------
+        DataFrame
+            The preprocessed and validated event log DataFrame.
+
+        Raises
+        ------
+        ValueError
+            If the input is not a DataFrame or if the case ID column is missing.
+        """
+
         self._validate_params()
 
         # TODO: the validation of a dataframe might be done
@@ -57,6 +84,19 @@ class BaseProcessEstimator(BaseEstimator):
         return data[cols]
 
     def _ensure_case_id(self, columns: list[str]):
+        """
+        Ensure that the case ID column is present in the list of columns.
+
+        Parameters
+        ----------
+        columns : list[str]
+            The list of column names to check for the presence of the case ID.
+
+        Returns
+        -------
+        bool
+            True if the case ID column is found, False otherwise.
+        """
         for col in columns:
             if col.endswith(elc.case_id):
                 elc.case_id = col

@@ -1,6 +1,6 @@
 import numpy as np
 
-__all__ = ["frequency_matrix", "node_degree", "traces_to_ngrams"]
+__all__ = ["frequency_matrix", "node_degree"]
 
 
 def frequency_matrix(traces: list, set_of_states: set) -> tuple[np.ndarray, dict, dict]:

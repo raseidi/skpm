@@ -5,25 +5,93 @@ from sklearn.base import (
     check_is_fitted,
 )
 from skpm.utils.validation import validate_methods_from_class
+from skpm.config import EventLogConfig as elc
 
 
 class DigraphFeaturesExtractor(TransformerMixin, BaseEstimator):
+    """Extracts features from a directed graph represented by event data.
+
+    This class calculates various features from a directed graph extracted from event data.
+
+    Attributes:
+    -----------
+    frequency_matrix : ndarray
+        Transition frequency matrix representing the directed graph.
+    stoi : dict
+        Mapping of states to indices.
+    itos : dict
+        Mapping of indices to states.
+    features_ : list of tuples
+        List of feature names and corresponding feature functions.
+
+    Methods:
+    --------
+    fit(X, y=None):
+        Fit the feature extractor to the input data.
+    transform(X, y=None):
+        Transform the input data to calculate graph features.
+
+    Notes:
+    ------
+    This class requires event data with columns 'caseid' and 'activity' for fitting and transformation.
+
+    Examples:
+    ---------
+    >>> from skpm.event_feature_extraction.meta import DigraphFeaturesExtractor
+    >>> from skpm.config import EventLogConfig as elc
+    >>> import pandas as pd
+    >>> # Assuming X is your dataframe containing event data with columns 'caseid' and 'activity'
+    >>> X = pd.DataFrame({elc.case_id: [1, 1, 2, 2], elc.timestamp: ['A', 'B', 'A', 'C']})
+    >>> feature_extractor = DigraphFeaturesExtractor()
+    >>> feature_extractor.fit_transform(X)
+    """
+
     def __init__(self) -> None:
         pass
 
     def fit(self, X, y=None):
-        traces = X.groupby("caseid").activity.apply(list)
+        """Fit the feature extractor to the input data.
+
+        Parameters:
+        -----------
+        X : pd.DataFrame
+            Input DataFrame containing event data with columns 'caseid' and 'activity'.
+        y : None
+            Ignored.
+
+        Returns:
+        --------
+        self : DigraphFeaturesExtractor
+            Returns the instance itself.
+        """
+        traces = X.groupby(elc.case_id)[elc.activity].apply(list)
         (
             self.frequency_matrix,
             self.stoi,
             self.itos,
-        ) = _DigraphFeatures._frequency_matrix(traces, traces.activity.unique())
+            # TODO: the bottom line has key error on elc.activity.
+        ) = _DigraphFeatures._frequency_matrix(traces, traces[elc.activity].unique())
 
         self.features_ = validate_methods_from_class(self.features, _DigraphFeatures)
         self._n_features_out = len(self.features_)
         return self
 
     def transform(self, X, y=None):
+        """
+        Transform the input data to calculate graph features.
+
+        Parameters:
+        -----------
+        X : pd.DataFrame
+            Input DataFrame containing event data with columns 'caseid' and 'activity'.
+        y : None
+            Ignored.
+
+        Returns:
+        --------
+        pd.DataFrame
+            Transformed DataFrame with calculated graph features added.
+        """
         check_is_fitted(self, "features_")
 
         # continue from here
@@ -36,7 +104,7 @@ class DigraphFeaturesExtractor(TransformerMixin, BaseEstimator):
 class _DigraphFeatures:
     @classmethod
     def _frequency_matrix(
-        cls, traces: list, set_of_states: set
+            cls, traces: list, set_of_states: set
     ) -> tuple[np.ndarray, dict, dict]:
         """
         Returns a transition frequency matrix.
@@ -180,8 +248,8 @@ class _DigraphFeatures:
         frequency_matrix = np.array(frequency_matrix)
         num_nodes = frequency_matrix.shape[0]
         in_cycle = [
-            False
-        ] * num_nodes  # Initialize list to store whether each node is in a cycle
+                       False
+                   ] * num_nodes  # Initialize list to store whether each node is in a cycle
 
         for n in range(2, max_cycle_length + 1):
             matrix_power = np.linalg.matrix_power(frequency_matrix, n)

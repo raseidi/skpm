@@ -1,3 +1,4 @@
+import numpy as np
 from sklearn.base import TransformerMixin
 from skpm.config import EventLogConfig as elc
 from skpm.base import BaseProcessEstimator
@@ -88,7 +89,7 @@ class Bucketing(TransformerMixin, BaseProcessEstimator):
         """
         if self.method == "single":
             # For the single method, assign all events to a single bucket.
-            bucket_labels = ["b1"] * len(X)
+            bucket_labels = np.array(["b1"] * len(X))
         elif self.method == "prefix":
             # For the prefix method, group events by case ID and assign sequential buckets.
             bucket_labels = X.groupby(elc.case_id).cumcount().apply(lambda x: f"b{x + 1}").values
