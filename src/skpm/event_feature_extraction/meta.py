@@ -46,8 +46,8 @@ class DigraphFeaturesExtractor(TransformerMixin, BaseEstimator):
     >>> feature_extractor.fit_transform(X)
     """
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, features: str = "all") -> None:
+        self.features = features
 
     def fit(self, X, y=None):
         """Fit the feature extractor to the input data.
@@ -65,14 +65,17 @@ class DigraphFeaturesExtractor(TransformerMixin, BaseEstimator):
             Returns the instance itself.
         """
         traces = X.groupby(elc.case_id)[elc.activity].apply(list)
+        states = set(X[elc.activity].unique())
         (
             self.frequency_matrix,
             self.stoi,
             self.itos,
             # TODO: the bottom line has key error on elc.activity.
-        ) = _DigraphFeatures._frequency_matrix(traces, traces[elc.activity].unique())
+        ) = _DigraphFeatures._frequency_matrix(traces=traces, set_of_states=states)
 
+        # TODO: refactor this part; this is hard to debug
         self.features_ = validate_methods_from_class(self.features, _DigraphFeatures)
+        self.features_ = set(self.features_) - {"_frequency_matrix"}
         self._n_features_out = len(self.features_)
         return self
 
@@ -94,17 +97,27 @@ class DigraphFeaturesExtractor(TransformerMixin, BaseEstimator):
         """
         check_is_fitted(self, "features_")
 
-        # continue from here
-        for feature_name, feature_fn in self.features_:
-            X[feature_name] = feature_fn(self.frequency_matrix)
+        # TODO: this does not work as a transformer; refactor
+        # for feature_name, feature_fn in self.features_:
+        #     X[feature_name] = feature_fn(self.frequency_matrix)
 
-        return X
+        # temporary solution: frequency matrix as dataframe
+        import pandas as pd
+
+        states = self.itos.values()
+        tmp = pd.DataFrame(
+            self.frequency_matrix,
+            columns=[f"to_{state}" for state in states],
+            index=[f"from_{state}" for state in states],
+        )
+
+        return tmp
 
 
 class _DigraphFeatures:
     @classmethod
     def _frequency_matrix(
-            cls, traces: list, set_of_states: set
+        cls, traces: list, set_of_states: set
     ) -> tuple[np.ndarray, dict, dict]:
         """
         Returns a transition frequency matrix.
@@ -166,6 +179,7 @@ class _DigraphFeatures:
         {0: ('c', 'd'), 1: ('b', 'c'), 2: ('a', 'b')})
 
         """
+        # TODO: this implementation is permutation-invariant; we should assert order for reproducibility
         stoi = {value: ix for ix, value in enumerate(set_of_states)}
         itos = {ix: value for value, ix in stoi.items()}
         freq_matrix = np.zeros((len(stoi), len(stoi)), dtype=np.int32)
@@ -248,15 +262,15 @@ class _DigraphFeatures:
         frequency_matrix = np.array(frequency_matrix)
         num_nodes = frequency_matrix.shape[0]
         in_cycle = [
-                       False
-                   ] * num_nodes  # Initialize list to store whether each node is in a cycle
+            False
+        ] * num_nodes  # Initialize list to store whether each node is in a cycle
 
         for n in range(2, max_cycle_length + 1):
             matrix_power = np.linalg.matrix_power(frequency_matrix, n)
             for i in range(num_nodes):
                 if matrix_power[i, i] > 0:
-                    in_cycle[
-                        i
-                    ] = True  # Mark node i as in a cycle if diagonal entry is non-zero
+                    in_cycle[i] = (
+                        True  # Mark node i as in a cycle if diagonal entry is non-zero
+                    )
 
         return in_cycle
