@@ -103,8 +103,13 @@ class DigraphFeaturesExtractor(TransformerMixin, BaseEstimator):
 
         # temporary solution: frequency matrix as dataframe
         import pandas as pd
+
         states = self.itos.values()
-        tmp = pd.DataFrame(self.frequency_matrix, columns=[f"to_{state}" for state in states], index=[f"from_{state}" for state in states])
+        tmp = pd.DataFrame(
+            self.frequency_matrix,
+            columns=[f"to_{state}" for state in states],
+            index=[f"from_{state}" for state in states],
+        )
 
         return tmp
 
@@ -112,7 +117,7 @@ class DigraphFeaturesExtractor(TransformerMixin, BaseEstimator):
 class _DigraphFeatures:
     @classmethod
     def _frequency_matrix(
-            cls, traces: list, set_of_states: set
+        cls, traces: list, set_of_states: set
     ) -> tuple[np.ndarray, dict, dict]:
         """
         Returns a transition frequency matrix.
@@ -257,15 +262,15 @@ class _DigraphFeatures:
         frequency_matrix = np.array(frequency_matrix)
         num_nodes = frequency_matrix.shape[0]
         in_cycle = [
-                       False
-                   ] * num_nodes  # Initialize list to store whether each node is in a cycle
+            False
+        ] * num_nodes  # Initialize list to store whether each node is in a cycle
 
         for n in range(2, max_cycle_length + 1):
             matrix_power = np.linalg.matrix_power(frequency_matrix, n)
             for i in range(num_nodes):
                 if matrix_power[i, i] > 0:
-                    in_cycle[
-                        i
-                    ] = True  # Mark node i as in a cycle if diagonal entry is non-zero
+                    in_cycle[i] = (
+                        True  # Mark node i as in a cycle if diagonal entry is non-zero
+                    )
 
         return in_cycle
