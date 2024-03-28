@@ -1,5 +1,10 @@
-from sklearn.base import OneToOneFeatureMixin, TransformerMixin, check_is_fitted
+from typing import Literal
+
+import pandas as pd
+import polars as pl
+from sklearn.base import OneToOneFeatureMixin, TransformerMixin
 from sklearn.utils._param_validation import StrOptions
+from sklearn.utils.validation import check_is_fitted
 
 from skpm.base import BaseProcessEstimator
 from skpm.config import EventLogConfig as elc
@@ -36,6 +41,8 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     cat_method : str, default="sum"
         The method to aggregate categorical features.
         Possible values: "frequency", "sum".
+    engine : str, default="pandas"
+        The DataFrame engine to use. Supported engines are "pandas" and "polars".
 
     Attributes
     ----------
@@ -85,15 +92,30 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     }
 
     def __init__(
-        self,
-        num_method="mean",
-        cat_method="sum",
-        # n_jobs=1,
+            self,
+            num_method: str = "mean",
+            cat_method: str = "sum",
+            # n_jobs=1,
+            engine: Literal["pandas", "polars"] = "pandas",  # Default to Pandas DataFrame
     ) -> None:
         self.num_method = num_method
         self.cat_method = cat_method
+        if engine not in ["pandas", "polars"]:
+            raise ValueError("Invalid engine. Supported engines are 'pandas' and 'polars'.")
+        self.engine = engine
         # self.n_jobs = n_jobs
 
+    @staticmethod
+    def validate_engine_with_df(func):
+        def _decorator(self, *args, **kwargs):
+            if (self.engine == "pandas" and not isinstance(args[0], pd.DataFrame)) or \
+                    (self.engine == "polars" and not isinstance(args[0], pl.DataFrame)):
+                raise ValueError("Expected {} dataframe, but received {}".format(self.engine, type(args[0])))
+            return func(self, *args, **kwargs)
+
+        return _decorator
+
+    @validate_engine_with_df
     def fit(self, X, y=None):
         """Fit transformer.
 
@@ -114,25 +136,30 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
                 Fitted aggregator.
 
         """
-        self.features_ = X.columns.drop(elc.case_id).tolist()
-        self.n_features_ = len(self.features_)
 
+        cols = list(X.columns)
+        cols.remove(elc.case_id)
+        self.features_ = cols
+        self.n_features_ = len(self.features_)
         X = self._validate_log(X)
 
-        # TODO: we assume int as categorical (e.g. one-hot)
-        # if cat_cols:
-        #     self.cat_ = cat_cols
-        # if num_cols:
-        #     self.num_ = num_cols
+        # Infer column types
         self.cat_, self.num_, _ = infer_column_types(X[self.features_], int_as_cat=True)
 
         self.feature_aggregations_ = {
-            **{cat_col: self.cat_method for cat_col in self.cat_},
-            **{num_col: self.num_method for num_col in self.num_},
+            cat_col: 'sum' if self.cat_method == "sum" else 'mean' for cat_col in self.cat_
         }
+        for num_col in self.num_:
+            if self.num_method == "sum":
+                self.feature_aggregations_[num_col] = 'sum'
+            elif self.num_method == "mean":
+                self.feature_aggregations_[num_col] = 'mean'
+            elif self.num_method == "median":
+                self.feature_aggregations_[num_col] = 'median'
 
         return self
 
+    @validate_engine_with_df
     def transform(self, X, y=None):
         """Performs the aggregation of event features from a trace.
 
@@ -150,19 +177,30 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         check_is_fitted(self, "n_features_")
         X = self._validate_log(X, reset=False)
 
-        group = X.groupby(elc.case_id, observed=True, as_index=True)
+        if self.engine == "pandas":  # If using Pandas DataFrame
+            return self._transform_pandas(X)
 
-        # TODO: major bottleneck; polars is 50x faster for this operation
-        # X[self.features_] =
+        elif self.engine == "polars":  # If using Polars DataFrame
+            return self._transform_polars(X)
+
+        else:
+            raise ValueError("Invalid engine. Supported engines are 'pandas' and 'polars'.")
+
+    def _transform_pandas(self, X):
+        """Transforms Pandas DataFrame."""
+        group = X.groupby(elc.case_id)
+
         for col, method in self.feature_aggregations_.items():
-            X[col] = group[col].expanding().agg(method).values
-        # X = ( # TODO: this changes the order of the columns withing the TransformerMixin
-        #     group.expanding()
-        #     .agg(self.feature_aggregations_)
-        #     .reset_index(level=elc.case_id)
-        #     .values
-        # )
+            X[col] = group[col].transform(method)
         return X.drop(elc.case_id, axis=1)
+
+    def _transform_polars(self, X):
+        """Transforms Polars DataFrame."""
+        for col, method in self.feature_aggregations_.items():
+            X = X.with_columns(
+                getattr(pl.col(col), method)().over(elc.case_id)
+            )
+        return X.drop(elc.case_id)
 
 
 class WindowAggregation(Aggregation):
@@ -184,6 +222,8 @@ class WindowAggregation(Aggregation):
     cat_method : str, default="sum"
         The method to aggregate categorical features.
         Possible values: "frequency", "sum".
+    engine : str, default="pandas"
+        The DataFrame engine to use. Supported engines are "pandas" and "polars".
 
     Attributes
     ----------
@@ -222,13 +262,14 @@ class WindowAggregation(Aggregation):
     """
 
     def __init__(
-        self, window_size=2, min_events=1, num_method="mean", cat_method="sum"
+            self, window_size: int = 2, min_events: int = 1, num_method: str = "mean", cat_method: str = "sum",
+            engine: Literal["pandas", "polars"] = "pandas"
     ) -> None:
-        self.num_method = num_method
-        self.cat_method = cat_method
+        super().__init__(num_method=num_method, cat_method=cat_method, engine=engine)
         self.window_size = window_size
         self.min_events = min_events
 
+    @Aggregation.validate_engine_with_df
     def transform(self, X, y=None):
         """Performs the windows aggregation of event features from a trace.
 
@@ -247,10 +288,31 @@ class WindowAggregation(Aggregation):
         check_is_fitted(self, "n_features_")
         X = self._validate_log(X, reset=False)
 
-        group = X.groupby(elc.case_id, observed=True, as_index=False).rolling(
+        if self.engine == "pandas":  # If using Pandas DataFrame
+            return self._transform_pandas(X)
+
+        elif self.engine == "polars":  # If using Polars DataFrame
+            return self._transform_polars(X)
+
+        else:
+            raise ValueError("Invalid engine. Supported engines are 'pandas' and 'polars'.")
+
+    def _transform_pandas(self, X):
+        """Transforms Pandas DataFrame."""
+        group = X.groupby(elc.case_id).rolling(
             window=self.window_size, min_periods=self.min_events
         )
 
         for col, method in self.feature_aggregations_.items():
             X[col] = group[col].agg(method).values
         return X.drop(elc.case_id, axis=1)
+
+    def _transform_polars(self, X):
+        """Transforms Polars DataFrame."""
+        for col, method in self.feature_aggregations_.items():
+            X = X.with_columns(
+                getattr(pl.col(col), "rolling_" + method)(self.window_size, min_periods=self.min_events).over(
+                    elc.case_id),
+            )
+            X = X.with_columns(pl.col(col).cast(pl.Float64))  # bc pandas returns float after rolling
+        return X.drop(elc.case_id)
