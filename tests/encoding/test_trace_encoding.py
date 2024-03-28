@@ -137,3 +137,20 @@ def test_window_output():
     print("pl:\n", pl_agg.head(15))
     assert isinstance(pl_agg, pd.DataFrame)
     assert pd_agg.equals(pl_agg)
+
+
+def test_wrong_dataframe_raises_exception():
+    pl_df = pl.DataFrame(
+        {
+            elc.case_id: np.repeat(np.arange(0, 10), 100),
+            elc.activity: np.random.randint(0, 10, 1000),
+            elc.resource: np.random.randint(0, 3, 1000),
+        }
+    )
+    with pytest.raises(ValueError):
+        agg1 = Aggregation(num_method="sum").set_output(transform="pandas")
+        agg1.fit_transform(pl_df)
+
+    with pytest.raises(ValueError):
+        agg1 = WindowAggregation(num_method="sum").set_output(transform="pandas")
+        agg1.fit_transform(pl_df)
