@@ -1,10 +1,14 @@
+import polars as pl
+
+
 # def flatten_list(l: list):
 #     return [item for sublist in l for item in sublist]
 
 
 def infer_column_types(df, int_as_cat=False) -> tuple:
     """Infer column types from a dataframe."""
-
+    if isinstance(df, pl.DataFrame):  # For Polars DataFrame
+        df = df.to_pandas()
     cat_cols = ["object", "category"]
     if int_as_cat:
         cat_cols.append("int")
