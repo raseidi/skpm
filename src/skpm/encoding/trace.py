@@ -310,9 +310,9 @@ class WindowAggregation(Aggregation):
     def _transform_polars(self, X):
         """Transforms Polars DataFrame."""
         for col, method in self.feature_aggregations_.items():
+            X = X.with_columns(pl.col(col).cast(pl.Float64))  # bc pandas returns float after rolling
             X = X.with_columns(
                 getattr(pl.col(col), "rolling_" + method)(self.window_size, min_periods=self.min_events).over(
                     elc.case_id),
             )
-            X = X.with_columns(pl.col(col).cast(pl.Float64))  # bc pandas returns float after rolling
         return X.drop(elc.case_id)
