@@ -183,9 +183,6 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         elif self.engine == "polars":  # If using Polars DataFrame
             return self._transform_polars(X)
 
-        else:
-            raise ValueError("Invalid engine. Supported engines are 'pandas' and 'polars'.")
-
     def _transform_pandas(self, X):
         """Transforms Pandas DataFrame."""
         group = X.groupby(elc.case_id)
@@ -293,9 +290,6 @@ class WindowAggregation(Aggregation):
 
         elif self.engine == "polars":  # If using Polars DataFrame
             return self._transform_polars(X)
-
-        else:
-            raise ValueError("Invalid engine. Supported engines are 'pandas' and 'polars'.")
 
     def _transform_pandas(self, X):
         """Transforms Pandas DataFrame."""

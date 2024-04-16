@@ -3,6 +3,7 @@ from pandas import DataFrame
 from sklearn.base import BaseEstimator
 
 from .config import EventLogConfig as elc
+from .utils.helpers import auto_convert_dataframes
 from .utils.validation import ensure_list, validate_columns
 
 
@@ -16,6 +17,7 @@ class BaseProcessEstimator(BaseEstimator):
     For instance, all event logs must have a `case_id` column.
     """
 
+    @auto_convert_dataframes
     def _validate_log(
             self,
             X: DataFrame,
@@ -50,11 +52,6 @@ class BaseProcessEstimator(BaseEstimator):
         ValueError
             If the input is not a DataFrame or if the case ID column is missing.
         """
-        polar_df = False
-        if isinstance(X, pl.DataFrame):  # For Polars DataFrame
-            X = X.to_pandas()
-            polar_df = True
-
         self._validate_params()
 
         # TODO: the validation of a dataframe might be done
@@ -78,16 +75,11 @@ class BaseProcessEstimator(BaseEstimator):
             cast_to_ndarray=cast_to_ndarray,
         )
 
-        # if cols:
         cols = validate_columns(
             input_columns=data.columns,
             required=[elc.case_id] + self.features_,
         )
-        # else:
-        #     cols = data.columns
 
-        if polar_df:  # For Polars DataFrame
-            data = pl.from_pandas(data)
         return data[cols]
 
     def _ensure_case_id(self, columns: list[str]):
