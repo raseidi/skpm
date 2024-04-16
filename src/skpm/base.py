@@ -1,3 +1,4 @@
+import polars as pl
 from pandas import DataFrame
 from sklearn.base import BaseEstimator
 
@@ -49,6 +50,10 @@ class BaseProcessEstimator(BaseEstimator):
         ValueError
             If the input is not a DataFrame or if the case ID column is missing.
         """
+        polar_df = False
+        if isinstance(X, pl.DataFrame):  # For Polars DataFrame
+            X = X.to_pandas()
+            polar_df = True
 
         self._validate_params()
 
@@ -81,6 +86,8 @@ class BaseProcessEstimator(BaseEstimator):
         # else:
         #     cols = data.columns
 
+        if polar_df:  # For Polars DataFrame
+            data = pl.from_pandas(data)
         return data[cols]
 
     def _ensure_case_id(self, columns: list[str]):

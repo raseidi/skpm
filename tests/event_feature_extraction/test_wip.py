@@ -1,10 +1,12 @@
 import numpy as np
 import pandas as pd
+import pytest
 from skpm.event_feature_extraction import WorkInProgress
 from skpm.config import EventLogConfig as elc
 
 
 def test_wip():
+    # Test with random data
     dummy_log = pd.DataFrame(
         {
             elc.case_id: np.random.randint(1, 10, 100),
@@ -12,16 +14,33 @@ def test_wip():
             elc.activity: np.random.choice(["a", "b", "c"], 100),
         }
     ).sort_values(elc.timestamp)
+
+    # Test fit_transform with default window_size
     wip = WorkInProgress()
-    wip.fit(dummy_log)
-    wip_values = wip.transform(dummy_log)
+    wip_values = wip.fit_transform(dummy_log)
     assert isinstance(wip_values, np.ndarray)
     assert wip_values.shape == (len(dummy_log),)
 
-    wip = (
+    # Test fit_transform with different window_size
+    wip = WorkInProgress(window_size="2D")
+    wip_values = wip.fit_transform(dummy_log)
+    assert isinstance(wip_values, np.ndarray)
+    assert wip_values.shape == (len(dummy_log),)
+
+    # Test set_output with transform="pandas"
+    wip_df = (
         WorkInProgress()
         .set_output(transform="pandas")
         .fit(dummy_log)
         .transform(dummy_log)
     )
-    assert isinstance(wip, pd.DataFrame)
+    assert isinstance(wip_df, pd.DataFrame)
+
+    # Test with empty dataframe
+    empty_log = pd.DataFrame(columns=[elc.case_id, elc.timestamp, elc.activity])
+    wip_empty = WorkInProgress()
+    wip_empty.fit(empty_log)
+    with pytest.raises(TypeError):
+        wip_empty_values = wip_empty.transform(empty_log)
+        assert isinstance(wip_empty_values, np.ndarray)
+        assert len(wip_empty_values) == 0
