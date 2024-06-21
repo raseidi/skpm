@@ -93,7 +93,15 @@ def test_aggregation_output():
     pl_agg = pl_agg.astype(pd_agg.dtypes)
     assert isinstance(pl_agg, pd.DataFrame)
     assert pd_agg.equals(pl_agg)
-
+    
+    
+    agg1 = Aggregation(window_size=3).set_output(transform="pandas")
+    pd_agg = agg1.fit_transform(pd_df)
+    agg2 = Aggregation(window_size=3, engine="polars").set_output(transform="pandas")
+    pl_agg = agg2.fit_transform(pl_df)
+    pl_agg = pl_agg.astype(pd_agg.dtypes)
+    assert isinstance(pl_agg, pd.DataFrame)
+    assert pd_agg.equals(pl_agg)
 
 def test_wrong_dataframe_raises_exception():
     pl_df = pl.DataFrame(
