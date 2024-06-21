@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Union
 
 import pandas as pd
 import polars as pl
@@ -10,6 +10,8 @@ from skpm.base import BaseProcessEstimator
 from skpm.config import EventLogConfig as elc
 from skpm.utils.helpers import infer_column_types
 
+DataFrame = pd.DataFrame
+PlDataFrame = pl.DataFrame
 
 class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     """Sequence Encoding Transformer.
@@ -95,11 +97,14 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
             self,
             num_method: str = "mean",
             cat_method: str = "sum",
+            window_size: int = None,
             # n_jobs=1,
             engine: Literal["pandas", "polars"] = "pandas",  # Default to Pandas DataFrame
     ) -> None:
         self.num_method = num_method
         self.cat_method = cat_method
+        self.window_size = window_size
+        
         if engine not in ["pandas", "polars"]:
             raise ValueError("Invalid engine. Supported engines are 'pandas' and 'polars'.")
         self.engine = engine
@@ -157,10 +162,13 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
             elif self.num_method == "median":
                 self.feature_aggregations_[num_col] = 'median'
 
+        if self.window_size is None:
+            self.window_size = len(X)
+
         return self
 
     @validate_engine_with_df
-    def transform(self, X, y=None):
+    def transform(self, X: Union[DataFrame, PlDataFrame], y=None):
         """Performs the aggregation of event features from a trace.
 
         Parameters
@@ -186,133 +194,32 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         else:
             raise ValueError("Invalid engine. Supported engines are 'pandas' and 'polars'.")
 
-    def _transform_pandas(self, X):
+    def _transform_pandas(self, X: DataFrame):
         """Transforms Pandas DataFrame."""
         group = X.groupby(elc.case_id)
 
-        for col, method in self.feature_aggregations_.items():
-            X[col] = group[col].transform(method)
-        return X.drop(elc.case_id, axis=1)
-
-    def _transform_polars(self, X):
-        """Transforms Polars DataFrame."""
-        for col, method in self.feature_aggregations_.items():
-            X = X.with_columns(
-                getattr(pl.col(col), method)().over(elc.case_id)
-            )
-        return X.drop(elc.case_id)
-
-
-class WindowAggregation(Aggregation):
-    """
-    Transformer to perform windowed aggregation on event features.
-
-    Extends the `Aggregation` transformer to provide functionality
-    for windowed aggregation on event features.
-
-    Parameters
-    ----------
-    window_size : int, default=2
-        The size of the window for windowed aggregation.
-    min_events : int, default=1
-        The minimum number of events required to form a window.
-    num_method : str, default="mean"
-        The method to aggregate numerical features.
-        Possible values: "sum", "mean".
-    cat_method : str, default="sum"
-        The method to aggregate categorical features.
-        Possible values: "frequency", "sum".
-    engine : str, default="pandas"
-        The DataFrame engine to use. Supported engines are "pandas" and "polars".
-
-    Attributes
-    ----------
-    n_features_ : int
-        The number of features to encode.
-    features_ : list[str]
-        The features to encode.
-    cat_ : list[str]
-        The categorical features to encode.
-    num_ : list[str]
-        The numerical features to encode.
-    window_size : int
-        The size of the window for windowed aggregation.
-    min_events : int
-        The minimum number of events required to form a window.
-
-    See Also
-    --------
-    Aggregation : Base class for aggregation transformers.
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> import pandas as pd
-    >>> from skpm.encoding import WindowAggregation
-    >>> from skpm.config import EventLogConfig as elc
-    >>> df = pd.DataFrame({
-    ...     elc.timestamp: np.arange(10),
-    ...     elc.activity: np.random.randint(0, 10, 10),
-    ...     elc.resource: np.random.randint(0, 3, 10),
-    ...     elc.case_id: np.random.randint(0, 3, 10),
-    ... }).sort_values(by=[elc.case_id, elc.timestamp])
-    >>> df = pd.get_dummies(df, columns=[elc.activity,elc.resource], dtype=int)
-    >>> df = df.drop(elc.timestamp, axis=1)
-    >>> WindowAggregation().fit_transform(df)
-    """
-
-    def __init__(
-            self, window_size: int = 2, min_events: int = 1, num_method: str = "mean", cat_method: str = "sum",
-            engine: Literal["pandas", "polars"] = "pandas"
-    ) -> None:
-        super().__init__(num_method=num_method, cat_method=cat_method, engine=engine)
-        self.window_size = window_size
-        self.min_events = min_events
-
-    @Aggregation.validate_engine_with_df
-    def transform(self, X, y=None):
-        """Performs the windows aggregation of event features from a trace.
-
-        Parameters
-        ----------
-        X : {DataFrame} of shape (n_samples, n_features+1)
-            The event log data.
-        y : None
-            Ignored.
-
-        Returns
-        -------
-        X : {DataFrame} of shape (n_samples, n_features)
-            The transformed data.
-        """
-        check_is_fitted(self, "n_features_")
-        X = self._validate_log(X, reset=False)
-
-        if self.engine == "pandas":  # If using Pandas DataFrame
-            return self._transform_pandas(X)
-
-        elif self.engine == "polars":  # If using Polars DataFrame
-            return self._transform_polars(X)
-
-        else:
-            raise ValueError("Invalid engine. Supported engines are 'pandas' and 'polars'.")
-
-    def _transform_pandas(self, X):
-        """Transforms Pandas DataFrame."""
-        group = X.groupby(elc.case_id).rolling(
-            window=self.window_size, min_periods=self.min_events
+        columns = list(self.feature_aggregations_.keys())
+        X[columns] = (
+            group
+            .rolling(window=self.window_size, min_periods=1)
+            .agg(self.feature_aggregations_)
+            .values
         )
-
-        for col, method in self.feature_aggregations_.items():
-            X[col] = group[col].agg(method).values
         return X.drop(elc.case_id, axis=1)
 
-    def _transform_polars(self, X):
+    def _transform_polars(self, X: PlDataFrame):
         """Transforms Polars DataFrame."""
+        group = X.group_by(elc.case_id, maintain_order=True)
+        
         for col, method in self.feature_aggregations_.items():
-            X = X.with_columns(pl.col(col).cast(pl.Float64))  # bc pandas returns float after rolling
+            expanding_expr = getattr(pl.col(col), f"rolling_{method}")(window_size=self.window_size, min_periods=1)
+            expanding_expr = expanding_expr.alias(col)
+
+            out_df = group.agg(expanding_expr)
+            out_df = out_df.explode(out_df.columns[1:]) # skip case_id; TODO: test when case_id is not the first column
+            out_df = out_df.drop(elc.case_id)
+
             X = X.with_columns(
-                getattr(pl.col(col), "rolling_" + method)(self.window_size, min_periods=self.min_events).over(
-                    elc.case_id),
+                out_df[col].alias(col)
             )
         return X.drop(elc.case_id)
