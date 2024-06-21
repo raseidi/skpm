@@ -212,7 +212,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         group = X.group_by(elc.case_id, maintain_order=True)
         
         for col, method in self.feature_aggregations_.items():
-            expanding_expr = getattr(pl.col(col), f"rolling_{method}")(window_size=X.height, min_periods=1)
+            expanding_expr = getattr(pl.col(col), f"rolling_{method}")(window_size=self.window_size, min_periods=1)
             expanding_expr = expanding_expr.alias(col)
 
             out_df = group.agg(expanding_expr)
