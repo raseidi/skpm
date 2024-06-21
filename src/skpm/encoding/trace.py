@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Union
 
 import pandas as pd
 import polars as pl
@@ -10,6 +10,8 @@ from skpm.base import BaseProcessEstimator
 from skpm.config import EventLogConfig as elc
 from skpm.utils.helpers import infer_column_types
 
+DataFrame = pd.DataFrame
+PlDataFrame = pl.DataFrame
 
 class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     """Sequence Encoding Transformer.
@@ -95,11 +97,14 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
             self,
             num_method: str = "mean",
             cat_method: str = "sum",
+            window_size: int = None,
             # n_jobs=1,
             engine: Literal["pandas", "polars"] = "pandas",  # Default to Pandas DataFrame
     ) -> None:
         self.num_method = num_method
         self.cat_method = cat_method
+        self.window_size = window_size
+        
         if engine not in ["pandas", "polars"]:
             raise ValueError("Invalid engine. Supported engines are 'pandas' and 'polars'.")
         self.engine = engine
@@ -157,10 +162,13 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
             elif self.num_method == "median":
                 self.feature_aggregations_[num_col] = 'median'
 
+        if self.window_size is None:
+            self.window_size = len(X)
+
         return self
 
     @validate_engine_with_df
-    def transform(self, X, y=None):
+    def transform(self, X: Union[DataFrame, PlDataFrame], y=None):
         """Performs the aggregation of event features from a trace.
 
         Parameters
@@ -186,19 +194,33 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         else:
             raise ValueError("Invalid engine. Supported engines are 'pandas' and 'polars'.")
 
-    def _transform_pandas(self, X):
+    def _transform_pandas(self, X: DataFrame):
         """Transforms Pandas DataFrame."""
         group = X.groupby(elc.case_id)
 
-        for col, method in self.feature_aggregations_.items():
-            X[col] = group[col].transform(method)
+        columns = list(self.feature_aggregations_.keys())
+        X[columns] = (
+            group
+            .rolling(window=self.window_size, min_periods=1)
+            .agg(self.feature_aggregations_)
+            .values
+        )
         return X.drop(elc.case_id, axis=1)
 
-    def _transform_polars(self, X):
+    def _transform_polars(self, X: PlDataFrame):
         """Transforms Polars DataFrame."""
+        group = X.group_by(elc.case_id, maintain_order=True)
+        
         for col, method in self.feature_aggregations_.items():
+            expanding_expr = getattr(pl.col(col), f"rolling_{method}")(window_size=X.height, min_periods=1)
+            expanding_expr = expanding_expr.alias(col)
+
+            out_df = group.agg(expanding_expr)
+            out_df = out_df.explode(out_df.columns[1:]) # skip case_id; TODO: test when case_id is not the first column
+            out_df = out_df.drop(elc.case_id)
+
             X = X.with_columns(
-                getattr(pl.col(col), method)().over(elc.case_id)
+                out_df[col].alias(col)
             )
         return X.drop(elc.case_id)
 
