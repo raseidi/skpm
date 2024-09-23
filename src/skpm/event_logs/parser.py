@@ -10,6 +10,7 @@ DataFrame = pd.DataFrame
 class Event(dict):
     pass
 
+
 class TagXES:
     # attributes
     STRING: str = "string"
@@ -17,32 +18,36 @@ class TagXES:
     FLOAT: str = "float"
     BOOLEAN: str = "boolean"
     INT: str = "int"
-    
+
     # elements
     EVENT: str = "event"
     TRACE: str = "trace"
-    
+
     _DTYPES: tuple = (STRING, DATE, FLOAT, BOOLEAN, INT)
-    
+
     @classmethod
     def is_attribute(cls, element: etree._Element) -> bool:
         """element is an attribute if it ends with one of the dtypes."""
         return element.tag.endswith(cls._DTYPES)
-    
+
     @classmethod
     def is_valid(cls, element: etree._Element) -> bool:
-        return element.tag.endswith(tuple(v for v in vars(cls).values() if not v.startswith("_")))
-    
+        return element.tag.endswith(
+            tuple(v for v in vars(cls).values() if not v.startswith("_"))
+        )
+
     @classmethod
     def get_dtypes(cls) -> tuple:
         return cls._DTYPES
 
+
 tag: TagXES = TagXES
+
 
 def extract_case_attributes(trace: etree._Element, ns: dict) -> Event:
     """
     Extracts case-level attributes from the trace.
-    
+
     Using findall for case attributes is faster than using iter since
     cases has fewer attributes than events.
 
@@ -58,16 +63,14 @@ def extract_case_attributes(trace: etree._Element, ns: dict) -> Event:
         # Find all attributes of the given type in the trace
         attrs = trace.findall(attr, ns)
         # Update case_attrs with the found attributes
-        case_attrs.update({
-            f'case:{e.get("key")}': e.get("value") for e in attrs
-        })
+        case_attrs.update({f'case:{e.get("key")}': e.get("value") for e in attrs})
     return case_attrs
 
 
 def extract_event_attributes(event: etree._Element) -> Event:
     """
     Extracts attributes from an event element.
-    
+
     Using iter is slightly faster than findall for events since
     there many events and event attributes in a trace.
 
@@ -98,17 +101,17 @@ def parse_trace(trace: list[etree._Element], ns: dict) -> list[Event]:
         trace = etree.fromstring(trace)
 
     case_attrs = extract_case_attributes(trace, ns)
-    
+
     # Parse each event
     parsed_events = []
     events = trace.findall(tag.EVENT, ns)
     for event in events:
         event_attrs = extract_event_attributes(event)
-        
+
         # Add case-level attributes to event attributes
         event_attrs.update(case_attrs)
         parsed_events.append(event_attrs)
-        
+
         # Clear the event to free memory
         event.clear()
 
@@ -146,8 +149,7 @@ def read_xes(filepath: str, n_jobs: int = None, as_df=True) -> DataFrame | list[
     """
     tree = etree.parse(filepath).getroot()
     ns = tree.nsmap
-    
-    
+
     traces = tree.findall(tag.TRACE, ns)
 
     if n_jobs in [1, None]:
@@ -156,14 +158,16 @@ def read_xes(filepath: str, n_jobs: int = None, as_df=True) -> DataFrame | list[
             log.extend(parse_trace(trace, ns))
     else:
         from functools import partial
-        
+
         parse_trace_partial = partial(parse_trace, ns=ns)
-        
+
         traces = lazy_serialize(traces)
-        log = Parallel(n_jobs=n_jobs)(delayed(parse_trace_partial)(trace) for trace in traces)
+        log = Parallel(n_jobs=n_jobs)(
+            delayed(parse_trace_partial)(trace) for trace in traces
+        )
         log = list(chain(*log))
-        
+
     if as_df:
         log = pd.DataFrame(log)
-        
+
     return log
