@@ -155,8 +155,12 @@ def read_xes(filepath: str, n_jobs: int = None, as_df=True) -> DataFrame | list[
         for trace in traces:
             log.extend(parse_trace(trace, ns))
     else:
+        from functools import partial
+        
+        parse_trace_partial = partial(parse_trace, ns=ns)
+        
         traces = lazy_serialize(traces)
-        log = Parallel(n_jobs=n_jobs)(delayed(parse_trace)(trace) for trace in traces)
+        log = Parallel(n_jobs=n_jobs)(delayed(parse_trace_partial)(trace) for trace in traces)
         log = list(chain(*log))
         
     if as_df:
