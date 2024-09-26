@@ -1,5 +1,4 @@
-from .base import TUEventLog
-
+from skpm.event_logs.base import TUEventLog
 
 class BPI12(TUEventLog):
     """BPI Challenge 2012 event log.
@@ -33,6 +32,11 @@ class BPI12(TUEventLog):
     md5: str = "74c7ba9aba85bfcb181a22c9d565e5b5"
     file_name: str = "BPI_Challenge_2012.xes.gz"
 
+    _unbiased_split_params: dict = {    
+        "start_date": None ,
+        "end_date": "2012-02",
+        "max_days": 32.28,
+    }
 
 class BPI13ClosedProblems(TUEventLog):
     """
@@ -65,7 +69,6 @@ class BPI13ClosedProblems(TUEventLog):
     md5: str = "4f9c35942f42cb90d911ee4936bbad87"
     file_name: str = "BPI_Challenge_2013_closed_problems.xes.gz"
 
-
 class BPI13Incidents(TUEventLog):
     """
     BPI Challenge 2013 Incidents.
@@ -96,7 +99,6 @@ class BPI13Incidents(TUEventLog):
     )
     md5: str = "d4809bd55e3e1c15b017ab4e58228297"
     file_name: str = "BPI_Challenge_2013_incidents.xes.gz"
-
 
 class BPI13OpenProblems(TUEventLog):
     """
@@ -129,12 +131,9 @@ class BPI13OpenProblems(TUEventLog):
     md5: str = "9663e544a2292edf1fe369747736e7b4"
     file_name: str = "BPI_Challenge_2013_open_problems.xes.gz"
 
-
 class BPI17(TUEventLog):
     """
     BPI Challenge 2017.
-
-
 
     DOI: 10.4121/uuid:d444d7f1-f81b-45c5-9a1a-0f4d1c1cee7e
 
@@ -174,7 +173,12 @@ class BPI17(TUEventLog):
     )
     md5: str = "10b37a2f78e870d78406198403ff13d2"
     file_name: str = "BPI Challenge 2017.xes.gz"
-
+    
+    _unbiased_split_params: dict = {
+        "start_date": None ,
+        "end_date": "2017-01",
+        "max_days": 47.81,
+    }
 
 class BPI19(TUEventLog):
     """
@@ -207,83 +211,70 @@ class BPI19(TUEventLog):
     md5: str = "4eb909242351193a61e1c15b9c3cc814"
     file_name: str = "BPI_Challenge_2019.xes"
 
-
-class BPI20(TUEventLog):
-    """
-    BPI Challenge 2020.
-
-    DOI: 10.4121/uuid:62b0313f-3bde-447f-a4ce-f28aa06f49b2
-
-    The BPI Challenge 2020 focused on analyzing event data related to business processes in various domains.
-    This class provides access to different versions of the BPI Challenge 2020 event log.
-
-    Parameters
-    ----------
-    version : str, optional
-        The version of the event log to use. Available versions are "permit", "request", "domestic", "prepaid", and "international". Defaults to "permit".
-    root_folder : str, optional
-        Path where the event log will be stored. Defaults to "./data".
-    save_as_pandas : bool, optional
-        Whether to save the event log as a pandas parquet file. Defaults to True.
-    train_set : bool, optional
-        Whether to use the train set or the test set. If True, use the train set. If False, use the test set. Defaults to True.
-    file_path : str, optional
-        Path to the file containing the event log. If provided, the event log will be loaded from this file. Defaults to None.
-
-    Notes
-    -----
-    The BPI Challenge 2020 event log is available in multiple versions corresponding to different types of processes (permit, request, domestic, prepaid, international).
-    Each version has its own URL, MD5 hash, and file name.
-
-    Raises
-    ------
-    NotImplementedError
-        This class does not support direct downloading of the event log from 4TU. Manual download is required.
-    ValueError
-        If an unsupported version is specified.
-
-    Examples
-    --------
-    >>> bpi_20_permit = BPI20(version="permit")
-    >>> bpi_20_permit.download()  # Manually download the event log
-    >>> event_log = bpi_20_permit.log  # Access the event log DataFrame
-    """
-
-    versions = ("permit", "request", "domestic", "prepaid", "international")
-    urls: dict = {
-        "permit": "url1",
-        "request": "url2",
-        "domestic": "url3",
-        "prepaid": "url4",
-        "international": "url5",
-    }
-    md5s: dict = {
-        "permit": "md51",
-        "request": "md52",
-        "domestic": "md53",
-        "prepaid": "md54",
-        "international": "md55",
-    }
-    file_names: dict = {
-        "permit": "BPI_Challenge_2020_permit.xes.gz",
-        "request": "BPI_Challenge_2020_request.xes.gz",
-        "domestic": "BPI_Challenge_2020_domestic.xes.gz",
-        "prepaid": "BPI_Challenge_2020_prepaid.xes.gz",
-        "international": "BPI_Challenge_2020_international.xes.gz",
+    _unbiased_split_params: dict = {
+        "start_date": "2018-01",
+        "end_date": "2019-02",
+        "max_days": 143.33,
     }
 
-    def __init__(
-        self,
-        version: str = "permit",
-        root_folder: str = "./data",
-        save_as_pandas: bool = True,
-        train_set: bool = True,
-        file_path: str = None,
-    ) -> None:
-        raise NotImplementedError("TODO: download from 4TU")
+class BPI20PrepaidTravelCosts(TUEventLog):
+    
+    url: str = (
+        "https://data.4tu.nl/file/fb84cf2d-166f-4de2-87be-62ee317077e5/612068f6-14d0-4a82-b118-1b51db52e73a"
+    )
+    md5: str = "b6ab8ee749e2954f09a4fef030960598"
+    file_name: str = "PrepaidTravelCost.xes.gz"
 
-        if version not in self.versions:
-            raise ValueError(f"Version {version} not in {self.versions}")
-        # TODO
+    _unbiased_split_params: dict = {
+        "start_date": None ,
+        "end_date": "2019-01",
+        "max_days": 114.26,
+    }
 
-        super().__init__(root_folder, save_as_pandas, train_set, file_path)
+class BPI20TravelPermitData(TUEventLog):
+    url: str = (
+        "https://data.4tu.nl/file/db35afac-2133-40f3-a565-2dc77a9329a3/12b48cc1-18a8-4089-ae01-7078fc5e8f90"
+    )
+    md5: str = "b6e9ff00d946f6ad4c91eb6fb550aee4"
+    file_name: str = "PermitLog.xes.gz"
+
+    _unbiased_split_params: dict = {
+        "start_date": None ,
+        "end_date": "2019-10",
+        "max_days": 258.81,
+    }
+
+class BPI20RequestForPayment(TUEventLog):
+    url: str = (
+        "https://data.4tu.nl/file/a6f651a7-5ce0-4bc6-8be1-a7747effa1cc/7b1f2e56-e4a8-43ee-9a09-6e64f45a1a98"
+    )
+    md5 : str = "2eb4dd20e70b8de4e32cc3c239bde7f2"
+    file_name: str = "RequestForPayment.xes.gz"
+    
+    _unbiased_split_params: dict = {
+        "start_date": None ,
+        "end_date": "2018-12",
+        "max_days": 28.86,
+    }
+
+class BPI20DomesticDeclarations(TUEventLog):
+    url: str = (
+        "https://data.4tu.nl/file/6a0a26d2-82d0-4018-b1cd-89afb0e8627f/6eeb0328-f991-48c7-95f2-35033504036e"
+    )
+    md5: str = "6a78c39491498363ce4788e0e8ca75ef"
+    file_name: str = "DomesticDeclarations.xes.gz"
+
+class BPI20InternationalDeclarations(TUEventLog):
+    url: str = (
+        "https://data.4tu.nl/file/91fd1fa8-4df4-4b1a-9a3f-0116c412378f/d45ee7dc-952c-4885-b950-4579a91ef426"
+    )
+    md5: str = "1ec65e046f70bb399cc6d2c154cd615a"
+    file_name: str = "InternationalDeclarations.xes.gz"
+
+class Sepsis(TUEventLog):
+    url: str = (
+        "https://data.4tu.nl/file/33632f3c-5c48-40cf-8d8f-2db57f5a6ce7/643dccf2-985a-459e-835c-a82bce1c0339"
+    )
+    
+    md5: str = "b5671166ac71eb20680d3c74616c43d2"
+    file_name: str = "Sepsis Cases - Event Log.xes.gz"
