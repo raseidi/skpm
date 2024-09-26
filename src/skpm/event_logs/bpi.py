@@ -33,6 +33,13 @@ class BPI12(TUEventLog):
     md5: str = "74c7ba9aba85bfcb181a22c9d565e5b5"
     file_name: str = "BPI_Challenge_2012.xes.gz"
 
+    unbiased_split_params = {    
+        "test_len": .2,
+        "start_date": None ,
+        "end_date": "2012-02",
+        "max_days": 32.28,
+    }
+
 
 class BPI13ClosedProblems(TUEventLog):
     """

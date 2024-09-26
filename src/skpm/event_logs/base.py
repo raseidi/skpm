@@ -158,17 +158,10 @@ class TUEventLog(BasePreprocessing):
 
         elif self.file_path.endswith(elc.default_file_format):
             log = pd.read_parquet(self.file_path)
+        else:
+            raise ValueError(f"File format not implemented.")
 
-        # log = self._base_preprocess(log)
         return log
-
-        # Ideally we want to standardize the train/test sets
-        # see https://github.com/hansweytjens/predictive-process-monitoring-benchmarks
-        # train, test = self.split_log(log)
-        # train.to_parquet(self.train_file, index=False)
-        # test.to_parquet(self.test_file, index=False)
-
-        # return train if self.train else test
 
     def __repr__(self) -> str:
         """
