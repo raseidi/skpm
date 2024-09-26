@@ -18,51 +18,51 @@ class TimestampExtractor(
 ):
     """Extracts features from a timestamp column.
 
-       This class extracts various features from a timestamp column in a DataFrame.
+    This class extracts various features from a timestamp column in a DataFrame.
 
-       Parameters:
-       -----------
-           features (Union[list, str], optional): List of features to extract. Defaults to "all".
+    Parameters:
+    -----------
+        features (Union[list, str], optional): List of features to extract. Defaults to "all".
 
-       Attributes:
-       -----------
-           features_ : list of tuples
-               List of feature names and corresponding feature functions.
+    Attributes:
+    -----------
+        features_ : list of tuples
+            List of feature names and corresponding feature functions.
 
-       Methods:
-       --------
-           fit(X, y=None):
-               Fit the transformer to the input data.
-           transform(X, y=None):
-               Transform the input data to calculate timestamp features.
+    Methods:
+    --------
+        fit(X, y=None):
+            Fit the transformer to the input data.
+        transform(X, y=None):
+            Transform the input data to calculate timestamp features.
 
-       Notes:
-       ------
-       - This class requires a DataFrame with columns for case IDs and timestamps.
-       - Validation of columns and timestamps is performed in the `fit` method.
+    Notes:
+    ------
+    - This class requires a DataFrame with columns for case IDs and timestamps.
+    - Validation of columns and timestamps is performed in the `fit` method.
 
-       Examples:
-       ---------
-       >>> from skpm.event_feature_extraction.time import TimestampExtractor
-       >>> import pandas as pd
-       >>> # Assuming X is your dataframe containing event data with columns 'case_id' and 'timestamp'
-       >>> X = pd.DataFrame({'case_id': [1, 1, 2, 2], 'timestamp': ['2023-01-01 10:30:00', '2023-01-01 11:00:00', '2023-01-01 09:00:00', '2023-01-01 09:30:00']})
-       >>> feature_extractor = TimestampExtractor()
-       >>> feature_extractor.fit(X)
-       >>> feature_extractor.transform(X)
-       """
+    Examples:
+    ---------
+    >>> from skpm.event_feature_extraction.time import TimestampExtractor
+    >>> import pandas as pd
+    >>> # Assuming X is your dataframe containing event data with columns 'case_id' and 'timestamp'
+    >>> X = pd.DataFrame({'case_id': [1, 1, 2, 2], 'timestamp': ['2023-01-01 10:30:00', '2023-01-01 11:00:00', '2023-01-01 09:00:00', '2023-01-01 09:30:00']})
+    >>> feature_extractor = TimestampExtractor()
+    >>> feature_extractor.fit(X)
+    >>> feature_extractor.transform(X)
+    """
 
     def __init__(
-            self,
-            features: Union[list, str] = "all",
+        self,
+        features: Union[list, str] = "all",
     ):
         # TODO: time unit (secs, hours, days, etc)
         self.features = features
 
     def fit(
-            self,
-            X: DataFrame,
-            y=None,
+        self,
+        X: DataFrame,
+        y=None,
     ):
         """Fit the transformer to the input data.
 
@@ -161,7 +161,7 @@ class TimestampExtractor(
         return x
 
     def _validate_timestamp_format(
-            self, x: DataFrame, timestamp_format: str = "%Y-%m-%d %H:%M:%S"
+        self, x: DataFrame, timestamp_format: str = "%Y-%m-%d %H:%M:%S"
     ):
         """
         Validates the format of the timestamp column.

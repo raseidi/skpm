@@ -4,7 +4,7 @@ from urllib import error, request
 
 
 def download_url(
-        url: str, folder: t.Optional[str] = None, file_name: t.Optional[str] = None
+    url: str, folder: t.Optional[str] = None, file_name: t.Optional[str] = None
 ) -> str:
     """Download a file from a `url` and place it in `folder`.
 
@@ -40,8 +40,8 @@ def download_url(
 
 
 def _save_response_content(
-        content: t.Iterator[bytes],
-        destination: str,
+    content: t.Iterator[bytes],
+    destination: str,
 ) -> None:
     """
     Save the content received from an HTTP response to a file.

@@ -46,11 +46,11 @@ class TUEventLog(BasePreprocessing):
     meta_data: str = None  # TODO: download DATA.xml from the 4TU repository
 
     def __init__(
-            self,
-            root_folder: str = "./data",
-            save_as_pandas: bool = True,
-            train_set: bool = True,
-            file_path: str = None,
+        self,
+        root_folder: str = "./data",
+        save_as_pandas: bool = True,
+        train_set: bool = True,
+        file_path: str = None,
     ) -> None:
         """
         Initialize the TUEventLog object.

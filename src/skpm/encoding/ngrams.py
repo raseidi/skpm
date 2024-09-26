@@ -36,13 +36,13 @@ def _trace_to_ngram(trace: Union[list, np.array], N: int = 3) -> list:
     trace = np.append(trace, -1)  # otherwise, it only works for integers
     gram_list = []
     for ix in range(len(trace) - N + 1):
-        gram = tuple(trace[ix: ix + N])
+        gram = tuple(trace[ix : ix + N])
         gram_list.append(gram)
     return gram_list
 
 
 def traces_to_ngrams(
-        traces: list[Union[list, np.array]], N: int = 3
+    traces: list[Union[list, np.array]], N: int = 3
 ) -> tuple[list, set]:
     """
     Convert a list of traces into n-grams and obtain unique n-grams.

@@ -153,8 +153,8 @@ def nodes_in_cycles(frequency_matrix, max_cycle_length):
         matrix_power = np.linalg.matrix_power(frequency_matrix, n)
         for i in range(num_nodes):
             if matrix_power[i, i] > 0:
-                in_cycle[
-                    i
-                ] = True  # Mark node i as in a cycle if diagonal entry is non-zero
+                in_cycle[i] = (
+                    True  # Mark node i as in a cycle if diagonal entry is non-zero
+                )
 
     return in_cycle

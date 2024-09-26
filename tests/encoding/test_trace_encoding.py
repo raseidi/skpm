@@ -33,6 +33,7 @@ def test_aggregation():
     with pytest.raises(Exception) as exc_info:
         rp.transform(dummy_data[[elc.activity, elc.resource]])
 
+
 def test_aggregation_with_window():
     dummy_data = pd.DataFrame(
         {
@@ -48,14 +49,14 @@ def test_aggregation_with_window():
     out = rp.transform(dummy_data)
     assert isinstance(out, pd.DataFrame)
     assert out.shape[0] == dummy_data.shape[0]
-        
+
     # Test window aggregation with window size larger than len(data) must work
-    rp = Aggregation(window_size=len(dummy_data)+1).set_output(transform="pandas")
+    rp = Aggregation(window_size=len(dummy_data) + 1).set_output(transform="pandas")
     rp.fit(dummy_data)
     out = rp.transform(dummy_data)
     assert isinstance(out, pd.DataFrame)
     assert out.shape[0] == dummy_data.shape[0]
-        
+
     # Test window aggregation with invalid window size
     with pytest.raises(Exception) as exc_info:
         rp = Aggregation(window_size=0).set_output(transform="pandas")
@@ -64,17 +65,20 @@ def test_aggregation_with_window():
 
 
 def test_aggregation_with_polars():
-    pl_df = pl.DataFrame({
-        elc.case_id: np.repeat(np.arange(0, 10), 100),
-        elc.activity: np.random.randint(0, 10, 1000),
-        elc.resource: np.random.randint(0, 3, 1000),
-    })
+    pl_df = pl.DataFrame(
+        {
+            elc.case_id: np.repeat(np.arange(0, 10), 100),
+            elc.activity: np.random.randint(0, 10, 1000),
+            elc.resource: np.random.randint(0, 3, 1000),
+        }
+    )
 
     rp = Aggregation(engine="polars").set_output(transform="polars")
     rp.fit(pl_df)
     out = rp.transform(pl_df)
     assert isinstance(out, pl.DataFrame)
     assert out.height == pl_df.height
+
 
 def test_aggregation_output():
     pl_df = pl.DataFrame(
@@ -93,8 +97,7 @@ def test_aggregation_output():
     pl_agg = pl_agg.astype(pd_agg.dtypes)
     assert isinstance(pl_agg, pd.DataFrame)
     assert pd_agg.equals(pl_agg)
-    
-    
+
     agg1 = Aggregation(window_size=3).set_output(transform="pandas")
     pd_agg = agg1.fit_transform(pd_df)
     agg2 = Aggregation(window_size=3, engine="polars").set_output(transform="pandas")
@@ -102,6 +105,7 @@ def test_aggregation_output():
     pl_agg = pl_agg.astype(pd_agg.dtypes)
     assert isinstance(pl_agg, pd.DataFrame)
     assert pd_agg.equals(pl_agg)
+
 
 def test_wrong_dataframe_raises_exception():
     pl_df = pl.DataFrame(

@@ -6,6 +6,7 @@ htmlcov/
 
 .coverage
 notes.md
+skpm-venv/
 
 # Byte-compiled / optimized / DLL files
 *.py[cod]

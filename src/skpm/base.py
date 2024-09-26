@@ -17,12 +17,12 @@ class BaseProcessEstimator(BaseEstimator):
     """
 
     def _validate_log(
-            self,
-            X: DataFrame,
-            y: DataFrame = None,
-            reset: bool = True,
-            cast_to_ndarray: bool = False,
-            copy: bool = True,
+        self,
+        X: DataFrame,
+        y: DataFrame = None,
+        reset: bool = True,
+        cast_to_ndarray: bool = False,
+        copy: bool = True,
     ):
         """
         Validate and preprocess the input event log DataFrame.
