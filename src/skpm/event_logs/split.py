@@ -82,7 +82,7 @@ def unbiased(
     >>> from skpm.event_logs import BPI12
     >>> from skpm.event_logs import split
     >>> bpi12 = BPI12()
-    >>> df_train, df_test = split.unbiased(bpi12.log **bpi12.unbiased_split_params)
+    >>> df_train, df_test = split.unbiased(bpi12.log, **bpi12.unbiased_split_params)
     >>> df_train.shape, df_test.shape
     ((117546, 7), (55952, 7))
 
