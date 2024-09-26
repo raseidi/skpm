@@ -45,6 +45,8 @@ class TUEventLog(BasePreprocessing):
     file_name: str = None
     meta_data: str = None  # TODO: download DATA.xml from the 4TU repository
 
+    _unbiased_split_params: dict = None
+
     def __init__(
         self,
         root_folder: str = "./data",
@@ -100,6 +102,15 @@ class TUEventLog(BasePreprocessing):
     @file_path.setter
     def file_path(self, value):
         self._file_path = value
+
+    @property
+    def unbiased_split_params(self) -> dict:
+        """
+        dict: Parameters for the unbiased split of the event log.
+        """
+        if self._unbiased_split_params is None:
+            raise ValueError("Unbiased split parameters not supported.")
+        return self._unbiased_split_params
 
     def __len__(self):
         """
