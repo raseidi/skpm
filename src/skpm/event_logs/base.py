@@ -3,6 +3,7 @@ import os
 import pandas as pd
 
 from skpm.config import EventLogConfig as elc
+from skpm.event_logs.parser import read_xes
 from .download import download_url
 from .extract import extract_gz
 
@@ -13,7 +14,7 @@ class BasePreprocessing:
         Preprocess the event log by converting the timestamp column to datetime format.
         """
         self.log[elc.timestamp] = pd.to_datetime(
-            self.log[elc.timestamp], format="mixed"
+            self.log[elc.timestamp], utc=True, format="mixed"
         )
 
 
@@ -53,6 +54,8 @@ class TUEventLog(BasePreprocessing):
     ) -> None:
         """
         Initialize the TUEventLog object.
+
+        TODO: file_name, file_path, root_folder ??
 
         Parameters
         ----------
@@ -142,13 +145,14 @@ class TUEventLog(BasePreprocessing):
             DataFrame containing the event log data.
         """
         if self.file_path.endswith(".xes"):
-            import pm4py
-
-            log = pm4py.read_xes(self.file_path)
+            log = read_xes(self.file_path, as_df=True)
 
             if self.save_as_pandas:
                 new_file_path = self.file_path.replace(".xes", elc.default_file_format)
-                log.to_parquet(new_file_path)
+                if elc.default_file_format == ".parquet":
+                    log.to_parquet(new_file_path)
+                else:
+                    raise ValueError(f"File format not implemented.")
                 os.remove(self.file_path)
                 self.file_path = new_file_path
 
