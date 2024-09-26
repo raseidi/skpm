@@ -6,15 +6,18 @@
 #     BPI17,
 #     BPI19,
 #     BPI20,
-# ) 
+# )
+
 
 def test_rerad_xes():
     assert True
+
+
 #     """ToDo
-    
+
 #     I gotta learn how to cache files on GitHub Actions.
 #     """
-    
+
 #     logs = (
 #         BPI12,
 #         BPI13ClosedProblems,
@@ -31,7 +34,7 @@ def test_rerad_xes():
 #         "BPI17": (1202267, 19),
 #         "BPI19": (1595923, 21),
 #     }
-    
+
 #     for l in logs:
-#         df = l()        
+#         df = l()
 #         assert df.log.shape == shapes[l.__name__]

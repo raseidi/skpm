@@ -15,13 +15,12 @@ def example_set_of_states():
 
 @pytest.fixture
 def example_frequency_matrix():
-    return np.array([[0, 2, 0, 0],
-                     [0, 0, 2, 0],
-                     [0, 0, 0, 1],
-                     [0, 0, 0, 0]])
+    return np.array([[0, 2, 0, 0], [0, 0, 2, 0], [0, 0, 0, 1], [0, 0, 0, 0]])
 
 
-def test_frequency_matrix(example_traces, example_set_of_states, example_frequency_matrix):
+def test_frequency_matrix(
+    example_traces, example_set_of_states, example_frequency_matrix
+):
     freq_matrix, stoi, itos = frequency_matrix(example_traces, example_set_of_states)
     assert np.array_equal(freq_matrix, example_frequency_matrix)
     assert stoi == {1: 0, 2: 1, 3: 2, 4: 3}
@@ -30,10 +29,7 @@ def test_frequency_matrix(example_traces, example_set_of_states, example_frequen
 
 @pytest.fixture
 def example_frequency_matrix_node_degree():
-    return np.array([[0, 2, 0, 0],
-                     [0, 0, 2, 0],
-                     [0, 0, 0, 1],
-                     [0, 0, 0, 0]])
+    return np.array([[0, 2, 0, 0], [0, 0, 2, 0], [0, 0, 0, 1], [0, 0, 0, 0]])
 
 
 def test_node_degree(example_frequency_matrix_node_degree):
@@ -43,15 +39,10 @@ def test_node_degree(example_frequency_matrix_node_degree):
 
 
 def test_density():
-    graph = np.array([[0, 2, 0, 0],
-                      [0, 0, 2, 0],
-                      [0, 0, 0, 1],
-                      [0, 0, 0, 0]])
+    graph = np.array([[0, 2, 0, 0], [0, 0, 2, 0], [0, 0, 0, 1], [0, 0, 0, 0]])
     assert density(graph) == 0.4166666666666667
 
 
 def test_nodes_in_cycles():
-    graph = np.array([[0, 1, 0],
-                      [0, 0, 1],
-                      [1, 0, 0]])
+    graph = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
     assert nodes_in_cycles(graph, max_cycle_length=3) == [True, True, True]

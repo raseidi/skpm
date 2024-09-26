@@ -92,7 +92,9 @@ class Bucketing(TransformerMixin, BaseProcessEstimator):
             bucket_labels = np.array(["b1"] * len(X))
         elif self.method == "prefix":
             # For the prefix method, group events by case ID and assign sequential buckets.
-            bucket_labels = X.groupby(elc.case_id).cumcount().apply(lambda x: f"b{x + 1}").values
+            bucket_labels = (
+                X.groupby(elc.case_id).cumcount().apply(lambda x: f"b{x + 1}").values
+            )
         elif self.method == "clustering":
             # Clustering method is not implemented yet.
             raise NotImplementedError("Clustering method is not implemented yet")

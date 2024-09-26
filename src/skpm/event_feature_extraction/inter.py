@@ -40,8 +40,8 @@ class WorkInProgress(TransformerMixin, BaseEstimator):
 
     # see https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
     def __init__(
-            self,
-            window_size="1D",
+        self,
+        window_size="1D",
     ) -> None:
         self.window_size = window_size
 
@@ -49,9 +49,9 @@ class WorkInProgress(TransformerMixin, BaseEstimator):
         return ["wip"]
 
     def fit(
-            self,
-            X: pd.DataFrame,
-            y=None,
+        self,
+        X: pd.DataFrame,
+        y=None,
     ):
         assert isinstance(X, pd.DataFrame), "Input must be a dataframe."
 

@@ -13,6 +13,7 @@ from skpm.utils.helpers import infer_column_types
 DataFrame = pd.DataFrame
 PlDataFrame = pl.DataFrame
 
+
 class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     """Sequence Encoding Transformer.
 
@@ -94,28 +95,35 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     }
 
     def __init__(
-            self,
-            num_method: str = "mean",
-            cat_method: str = "sum",
-            window_size: int = None,
-            # n_jobs=1,
-            engine: Literal["pandas", "polars"] = "pandas",  # Default to Pandas DataFrame
+        self,
+        num_method: str = "mean",
+        cat_method: str = "sum",
+        window_size: int = None,
+        # n_jobs=1,
+        engine: Literal["pandas", "polars"] = "pandas",  # Default to Pandas DataFrame
     ) -> None:
         self.num_method = num_method
         self.cat_method = cat_method
         self.window_size = window_size
-        
+
         if engine not in ["pandas", "polars"]:
-            raise ValueError("Invalid engine. Supported engines are 'pandas' and 'polars'.")
+            raise ValueError(
+                "Invalid engine. Supported engines are 'pandas' and 'polars'."
+            )
         self.engine = engine
         # self.n_jobs = n_jobs
 
     @staticmethod
     def validate_engine_with_df(func):
         def _decorator(self, *args, **kwargs):
-            if (self.engine == "pandas" and not isinstance(args[0], pd.DataFrame)) or \
-                    (self.engine == "polars" and not isinstance(args[0], pl.DataFrame)):
-                raise ValueError("Expected {} dataframe, but received {}".format(self.engine, type(args[0])))
+            if (self.engine == "pandas" and not isinstance(args[0], pd.DataFrame)) or (
+                self.engine == "polars" and not isinstance(args[0], pl.DataFrame)
+            ):
+                raise ValueError(
+                    "Expected {} dataframe, but received {}".format(
+                        self.engine, type(args[0])
+                    )
+                )
             return func(self, *args, **kwargs)
 
         return _decorator
@@ -152,15 +160,16 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         self.cat_, self.num_, _ = infer_column_types(X[self.features_], int_as_cat=True)
 
         self.feature_aggregations_ = {
-            cat_col: 'sum' if self.cat_method == "sum" else 'mean' for cat_col in self.cat_
+            cat_col: "sum" if self.cat_method == "sum" else "mean"
+            for cat_col in self.cat_
         }
         for num_col in self.num_:
             if self.num_method == "sum":
-                self.feature_aggregations_[num_col] = 'sum'
+                self.feature_aggregations_[num_col] = "sum"
             elif self.num_method == "mean":
-                self.feature_aggregations_[num_col] = 'mean'
+                self.feature_aggregations_[num_col] = "mean"
             elif self.num_method == "median":
-                self.feature_aggregations_[num_col] = 'median'
+                self.feature_aggregations_[num_col] = "median"
 
         if self.window_size is None:
             self.window_size = len(X)
@@ -192,7 +201,9 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
             return self._transform_polars(X)
 
         else:
-            raise ValueError("Invalid engine. Supported engines are 'pandas' and 'polars'.")
+            raise ValueError(
+                "Invalid engine. Supported engines are 'pandas' and 'polars'."
+            )
 
     def _transform_pandas(self, X: DataFrame):
         """Transforms Pandas DataFrame."""
@@ -200,8 +211,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
 
         columns = list(self.feature_aggregations_.keys())
         X[columns] = (
-            group
-            .rolling(window=self.window_size, min_periods=1)
+            group.rolling(window=self.window_size, min_periods=1)
             .agg(self.feature_aggregations_)
             .values
         )
@@ -210,16 +220,18 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     def _transform_polars(self, X: PlDataFrame):
         """Transforms Polars DataFrame."""
         group = X.group_by(elc.case_id, maintain_order=True)
-        
+
         for col, method in self.feature_aggregations_.items():
-            expanding_expr = getattr(pl.col(col), f"rolling_{method}")(window_size=self.window_size, min_periods=1)
+            expanding_expr = getattr(pl.col(col), f"rolling_{method}")(
+                window_size=self.window_size, min_periods=1
+            )
             expanding_expr = expanding_expr.alias(col)
 
             out_df = group.agg(expanding_expr)
-            out_df = out_df.explode(out_df.columns[1:]) # skip case_id; TODO: test when case_id is not the first column
+            out_df = out_df.explode(
+                out_df.columns[1:]
+            )  # skip case_id; TODO: test when case_id is not the first column
             out_df = out_df.drop(elc.case_id)
 
-            X = X.with_columns(
-                out_df[col].alias(col)
-            )
+            X = X.with_columns(out_df[col].alias(col))
         return X.drop(elc.case_id)

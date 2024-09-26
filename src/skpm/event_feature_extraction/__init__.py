@@ -8,6 +8,7 @@ Notes on inter-case features:
     if this is an issue.
     For TimestampExtractor, if we have on the training set a trace [t_0, ..., t_n] whereas on the test set we have the remaining trace, i.e., [t_{n+1}, ..., t_m], the `accumulated_time` feature should take this info into consideration.
 """
+
 from .time import TimestampExtractor
 from .resource import ResourcePoolExtractor
 from .inter import WorkInProgress

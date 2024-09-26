@@ -18,18 +18,34 @@ def test_traces_to_ngrams():
     # Test conversion of traces to n-grams
     traces = [[1, 2, 3, 4], [4, 5, 6, 7]]
     ngrams, unique_grams = traces_to_ngrams(traces, N=2)
-    expected_ngrams = [[(-1, 1), (1, 2), (2, 3), (3, 4), (4, -1)], [(-1, 4), (4, 5), (5, 6), (6, 7), (7, -1)]]
-    expected_unique_grams = {(-1, 1), (-1, 4), (1, 2), (2, 3), (3, 4), (4, -1), (4, 5), (5, 6), (6, 7), (7, -1)}
+    expected_ngrams = [
+        [(-1, 1), (1, 2), (2, 3), (3, 4), (4, -1)],
+        [(-1, 4), (4, 5), (5, 6), (6, 7), (7, -1)],
+    ]
+    expected_unique_grams = {
+        (-1, 1),
+        (-1, 4),
+        (1, 2),
+        (2, 3),
+        (3, 4),
+        (4, -1),
+        (4, 5),
+        (5, 6),
+        (6, 7),
+        (7, -1),
+    }
     assert ngrams == expected_ngrams
     assert unique_grams == expected_unique_grams
 
 
 def test_encoded_ngrams():
     # Test EncodedNgrams transformer
-    dummy_log = pd.DataFrame({
-        elc.case_id: [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        elc.activity: [10, 20, 30, 10, 20, 30, 10, 20, 30],
-    })
+    dummy_log = pd.DataFrame(
+        {
+            elc.case_id: [1, 1, 1, 2, 2, 2, 3, 3, 3],
+            elc.activity: [10, 20, 30, 10, 20, 30, 10, 20, 30],
+        }
+    )
 
     # Test fit_transform
     ng = EncodedNgrams(N=2)
@@ -43,10 +59,22 @@ def test_encoded_ngrams():
         ng_unfitted.transform(dummy_log)
 
     # Test new n-grams warning
-    dummy_log_extra = pd.DataFrame({
-        elc.case_id: [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        elc.activity: [10, 20, 30, 10, 20, 30, 10, 20, 40],  # Introduce new n-gram (30, 40)
-    })
+    dummy_log_extra = pd.DataFrame(
+        {
+            elc.case_id: [1, 1, 1, 2, 2, 2, 3, 3, 3],
+            elc.activity: [
+                10,
+                20,
+                30,
+                10,
+                20,
+                30,
+                10,
+                20,
+                40,
+            ],  # Introduce new n-gram (30, 40)
+        }
+    )
     with pytest.warns(UserWarning):
         ng.transform(dummy_log_extra)
         assert ng.new_ngrams_ == {(20, 40), (40, -1)}

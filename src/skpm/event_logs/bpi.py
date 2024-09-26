@@ -26,7 +26,10 @@ class BPI12(TUEventLog):
     >>> bpi_12.download()  # Manually download the event log
     >>> event_log = bpi_12.log  # Access the event log DataFrame
     """
-    url: str = "https://data.4tu.nl/file/533f66a4-8911-4ac7-8612-1235d65d1f37/3276db7f-8bee-4f2b-88ee-92dbffb5a893"
+
+    url: str = (
+        "https://data.4tu.nl/file/533f66a4-8911-4ac7-8612-1235d65d1f37/3276db7f-8bee-4f2b-88ee-92dbffb5a893"
+    )
     md5: str = "74c7ba9aba85bfcb181a22c9d565e5b5"
     file_name: str = "BPI_Challenge_2012.xes.gz"
 
@@ -55,7 +58,10 @@ class BPI13ClosedProblems(TUEventLog):
     >>> bpi_13_incidents.download()  # Manually download the event log
     >>> event_log = bpi_13_incidents.log  # Access the event log DataFrame
     """
-    url: str = "https://data.4tu.nl/file/1987a2a6-9f5b-4b14-8d26-ab7056b17929/8b99119d-9525-452e-bc8f-236ac76fa9c9"
+
+    url: str = (
+        "https://data.4tu.nl/file/1987a2a6-9f5b-4b14-8d26-ab7056b17929/8b99119d-9525-452e-bc8f-236ac76fa9c9"
+    )
     md5: str = "4f9c35942f42cb90d911ee4936bbad87"
     file_name: str = "BPI_Challenge_2013_closed_problems.xes.gz"
 
@@ -85,7 +91,9 @@ class BPI13Incidents(TUEventLog):
     >>> event_log = bpi_13_open_problems.log  # Access the event log DataFrame
     """
 
-    url: str = "https://data.4tu.nl/file/0fc5c579-e544-4fab-9143-fab1f5192432/aa51ffbb-25fd-4b5a-b0b8-9aba659b7e8c"
+    url: str = (
+        "https://data.4tu.nl/file/0fc5c579-e544-4fab-9143-fab1f5192432/aa51ffbb-25fd-4b5a-b0b8-9aba659b7e8c"
+    )
     md5: str = "d4809bd55e3e1c15b017ab4e58228297"
     file_name: str = "BPI_Challenge_2013_incidents.xes.gz"
 
@@ -114,7 +122,10 @@ class BPI13OpenProblems(TUEventLog):
     >>> bpi_13_open_problems.download()  # Manually download the event log
     >>> event_log = bpi_13_open_problems.log  # Access the event log DataFrame
     """
-    url: str = "https://data.4tu.nl/file/7aafbf5b-97ae-48ba-bd0a-4d973a68cd35/0647ad1a-fa73-4376-bdb4-1b253576c3a1"
+
+    url: str = (
+        "https://data.4tu.nl/file/7aafbf5b-97ae-48ba-bd0a-4d973a68cd35/0647ad1a-fa73-4376-bdb4-1b253576c3a1"
+    )
     md5: str = "9663e544a2292edf1fe369747736e7b4"
     file_name: str = "BPI_Challenge_2013_open_problems.xes.gz"
 
@@ -157,7 +168,10 @@ class BPI17(TUEventLog):
     >>> bpi_17.download()  # Manually download the event log
     >>> event_log = bpi_17.log  # Access the event log DataFrame
     """
-    url: str = "https://data.4tu.nl/file/34c3f44b-3101-4ea9-8281-e38905c68b8d/f3aec4f7-d52c-4217-82f4-57d719a8298c"
+
+    url: str = (
+        "https://data.4tu.nl/file/34c3f44b-3101-4ea9-8281-e38905c68b8d/f3aec4f7-d52c-4217-82f4-57d719a8298c"
+    )
     md5: str = "10b37a2f78e870d78406198403ff13d2"
     file_name: str = "BPI Challenge 2017.xes.gz"
 
@@ -186,7 +200,10 @@ class BPI19(TUEventLog):
     >>> bpi_19.download()  # Manually download the event log
     >>> event_log = bpi_19.log  # Access the event log DataFrame
     """
-    url: str = "https://data.4tu.nl/file/35ed7122-966a-484e-a0e1-749b64e3366d/864493d1-3a58-47f6-ad6f-27f95f995828"
+
+    url: str = (
+        "https://data.4tu.nl/file/35ed7122-966a-484e-a0e1-749b64e3366d/864493d1-3a58-47f6-ad6f-27f95f995828"
+    )
     md5: str = "4eb909242351193a61e1c15b9c3cc814"
     file_name: str = "BPI_Challenge_2019.xes"
 
@@ -256,12 +273,12 @@ class BPI20(TUEventLog):
     }
 
     def __init__(
-            self,
-            version: str = "permit",
-            root_folder: str = "./data",
-            save_as_pandas: bool = True,
-            train_set: bool = True,
-            file_path: str = None,
+        self,
+        version: str = "permit",
+        root_folder: str = "./data",
+        save_as_pandas: bool = True,
+        train_set: bool = True,
+        file_path: str = None,
     ) -> None:
         raise NotImplementedError("TODO: download from 4TU")
 
