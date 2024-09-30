@@ -3,30 +3,30 @@ from typing import Iterable, Union, Any
 
 
 def validate_methods_from_class(
-    features: Union[str, list[str]], class_obj: Any
+    methods: Union[str, list[str]], class_obj: Any
 ) -> list[tuple[str, callable]]:
     """Validate methods from a class.
 
     Args:
-        features (Union[str, list[str]]): features to be extracted from a class.
+        methods (Union[str, list[str]]): methods to be extracted from a class.
         class_obj (Any): a class object cotaining class methods.
 
     Returns:
         list[tuple[str, callable]]: a list of tuples
-            containing the name of the feature and the method.
+            containing the name of the methods and the callable.
     """
-    available_features = inspect.getmembers(class_obj, predicate=inspect.ismethod)
-    out_features = []
-    if features == "all":
-        out_features = available_features
+    available_methods = inspect.getmembers(class_obj, predicate=inspect.ismethod)
+    out_methods = []
+    if methods == "all":
+        out_methods = available_methods
     else:
-        if not isinstance(features, (tuple, list)):
-            features = [features]
-        for f in available_features:
-            if f[0] in features and not f[0].startswith("_"):
-                out_features.append(f)
+        if not isinstance(methods, (tuple, list)):
+            methods = [methods]
+        for f in available_methods:
+            if f[0] in methods and not f[0].startswith("_"):
+                out_methods.append(f)
 
-    return out_features
+    return out_methods
 
 
 def validate_columns(input_columns: Iterable, required: list) -> list:

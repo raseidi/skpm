@@ -1,17 +1,18 @@
 from typing import Union
 
-from pandas import DataFrame
+import pandas as pd
 from sklearn.base import (
     BaseEstimator,
     ClassNamePrefixFeaturesOutMixin,
     TransformerMixin,
     check_is_fitted,
 )
-from sklearn.utils import check_pandas_support
+# from sklearn.utils import check_pandas_support
 
 from skpm.config import EventLogConfig as elc
 from skpm.utils import validate_columns, validate_methods_from_class
 
+DataFrame: pd.DataFrame = pd.DataFrame 
 
 class TimestampExtractor(
     ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
@@ -52,12 +53,17 @@ class TimestampExtractor(
     >>> feature_extractor.transform(X)
     """
 
-    def __init__(
-        self,
-        features: Union[list, str] = "all",
-    ):
-        # TODO: time unit (secs, hours, days, etc)
-        self.features = features
+    def __init__(self, 
+                 case_level: Union[str, list] = "all", 
+                 event_level: Union[str, list] = "all", 
+                 time_unit: str = "secs"):
+        # TODO: feature time unit (secs, hours, days, etc)
+        # TODO: subset of features rather than all
+        # TODO: param for event-level and case-level
+        self.features = "all"
+        self.case_level = case_level
+        self.event_level = event_level
+        self.time_unit = time_unit
 
     def fit(
         self,
@@ -82,13 +88,15 @@ class TimestampExtractor(
             Fitted transformer instance.
         """
         _ = self._validate_data(X)
-        self.features_ = validate_methods_from_class(self.features, Timestamp)
-        # del self.features
-        self._n_features_out = len(self.features_)
+        
+        self.event_level_features = validate_methods_from_class(self.features, TimestampEventLevel)
+        self.case_level_features = validate_methods_from_class(self.features, TimestampCaseLevel)
+        
+        self._n_features_out = len(self.event_level_features) + len(self.case_level_features)
         return self
 
     def get_feature_names_out(self):
-        return [f[0] for f in self.features_]
+        return [f[0] for f in self.case_level_features + self.event_level_features]
 
     def transform(self, X: DataFrame, y=None):
         """Transform the input data to calculate timestamp features.
@@ -111,26 +119,25 @@ class TimestampExtractor(
         # data validation
         X = self._validate_data(X)
 
+        # for case-level features
         self.group_ = X.groupby(
             elc.case_id, as_index=False, group_keys=False, observed=True
         )
 
-        # TODO: preprocess features and kwargs for each class
-        # method; otherwise, we gotta pass **kwargs to all methods;
-        # this is not a problem for now, but it might be in the
-        # future since each class method might have different kwargs
         kwargs = {
             "case": self.group_,
             "ix_list": X.index.values,
-            "X": X,
         }
 
-        for feature_name, feature_fn in self.features_:
+        for feature_name, feature_fn in self.case_level_features:
             X[feature_name] = feature_fn(**kwargs)
 
-        # features_ is a list of tuples (name, fn)
-        # TODO: TimestampExtractor().fit().get_feature_names_out()
-        return X.loc[:, [feature[0] for feature in self.features_]].values
+        # for event-level features
+        for feature_name, feature_fn in self.event_level_features:
+            X[feature_name] = feature_fn(X[elc.timestamp])
+
+        output_columns = [feature[0] for feature in self.case_level_features + self.event_level_features]
+        return X.loc[:, output_columns].values
 
     def _validate_data(self, X: DataFrame):
         """
@@ -179,9 +186,9 @@ class TimestampExtractor(
             Series containing the validated timestamps.
         """
         if not x[elc.timestamp].dtype == "datetime64[ns]":
-            pd = check_pandas_support(
-                "'pandas' not found. Please install it to use this method."
-            )
+            # pd = check_pandas_support(
+            #     "'pandas' not found. Please install it to use this method."
+            # )
             try:
                 # for now, since we are only employing the BPI event logs,
                 # we are assuming that the datetime format is '%Y-%m-%d %H:%M:%S'.
@@ -206,127 +213,84 @@ class TimestampExtractor(
         return x[elc.timestamp]
 
 
-class Timestamp:
+class TimestampEventLevel:
     """
-    Provides various methods for calculating timestamp-related features.
-
-    This class contains static methods for computing timestamp-related features
-    from a DataFrame containing event logs.
-
-    Methods:
-    --------
-    execution_time(case, ix_list, **kwargs):
-        Calculate the execution time of each event in seconds.
-
-    accumulated_time(case, ix_list, **kwargs):
-        Calculate the accumulated time from the start of each case in seconds.
-
-    remaining_time(case, ix_list, **kwargs):
-        Calculate the remaining time until the end of each case in seconds.
-
-    within_day(X, **kwargs):
-        Extract the number of seconds elapsed within each day from the timestamps.
-
-    Notes:
-    ------
-    - These methods operate on pandas DataFrame columns containing timestamps.
-    - Some methods may require the 'pandas' library to be installed for execution.
-
-    Examples:
-    ---------
-    >>> from skpm.event_feature_extraction.time import Timestamp
-    >>> import pandas as pd
-    >>> # Assuming X is your dataframe containing event data with columns 'case_id' and 'timestamp'
-    >>> X = pd.DataFrame({'case_id': [1, 1, 2, 2], 'timestamp': ['2023-01-01 10:30:00', '2023-01-01 11:00:00', '2023-01-01 09:00:00', '2023-01-01 09:30:00']})
-    >>> # Calculate execution time for each event
-    >>> execution_times = Timestamp.execution_time(X, X.index.values)
-    >>> print(execution_times)
-    [  0. 1800.   0. 1800.]
+    Provides methods to extract time-related features from the event level.
+    
+    Implementing event-level and case-level seperately makes code faster since here we do not need to group by case_id.
+    
     """
 
     @classmethod
-    def execution_time(cls, case, ix_list, **kwargs):
-        """Calculate the execution time of each event in seconds.
+    def secs_within_day(cls, X):
+        """Extract the number of seconds elapsed within each day from the timestamps encoded as value between [-0.5, 0.5]."""
+        return ((X.dt.hour * 3600 + X.dt.minute * 60 + X.dt.second) / 86400) - 0.5
+        
+    @classmethod
+    def week_of_year(cls, X):
+        """Week of year encoded as value between [-0.5, 0.5]"""
+        return (X.dt.isocalendar().week - 1) / 52.0 - 0.5
+    
 
-        Parameters:
-        -----------
-        case : pandas.Series
-            Series containing the timestamps of events for a single case.
-        ix_list : array-like
-            List of indices corresponding to the events to compute execution time for.
+    @classmethod
+    def sec_of_min(cls, X):
+        """Minute of hour encoded as value between [-0.5, 0.5]"""    
+        return X.dt.second / 59.0 - 0.5
 
-        Returns:
-        --------
-        execution_times : numpy.ndarray
-            Array containing the execution time of each event in seconds.
-        """
+    @classmethod
+    def min_of_hour(cls, X):
+        """Minute of hour encoded as value between [-0.5, 0.5]"""
+    
+        return X.dt.minute / 59.0 - 0.5
+
+    @classmethod
+    def hour_of_day(cls, X):
+        """Hour of day encoded as value between [-0.5, 0.5]"""
+
+        
+        return X.dt.hour / 23.0 - 0.5
+
+    @classmethod
+    def day_of_week(cls, X):
+        """Hour of day encoded as value between [-0.5, 0.5]"""
+
+        
+        return X.dt.dayofweek / 6.0 - 0.5
+
+    @classmethod
+    def day_of_month(cls, X):
+        """Day of month encoded as value between [-0.5, 0.5]"""
+        return (X.dt.day - 1) / 30.0 - 0.5
+
+    @classmethod
+    def day_of_year(cls, X):
+        """Day of year encoded as value between [-0.5, 0.5]"""
+
+        
+        return (X.dt.dayofyear - 1) / 365.0 - 0.5
+
+    @classmethod
+    def month_of_year(cls, X):
+        """Month of year encoded as value between [-0.5, 0.5]"""
+        return (X.dt.month - 1) / 11.0 - 0.5
+
+class TimestampCaseLevel:
+    """Provides methods to extract time-related features from the case level
+    
+    Implementing event-level and case-level seperately makes code faster since, since here is slower due to the groupby dependency.
+    """
+    
+    @classmethod
+    def execution_time(cls, case, ix_list):
+        """Calculate the execution time of each event in seconds."""
         return case[elc.timestamp].diff().loc[ix_list].dt.total_seconds().fillna(0)
 
     @classmethod
-    def accumulated_time(cls, case, ix_list, **kwargs):
-        """Calculate the accumulated time from the start of each case in seconds.
-
-        Parameters:
-        -----------
-        case : pandas.Series
-            Series containing the timestamps of events for a single case.
-        ix_list : array-like
-            List of indices corresponding to the events to compute accumulated time for.
-
-        Returns:
-        --------
-        accumulated_times : numpy.ndarray
-            Array containing the accumulated time from the start of each case in seconds.
-        """
+    def accumulated_time(cls, case, ix_list):
+        """Calculate the accumulated time from the start of each case in seconds."""
         return (
             case[elc.timestamp]
             .apply(lambda x: x - x.min())
             .loc[ix_list]
             .dt.total_seconds()
-        )
-
-    @classmethod
-    def remaining_time(cls, case, ix_list, **kwargs):
-        """Calculate the remaining time until the end of each case in seconds.
-
-        Parameters:
-        -----------
-        case : pandas.Series
-            Series containing the timestamps of events for a single case.
-        ix_list : array-like
-            List of indices corresponding to the events to compute remaining time for.
-
-        Returns:
-        --------
-        remaining_times : numpy.ndarray
-            Array containing the remaining time until the end of each case in seconds.
-        """
-        return (
-            case[elc.timestamp]
-            .apply(lambda x: x.max() - x)
-            .loc[ix_list]
-            .dt.total_seconds()
-        )
-
-    @classmethod
-    def within_day(cls, X, **kwargs):
-        """Extract the number of seconds elapsed within each day from the timestamps.
-
-        Parameters:
-        -----------
-        X : pandas.DataFrame
-            DataFrame containing timestamps of events.
-
-        Returns:
-        --------
-        seconds_within_day : numpy.ndarray
-            Array containing the number of seconds elapsed within each day from the timestamps.
-        """
-        pd = check_pandas_support(
-            "'pandas' not found. Please install it to use this method."
-        )
-        return (
-            pd.to_timedelta(X[elc.timestamp].dt.time.astype(str))
-            .dt.total_seconds()
-            .values
         )

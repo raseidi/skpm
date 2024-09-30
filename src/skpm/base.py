@@ -68,11 +68,10 @@ class BaseProcessEstimator(BaseEstimator):
         assert isinstance(data, DataFrame), "Input must be a dataframe."
         cols = ensure_list(data.columns)
 
-        if not self._ensure_case_id(data.columns):
-            raise ValueError(f"Column `{elc.case_id}` not found.")
+        case_id = self._ensure_case_id(data.columns)
 
         self._validate_data(
-            X=X.drop(columns=elc.case_id, axis=1),
+            X=X.drop(columns=case_id, axis=1),
             y=y,
             reset=reset,
             cast_to_ndarray=cast_to_ndarray,
@@ -81,7 +80,7 @@ class BaseProcessEstimator(BaseEstimator):
         # if cols:
         cols = validate_columns(
             input_columns=data.columns,
-            required=[elc.case_id] + self.features_,
+            required=[case_id] + self.features_,
         )
         # else:
         #     cols = data.columns
@@ -106,6 +105,5 @@ class BaseProcessEstimator(BaseEstimator):
         """
         for col in columns:
             if col.endswith(elc.case_id):
-                elc.case_id = col
-                return True
-        return False
+                return col
+        raise ValueError(f"Case ID column not found.")

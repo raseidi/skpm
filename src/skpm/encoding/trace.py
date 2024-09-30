@@ -78,7 +78,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     >>> df = df.drop(elc.timestamp, axis=1)
     >>> Aggregation().fit_transform(df)
     """
-
+    _case_id = elc.case_id
     _parameter_constraints = {
         "num_method": [
             StrOptions({"sum", "mean", "median"}),
@@ -149,9 +149,10 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
                 Fitted aggregator.
 
         """
-
         cols = list(X.columns)
-        cols.remove(elc.case_id)
+        self._case_id = self._ensure_case_id(columns=cols)
+        if self._case_id in cols:
+            cols.remove(self._case_id)
         self.features_ = cols
         self.n_features_ = len(self.features_)
         X = self._validate_log(X)
@@ -207,7 +208,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
 
     def _transform_pandas(self, X: DataFrame):
         """Transforms Pandas DataFrame."""
-        group = X.groupby(elc.case_id)
+        group = X.groupby(self._case_id)
 
         columns = list(self.feature_aggregations_.keys())
         X[columns] = (
@@ -215,11 +216,11 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
             .agg(self.feature_aggregations_)
             .values
         )
-        return X.drop(elc.case_id, axis=1)
+        return X.drop(self._case_id, axis=1)
 
     def _transform_polars(self, X: PlDataFrame):
         """Transforms Polars DataFrame."""
-        group = X.group_by(elc.case_id, maintain_order=True)
+        group = X.group_by(self._case_id, maintain_order=True)
 
         for col, method in self.feature_aggregations_.items():
             expanding_expr = getattr(pl.col(col), f"rolling_{method}")(
@@ -231,7 +232,8 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
             out_df = out_df.explode(
                 out_df.columns[1:]
             )  # skip case_id; TODO: test when case_id is not the first column
-            out_df = out_df.drop(elc.case_id)
+            out_df = out_df.drop(self._case_id)
 
             X = X.with_columns(out_df[col].alias(col))
-        return X.drop(elc.case_id)
+        return X.drop(self._case_id)
+

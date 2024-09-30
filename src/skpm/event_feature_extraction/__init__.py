@@ -11,6 +11,6 @@ Notes on inter-case features:
 
 from .time import TimestampExtractor
 from .resource import ResourcePoolExtractor
-from .inter import WorkInProgress
+from .inter_case import WorkInProgress
 
 __all__ = ["TimestampExtractor", "ResourcePoolExtractor", "WorkInProgress"]
