@@ -1,7 +1,6 @@
 """
-===============================
 Remaining Time Prediction Pipeline
-===============================
+==================================
 
 This example demonstrates how to build a pipeline for remaining time prediction
 using the BPI 2013 Closed Problems dataset.
@@ -37,6 +36,7 @@ from skpm.event_logs import BPI13ClosedProblems
 
 # %%
 # Download the example dataset 
+# ----------------------------
 # :class:`~skpm.event_logs.BPI13ClosedProblems` and load the event log.
 # We subsequently extract the target variable `remaining_time` using the
 # :func:`~skpm.event_feature_extraction.targets.remaining_time` function.
