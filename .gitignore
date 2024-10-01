@@ -3,6 +3,7 @@
 .mypy_cache/
 data/
 htmlcov/
+notebooks/
 
 .coverage
 notes.md

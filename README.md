@@ -24,6 +24,10 @@ SkPM is an open-source extension of the widely used [Scikit-learn](https://sciki
 - [**Download Public Event Logs**](.): Download well-known event logs (e.g., BPI Challenges) from the 4tu repository!
 - [**Predictive Monitoring**](.): Build end-to-end applications of traditional process mining tasks, such as remaining time and next activity prediction!
 
+<p align="center">
+  <img src="docs/pipeline.png"/>
+</p>
+
 ## Installation
 
 **Soon available on PyPI**.
