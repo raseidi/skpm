@@ -181,14 +181,3 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
         return hasattr(self, "vocab_ngrams_")
 
     # def get_feature_names_out(self, input_features=None):
-
-
-dummy_log = pd.DataFrame(
-    {
-        elc.case_id: [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        elc.activity: [10, 20, 30, 10, 20, 30, 10, 20, 30],
-    }
-)
-
-ng = EncodedNgrams(N=2).fit(dummy_log)
-ng.transform(dummy_log)
