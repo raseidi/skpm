@@ -80,38 +80,24 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     """
     _case_id = elc.case_id
     _parameter_constraints = {
-        "num_method": [
+        "method": [
             StrOptions({"sum", "mean", "median"}),
         ],
-        "cat_method": [
-            StrOptions(
-                {
-                    "sum",
-                    "mean",
-                    "median",
-                }
-            ),
-        ],
+        "engine": [
+            StrOptions({"pandas", "polars"}),
+        ]
     }
 
     def __init__(
         self,
-        num_method: str = "mean",
-        cat_method: str = "sum",
+        method: str = "mean",
         window_size: int = None,
         # n_jobs=1,
         engine: Literal["pandas", "polars"] = "pandas",  # Default to Pandas DataFrame
     ) -> None:
-        self.num_method = num_method
-        self.cat_method = cat_method
+        self.method = method
         self.window_size = window_size
-
-        if engine not in ["pandas", "polars"]:
-            raise ValueError(
-                "Invalid engine. Supported engines are 'pandas' and 'polars'."
-            )
         self.engine = engine
-        # self.n_jobs = n_jobs
 
     @staticmethod
     def validate_engine_with_df(func):
@@ -157,21 +143,6 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         self.n_features_ = len(self.features_)
         X = self._validate_log(X)
 
-        # Infer column types
-        self.cat_, self.num_, _ = infer_column_types(X[self.features_], int_as_cat=True)
-
-        self.feature_aggregations_ = {
-            cat_col: "sum" if self.cat_method == "sum" else "mean"
-            for cat_col in self.cat_
-        }
-        for num_col in self.num_:
-            if self.num_method == "sum":
-                self.feature_aggregations_[num_col] = "sum"
-            elif self.num_method == "mean":
-                self.feature_aggregations_[num_col] = "mean"
-            elif self.num_method == "median":
-                self.feature_aggregations_[num_col] = "median"
-
         if self.window_size is None:
             self.window_size = len(X)
 
@@ -210,13 +181,12 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         """Transforms Pandas DataFrame."""
         group = X.groupby(self._case_id)
 
-        columns = list(self.feature_aggregations_.keys())
-        X[columns] = (
+        # columns = X.columns.drop(self._case_id)
+        X = (
             group.rolling(window=self.window_size, min_periods=1)
-            .agg(self.feature_aggregations_)
-            .values
+            .agg(self.method)
         )
-        return X.drop(self._case_id, axis=1)
+        return X
 
     def _transform_polars(self, X: PlDataFrame):
         """Transforms Polars DataFrame."""

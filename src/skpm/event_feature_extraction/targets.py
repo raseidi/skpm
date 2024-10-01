@@ -1,6 +1,6 @@
 import pandas as pd
 from skpm.config import EventLogConfig as elc
-
+import numpy as np
 
 def next_activity(log: pd.DataFrame):
     """Returns the next activity of each trace.
@@ -22,7 +22,7 @@ def next_activity(log: pd.DataFrame):
     )
 
 
-def remaining_time(log: pd.DataFrame):
+def remaining_time(log: pd.DataFrame, time_unit='seconds'):
     """Returns the remaining time of each trace.
 
     Parameters
@@ -35,11 +35,20 @@ def remaining_time(log: pd.DataFrame):
     pd.DataFrame
         A dataframe with the remaining time of each trace.
     """
-    # TODO: this is implemented in skpm.event_feature_extraction.time.Timestamp. We should use that.
+    if time_unit == 'seconds':
+        scaler = int(1e9)
+    elif time_unit == 'minutes':
+        scaler = int(1e9 * 60)
+    elif time_unit == 'hours':
+        scaler = int(1e9 * 60 * 60)
+    elif time_unit == 'days':
+        scaler = int(1e9 * 60 * 60 * 24)
+    else:
+        raise ValueError(f"Time unit {time_unit} is not supported")
     return (
         log[[elc.case_id, elc.timestamp]]
         .groupby(elc.case_id, observed=True, as_index=False)[elc.timestamp]
-        .apply(lambda x: x.max() - x)
+        .apply(lambda x: (x.max() - x) / np.timedelta64(scaler, 'ns'))
         # .reset_index(level=elc.case_id)
         .values
     )
