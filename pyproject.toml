@@ -24,6 +24,7 @@ black = "^24.1.1"
 codecov = "^2.1.13"
 mypy = "^1.8.0"
 coverage = "^7.4.1"
+sphinx-gallery = "^0.17.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
