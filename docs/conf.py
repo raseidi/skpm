@@ -39,7 +39,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
-html_static_path = ["_static"]
+# html_static_path = ["_static"]
 
 sg_examples_dir = "../examples"
 sg_gallery_dir = "auto_examples"
@@ -56,4 +56,11 @@ sphinx_gallery_conf = {
     # Modules for which function level galleries are created.  In
     # this case sphinx_gallery and numpy in a tuple of strings.
     'doc_module': ('SampleModule'),
+    'filename_pattern': '/*.py',
+}
+
+# configuration for intersphinx: refer to the Python standard library.
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/{.major}'.format(sys.version_info), None),
+    'matplotlib': ('https://matplotlib.org/', None),
 }
