@@ -39,7 +39,7 @@ jobs:
           pytest --version
 
       - name: pytest
-        run: poetry run pytest --cov=skpm tests/event_feature_extraction
+        run: poetry run pytest --cov=skpm tests
 
       - name: Statistics
         if: success()
