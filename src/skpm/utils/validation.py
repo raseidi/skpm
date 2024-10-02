@@ -3,13 +3,13 @@ from typing import Iterable, Union, Any
 
 
 def validate_methods_from_class(
-    methods: Union[str, list[str]], class_obj: Any
+    class_obj: Any, methods: Union[str, list[str]] = "all"
 ) -> list[tuple[str, callable]]:
     """Validate methods from a class.
 
     Args:
-        methods (Union[str, list[str]]): methods to be extracted from a class.
         class_obj (Any): a class object cotaining class methods.
+        methods (Union[str, list[str]]), {"all", str, list[str]}: a list of methods to validate.
 
     Returns:
         list[tuple[str, callable]]: a list of tuples
