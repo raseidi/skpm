@@ -169,41 +169,29 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         if self.engine == "pandas":  # If using Pandas DataFrame
             return self._transform_pandas(X)
 
-        elif self.engine == "polars":  # If using Polars DataFrame
+        else: #
             return self._transform_polars(X)
 
-        else:
-            raise ValueError(
-                "Invalid engine. Supported engines are 'pandas' and 'polars'."
-            )
 
     def _transform_pandas(self, X: DataFrame):
         """Transforms Pandas DataFrame."""
         group = X.groupby(self._case_id)
 
-        # columns = X.columns.drop(self._case_id)
         X = (
             group.rolling(window=self.window_size, min_periods=1)
             .agg(self.method)
+            .reset_index(drop=True)
         )
         return X
 
     def _transform_polars(self, X: PlDataFrame):
         """Transforms Polars DataFrame."""
-        group = X.group_by(self._case_id, maintain_order=True)
-
-        for col, method in self.feature_aggregations_.items():
-            expanding_expr = getattr(pl.col(col), f"rolling_{method}")(
-                window_size=self.window_size, min_periods=1
-            )
-            expanding_expr = expanding_expr.alias(col)
-
-            out_df = group.agg(expanding_expr)
-            out_df = out_df.explode(
-                out_df.columns[1:]
-            )  # skip case_id; TODO: test when case_id is not the first column
-            out_df = out_df.drop(self._case_id)
-
-            X = X.with_columns(out_df[col].alias(col))
+        X = X.with_columns([
+            getattr(pl.col(col), f"rolling_{self.method}")(
+                window_size=self.window_size,
+                min_periods=1
+            ).over(self._case_id)
+            for col in X.columns if col != self._case_id
+        ])
         return X.drop(self._case_id)
 
