@@ -18,19 +18,18 @@ def test_wip():
     # Test fit_transform with default window_size
     wip = WorkInProgress()
     wip_values = wip.fit_transform(dummy_log)
-    assert isinstance(wip_values, np.ndarray)
-    assert wip_values.shape == (len(dummy_log),)
+    assert isinstance(wip_values, pd.DataFrame)
+    assert wip_values.shape == (len(dummy_log), 1)
 
     # Test fit_transform with different window_size
     wip = WorkInProgress(window_size="2D")
     wip_values = wip.fit_transform(dummy_log)
-    assert isinstance(wip_values, np.ndarray)
-    assert wip_values.shape == (len(dummy_log),)
+    assert isinstance(wip_values, pd.DataFrame)
+    assert wip_values.shape == (len(dummy_log), 1)
 
     # Test set_output with transform="pandas"
     wip_df = (
         WorkInProgress()
-        .set_output(transform="pandas")
         .fit(dummy_log)
         .transform(dummy_log)
     )

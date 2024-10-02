@@ -53,62 +53,15 @@ from skpm.event_logs import BPI13ClosedProblems, BPI19
 # Unbiased split parameters not supported.
 # ========================================
 
+from tempfile import TemporaryDirectory
 
-@pytest.mark.timeout(300)
 def test_bpi():
-    # TODO: deactivate warnings from pm4py
-    # TODO: the download is fast but the reading (pm4py) is slow
+    with TemporaryDirectory() as tmpdirname:
+        bpi = BPI13ClosedProblems(root_folder=tmpdirname)
 
-    # testing BPI13ClosedProblems (smallest log, faster to test)
-    default_path = "data/BPI13ClosedProblems/BPI_Challenge_2013_closed_problems.parquet"
-    if os.path.exists(default_path):
-        os.remove(default_path)
-    bpi = BPI13ClosedProblems()
+        assert isinstance(bpi.log, pd.DataFrame)
+        assert isinstance(bpi.__repr__(), str)
+        assert isinstance(len(bpi.log), int)
 
-    assert isinstance(bpi.log, pd.DataFrame)
-    assert isinstance(bpi.__repr__(), str)
-    assert isinstance(len(bpi.log), int)
-
-    # covering pytest when the file already exists
-    bpi = BPI13ClosedProblems(bpi.file_path)
-
-    # bpi19 covers a diff case of tests
-    bpi19 = BPI19()
-    assert isinstance(bpi19.log, pd.DataFrame)
-
-    # removing downloaded files
-    import shutil
-
-    shutil.rmtree("data/BPI13ClosedProblems")
-    if os.path.dirname(bpi19.file_path) != os.getcwd():
-        shutil.rmtree(os.path.dirname(bpi19.file_path))
-
-# from skpm.event_logs import *
-# from skpm.event_logs import split
-
-# datasets = [
-#     BPI12,
-#     BPI13ClosedProblems,
-#     BPI13Incidents,
-#     BPI13OpenProblems,
-#     BPI17,
-#     BPI19,
-#     BPI20PrepaidTravelCosts,
-#     BPI20TravelPermitData,
-#     BPI20RequestForPayment,
-#     BPI20DomesticDeclarations,
-#     BPI20InternationalDeclarations,
-#     Sepsis,
-# ]
-
-# for d in datasets:
-#     print(d.__name__)
-#     log = d()
-#     print(log.log.shape)
-#     try:
-#         train, test = split.unbiased(log.log, **log.unbiased_split_params)
-#         print(train.shape, test.shape)
-#     except Exception as e:
-#         print(e)
-        
-#     print("=="*20)
+        # covering pytest when the file already exists
+        bpi = BPI13ClosedProblems(bpi.file_path)
