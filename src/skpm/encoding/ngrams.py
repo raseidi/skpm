@@ -173,7 +173,7 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
 
         # args to control this behavior
         ngrams = ngrams.explode().reset_index()
-        ngrams[elc.activity] = ngrams[elc.activity].map(self.vocab_ngrams_)
+        ngrams = ngrams[elc.activity].map(self.vocab_ngrams_)
 
         return ngrams
 
