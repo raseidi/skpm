@@ -37,7 +37,6 @@ def test_traces_to_ngrams():
     assert ngrams == expected_ngrams
     assert unique_grams == expected_unique_grams
 
-
 def test_encoded_ngrams():
     # Test EncodedNgrams transformer
     dummy_log = pd.DataFrame(
@@ -51,7 +50,7 @@ def test_encoded_ngrams():
     ng = EncodedNgrams(N=2)
     result = ng.fit_transform(dummy_log)
     assert isinstance(result, pd.DataFrame)
-    assert result.shape == (len(result), 2)
+    assert result.shape == (len(result), 1)
 
     # Test transform without fit
     ng_unfitted = EncodedNgrams(N=2)

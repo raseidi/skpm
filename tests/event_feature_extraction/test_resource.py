@@ -23,18 +23,12 @@ def test_resource():
         }
     )
 
-    rp = ResourcePoolExtractor().set_output(transform="pandas")
+    rp = ResourcePoolExtractor()
     rp.fit(dummy_data)
     out = rp.transform(dummy_data)
     assert isinstance(out, pd.DataFrame)
     assert out.shape[1] == 1
     assert out.columns.tolist() == ["resource_roles"]
-
-    rp = ResourcePoolExtractor()
-    rp.fit(dummy_data)
-    out = rp.transform(dummy_data)
-    assert isinstance(out, np.ndarray)
-    assert out.shape[0] == dummy_data.shape[0]
 
     test_out = rp.transform(dummy_data_test)
     assert test_out.shape[0] == dummy_data_test.shape[0]

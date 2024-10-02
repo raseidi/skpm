@@ -89,8 +89,8 @@ class TimestampExtractor(
         """
         _ = self._validate_data(X)
         
-        self.event_level_features = validate_methods_from_class(self.features, TimestampEventLevel)
-        self.case_level_features = validate_methods_from_class(self.features, TimestampCaseLevel)
+        self.event_level_features = validate_methods_from_class(class_obj=TimestampEventLevel, methods=self.features)
+        self.case_level_features = validate_methods_from_class(methods=self.features, class_obj=TimestampCaseLevel)
         
         self._n_features_out = len(self.event_level_features) + len(self.case_level_features)
         return self
