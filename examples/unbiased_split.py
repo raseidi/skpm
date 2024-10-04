@@ -71,7 +71,6 @@ except Exception as e:
 # %%
 # The availalbe datasets are:
 #
-
 # - :class:`~src.skpm.event_logs.BPI12`
 # - :class:`~skpm.event_logs.BPI12`
 # - :class:`~src.skpm.event_logs.bpi.BPI12`
