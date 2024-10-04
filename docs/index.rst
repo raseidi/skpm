@@ -27,4 +27,5 @@ This work is still in progress! So far, we have focused more on feature extracti
    :maxdepth: 1
    :caption: API Reference
 
-   api/index
+   skpm
+   src/skpm

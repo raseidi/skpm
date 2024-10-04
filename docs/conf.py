@@ -62,7 +62,7 @@ sphinx_gallery_conf = {
     "backreferences_dir": "gen_modules/backreferences",
     # Modules for which function level galleries are created.  In
     # this case sphinx_gallery and numpy in a tuple of strings.
-    "doc_module": ("SampleModule"),
+    "doc_module": ("skpm", "src/skpm"),
     "filename_pattern": "/*.py",
 }
 
