@@ -23,9 +23,8 @@ This work is still in progress! So far, we have focused more on feature extracti
 
    auto_examples/index
 
-Indices and tables
-==================
+.. toctree::
+   :maxdepth: 1
+   :caption: API Reference
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   api/index

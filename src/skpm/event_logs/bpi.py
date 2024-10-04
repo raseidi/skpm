@@ -12,6 +12,9 @@ class BPI12(TUEventLog):
     resource involved.
 
     DOI: :doi:`BPI12 <10.4121/uuid:3926db30-f712-4394-aebc-75976070e91f>`.
+    DOI: `:doi:BPI12 <10.4121/uuid:3926db30-f712-4394-aebc-75976070e91f>`.
+    DOI: `doi:10.1162/153244303321897735
+    <10.1162/153244303321897735>`_.
 
     Parameters
     ----------
