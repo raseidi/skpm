@@ -33,7 +33,7 @@ def test_aggregation(pd_df):
     assert out.shape[0] == pd_df.shape[0]
 
     # Test aggregation with invalid input data
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(Exception):
         rp.transform(pd_df[[elc.activity, elc.resource]])
 
 
@@ -53,7 +53,7 @@ def test_aggregation_with_window(pd_df):
     assert out.shape[0] == pd_df.shape[0]
 
     # Test window aggregation with invalid window size
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(Exception):
         rp = Aggregation(window_size=0)
         rp.fit(pd_df)
         out = rp.transform(pd_df)
@@ -80,8 +80,6 @@ def test_aggregation_output(pd_df):
     pl_agg = pl_agg.fit_transform(pl_df)
 
     pd_agg = pd_agg.astype(pl_agg.dtypes)
-    print(pl_agg)
-    print(pd_agg)
     assert isinstance(pl_agg, pd.DataFrame)
     assert pd_agg.equals(pl_agg)
 

@@ -1,10 +1,9 @@
 import os
-import pytest
 from skpm.event_logs.extract import extract_gz
 from skpm.event_logs.download import download_url
 
 
-def _download(test_folder: str = None):
+def _download(test_folder: str):
     url = "https://data.4tu.nl/file/1987a2a6-9f5b-4b14-8d26-ab7056b17929/8b99119d-9525-452e-bc8f-236ac76fa9c9"
     file_name = "BPI_Challenge_2013_closed_problems.xes.gz"
     output_fold_download = download_url(
@@ -43,6 +42,3 @@ def test_download_extract():
     _download(test_folder="test_download_skpm")
     _download(test_folder=None)
     _download(test_folder=".")
-
-
-_download()

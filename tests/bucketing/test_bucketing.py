@@ -38,12 +38,12 @@ def test_prefix(dummy_log):
 
 
 def test_clustering_not_implemented(dummy_log):
-    with pytest.raises(NotImplementedError) as exc_info:
+    with pytest.raises(NotImplementedError):
         Bucketing(method="clustering").fit(dummy_log).transform(dummy_log)
 
 
 def test_invalid_method(dummy_log):
-    with pytest.raises(AssertionError) as exc_info:
+    with pytest.raises(AssertionError):
         Bucketing(method="invalid_method").fit(dummy_log)
 
 

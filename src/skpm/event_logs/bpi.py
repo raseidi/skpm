@@ -29,7 +29,7 @@ class BPI12(TUEventLog):
     --------
     >>> bpi_12 = BPI12()
     >>> bpi_12.download()  # Manually download the event log
-    >>> event_log = bpi_12.log  # Access the event log DataFrame
+    >>> event_log = bpi_12.dataframe()  # Access the event log DataFrame
     """
 
     url: str = (
@@ -71,7 +71,7 @@ class BPI13ClosedProblems(TUEventLog):
     --------
     >>> bpi_13_incidents = BPI13Incidents()
     >>> bpi_13_incidents.download()  # Manually download the event log
-    >>> event_log = bpi_13_incidents.log  # Access the event log DataFrame
+    >>> event_log = bpi_13_incidents.dataframe()  # Access the event log DataFrame
     """
 
     url: str = (
@@ -105,7 +105,7 @@ class BPI13Incidents(TUEventLog):
     --------
     >>> bpi_13_open_problems = BPI13OpenProblems()
     >>> bpi_13_open_problems.download()  # Manually download the event log
-    >>> event_log = bpi_13_open_problems.log  # Access the event log DataFrame
+    >>> event_log = bpi_13_open_problems.dataframe()  # Access the event log DataFrame
     """
 
     url: str = (
@@ -140,7 +140,7 @@ class BPI13OpenProblems(TUEventLog):
     --------
     >>> bpi_13_open_problems = BPI13OpenProblems()
     >>> bpi_13_open_problems.download()  # Manually download the event log
-    >>> event_log = bpi_13_open_problems.log  # Access the event log DataFrame
+    >>> event_log = bpi_13_open_problems.dataframe()  # Access the event log DataFrame
     """
 
     url: str = (
@@ -181,7 +181,7 @@ class BPI17(TUEventLog):
     --------
     >>> bpi_17 = BPI17()
     >>> bpi_17.download()  # Manually download the event log
-    >>> event_log = bpi_17.log  # Access the event log DataFrame
+    >>> event_log = bpi_17.dataframe()  # Access the event log DataFrame
     """
 
     url: str = (
@@ -226,7 +226,7 @@ class BPI19(TUEventLog):
     --------
     >>> bpi_19 = BPI19()
     >>> bpi_19.download()  # Manually download the event log
-    >>> event_log = bpi_19.log  # Access the event log DataFrame
+    >>> event_log = bpi_19.dataframe()  # Access the event log DataFrame
     """
 
     url: str = (
@@ -273,7 +273,7 @@ class BPI20PrepaidTravelCosts(TUEventLog):
     --------
     >>> bpi_20 = BPI20PrepaidTravelCosts()
     >>> bpi_20.download()  # Manually download the event log
-    >>> event_log = bpi_20.log  # Access the event log DataFrame
+    >>> event_log = bpi_20.dataframe()  # Access the event log DataFrame
     """
 
     url: str = (
@@ -321,7 +321,7 @@ class BPI20TravelPermitData(TUEventLog):
     --------
     >>> bpi_20 = BPI20TravelPermitData()
     >>> bpi_20.download()  # Manually download the event log
-    >>> event_log = bpi_20.log  # Access the event log DataFrame
+    >>> event_log = bpi_20.dataframe()  # Access the event log DataFrame
     """
 
     url: str = (
@@ -367,7 +367,7 @@ class BPI20RequestForPayment(TUEventLog):
     --------
     >>> bpi_20 = BPI20RequestForPayment()
     >>> bpi_20.download()  # Manually download the event log
-    >>> event_log = bpi_20.log  # Access the event log DataFrame
+    >>> event_log = bpi_20.dataframe()  # Access the event log DataFrame
     """
 
     url: str = (
@@ -413,7 +413,7 @@ class BPI20DomesticDeclarations(TUEventLog):
     --------
     >>> bpi_20 = BPI20DomesticDeclarations()
     >>> bpi_20.download()  # Manually download the event log
-    >>> event_log = bpi_20.log  # Access the event log DataFrame
+    >>> event_log = bpi_20.dataframe()  # Access the event log DataFrame
     """
 
     url: str = (
@@ -454,7 +454,7 @@ class BPI20InternationalDeclarations(TUEventLog):
     --------
     >>> bpi_20 = BPI20InternationalDeclarations()
     >>> bpi_20.download()  # Manually download the event log
-    >>> event_log = bpi_20.log  # Access the event log DataFrame
+    >>> event_log = bpi_20.dataframe()  # Access the event log DataFrame
 
     """
 
@@ -495,7 +495,7 @@ class Sepsis(TUEventLog):
     --------
     >>> sepsis = Sepsis()
     >>> sepsis.download()  # Manually download the event log
-    >>> event_log = sepsis.log  # Access the event log DataFrame
+    >>> event_log = sepsis.dataframe()  # Access the event log DataFrame
 
     """
 

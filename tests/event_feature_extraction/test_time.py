@@ -36,5 +36,5 @@ def test_time():
         }
     )
     t = TimestampExtractor()
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(Exception):
         t.fit(dummy_data[[elc.case_id, elc.timestamp]])

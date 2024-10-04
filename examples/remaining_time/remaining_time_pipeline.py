@@ -19,6 +19,7 @@ using `sklearn.compose.TransformedTargetRegressor`.
 # Required imports
 # ------------------
 # We start by importing the required modules and classes.
+from sklearn.compose import TransformedTargetRegressor
 import numpy as np
 import pandas as pd
 
@@ -42,8 +43,12 @@ from skpm.event_logs import BPI13ClosedProblems
 # :class:`~skpm.event_logs.BPI13ClosedProblems` and load the event log.
 # We subsequently extract the target variable `remaining_time` using the
 # :func:`~skpm.event_feature_extraction.targets.remaining_time` function.
-log = BPI13ClosedProblems().log
+log = BPI13ClosedProblems()
+log  # Note: this is a TUEventLog object, not a dataframe
 
+# %%
+# Let's quickly preprocess the event log:
+log = log.dataframe
 log = log[[elc.case_id, elc.activity, elc.resource, elc.timestamp]]
 log.loc[:, elc.timestamp] = pd.to_datetime(log[elc.timestamp], utc=True)
 
@@ -53,6 +58,8 @@ log["remaining_time"] = remaining_time(log, time_unit="seconds")
 # ToDo: add the train test split here
 X_train = log.drop(columns=["remaining_time"])
 y_train = log["remaining_time"]
+
+log.head()
 
 # %%
 # Build the pipeline
@@ -109,7 +116,6 @@ print(pipe.fit(X_train, y_train).score(X_train, y_train))
 # we set the `inverse_func` parameter to `np.expm1`.
 #
 # Such trick allows us to enhance the predictive performance of the model.
-from sklearn.compose import TransformedTargetRegressor
 
 y_trans = FunctionTransformer(np.log1p, inverse_func=np.expm1)
 regr = TransformedTargetRegressor(regressor=pipe, transformer=y_trans)

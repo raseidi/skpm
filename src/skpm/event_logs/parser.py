@@ -4,8 +4,6 @@ from joblib import Parallel, delayed
 from typing import Generator
 import pandas as pd
 
-DataFrame = pd.DataFrame
-
 
 class Event(dict):
     pass
@@ -41,7 +39,7 @@ class TagXES:
         return cls._DTYPES
 
 
-tag: TagXES = TagXES
+tag = TagXES
 
 
 def extract_case_attributes(trace: etree._Element, ns: dict) -> Event:
@@ -89,7 +87,7 @@ def extract_event_attributes(event: etree._Element) -> Event:
     return event_attrs
 
 
-def parse_trace(trace: list[etree._Element], ns: dict) -> list[Event]:
+def parse_trace(trace: etree._Element, ns: dict) -> list[Event]:
     """Parses a list of XML elements representing a trace.
 
     Args:
@@ -99,7 +97,7 @@ def parse_trace(trace: list[etree._Element], ns: dict) -> list[Event]:
         list[Event]: The respective events from the trace.
     """
 
-    if type(trace) == bytes:
+    if isinstance(trace, bytes):
         trace = etree.fromstring(trace)
 
     case_attrs = extract_case_attributes(trace, ns)
@@ -130,8 +128,8 @@ def lazy_serialize(
 
 
 def read_xes(
-    filepath: str, n_jobs: int = None, as_df=True
-) -> DataFrame | list[Event]:
+    filepath: str, n_jobs: int = None
+) -> pd.DataFrame:
     """Reads an event log from a XES file.
 
     Rough overview:
@@ -173,7 +171,6 @@ def read_xes(
         )
         log = list(chain(*log))
 
-    if as_df:
-        log = pd.DataFrame(log)
+    log = pd.DataFrame(log)
 
     return log
