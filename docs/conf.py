@@ -28,6 +28,7 @@ release = "0.0.1"
 
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
     "sphinx_gallery.gen_gallery",
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
@@ -45,7 +46,8 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
-html_static_path = ["_static"]
+# html_static_path = ["_static"]
+
 
 sg_examples_dir = "../examples"
 sg_gallery_dir = "auto_examples"
@@ -60,7 +62,7 @@ sphinx_gallery_conf = {
     "backreferences_dir": "gen_modules/backreferences",
     # Modules for which function level galleries are created.  In
     # this case sphinx_gallery and numpy in a tuple of strings.
-    "doc_module": ("SampleModule"),
+    "doc_module": ("skpm", "src/skpm"),
     "filename_pattern": "/*.py",
 }
 
@@ -81,3 +83,12 @@ linkcode_resolve = make_linkcode_resolve(
         "{package}/{path}#L{lineno}"
     ),
 )
+autosummary_generate = True
+root_doc = "index"
+
+exclude_patterns = [
+    "_build",
+    "templates",
+    "includes",
+    "**/sg_execution_times.rst",
+]
