@@ -11,7 +11,8 @@ from .extract import extract_gz
 class BasePreprocessing:
     def preprocess(self):
         """
-        Preprocess the event log by converting the timestamp column to datetime format.
+        Preprocess the event log by converting the timestamp column to
+        datetime format.
         """
         self.log[elc.timestamp] = pd.to_datetime(
             self.log[elc.timestamp], utc=True, format="mixed"
@@ -22,22 +23,30 @@ class TUEventLog(BasePreprocessing):
     """
     Base class for event logs from the 4TU repository.
 
-    It provides the basic structure for downloading, preprocessing, and splitting
+    It provides the basic structure for downloading, preprocessing, and
+    splitting
     Furthermore, it provides the basic structure for caching the logs.
 
-    Event logs from the 4tu repository are downloaded as .xes.gz files
+    Event logs from the 4tu repository [1] are downloaded as .xes.gz files
     and then converted to parquet files. The parquet files are then used to
     load the event logs.
     By default, we keep the .xes files in the raw folder
 
     Args:
+    -----
         root_path (str, optional): Path where the event log will be stored.
             Defaults to "./data".
         config (Union[str, dict], optional): Configuration of the event log.
-            Defaults to "default" (it just renames a few columns in the current version).
-        transforms (Any, optional): Transformations to be applied to the event log.
+            Defaults to "default" (it just renames a few columns in the
+            current version).
+        transforms (Any, optional): Transformations to be applied to the event
+        log.
             Defaults to None. To be implemented.
         kwargs: Additional arguments to be passed to the base class.
+
+    References:
+    -----------
+    [1] 4TU Research Data: https://data.4tu.nl/
     """
 
     url: str = None
@@ -64,11 +73,13 @@ class TUEventLog(BasePreprocessing):
         root_folder : str, optional
             Path where the event log will be stored. Defaults to "./data".
         save_as_pandas : bool, optional
-            Whether to save the event log as a Pandas DataFrame. Defaults to True.
+            Whether to save the event log as a Pandas DataFrame. Defaults to
+            True.
         train_set : bool, optional
             Whether the event log is for the training set. Defaults to True.
         file_path : str, optional
-            Path to the event log file. If None, the file will be downloaded. Defaults to None.
+            Path to the event log file. If None, the file will be downloaded.
+            Defaults to None.
         """
         super().__init__()
         self.root_folder = root_folder
@@ -159,18 +170,19 @@ class TUEventLog(BasePreprocessing):
             log = read_xes(self.file_path, as_df=True)
 
             if self.save_as_pandas:
-                new_file_path = self.file_path.replace(".xes", elc.default_file_format)
+                new_file_path = self.file_path.replace(
+                    ".xes", elc.default_file_format)
                 if elc.default_file_format == ".parquet":
                     log.to_parquet(new_file_path)
                 else:
-                    raise ValueError(f"File format not implemented.")
+                    raise ValueError("File format not implemented.")
                 os.remove(self.file_path)
                 self.file_path = new_file_path
 
         elif self.file_path.endswith(elc.default_file_format):
             log = pd.read_parquet(self.file_path)
         else:
-            raise ValueError(f"File format not implemented.")
+            raise ValueError("File format not implemented.")
 
         return log
 
@@ -186,7 +198,8 @@ class TUEventLog(BasePreprocessing):
         head = "Event Log " + self.__class__.__name__
         body = [f"Number of events: {self.__len__()}"]
         if self.file_path is not None:
-            body.append(f"Event log location: {os.path.normpath(self.file_path)}")
+            body.append(
+                f"Event log location: {os.path.normpath(self.file_path)}")
         body += "".splitlines()
         lines = [head] + [" " * 4 + line for line in body]
         return "\n".join(lines)
