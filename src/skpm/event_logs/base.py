@@ -171,7 +171,8 @@ class TUEventLog(BasePreprocessing):
 
             if self.save_as_pandas:
                 new_file_path = self.file_path.replace(
-                    ".xes", elc.default_file_format)
+                    ".xes", elc.default_file_format
+                )
                 if elc.default_file_format == ".parquet":
                     log.to_parquet(new_file_path)
                 else:
@@ -199,7 +200,8 @@ class TUEventLog(BasePreprocessing):
         body = [f"Number of events: {self.__len__()}"]
         if self.file_path is not None:
             body.append(
-                f"Event log location: {os.path.normpath(self.file_path)}")
+                f"Event log location: {os.path.normpath(self.file_path)}"
+            )
         body += "".splitlines()
         lines = [head] + [" " * 4 + line for line in body]
         return "\n".join(lines)

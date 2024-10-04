@@ -1,5 +1,6 @@
 from skpm.event_logs.base import TUEventLog
 
+
 class BPI12(TUEventLog):
     """BPI Challenge 2012 event log.
 
@@ -43,6 +44,7 @@ class BPI12(TUEventLog):
         "max_days": 32.28,
     }
 
+
 class BPI13ClosedProblems(TUEventLog):
     """BPI Challenge 2013 Closed problems.
 
@@ -78,6 +80,7 @@ class BPI13ClosedProblems(TUEventLog):
     md5: str = "4f9c35942f42cb90d911ee4936bbad87"
     file_name: str = "BPI_Challenge_2013_closed_problems.xes.gz"
 
+
 class BPI13Incidents(TUEventLog):
     """BPI Challenge 2013 Incidents.
 
@@ -110,6 +113,7 @@ class BPI13Incidents(TUEventLog):
     )
     md5: str = "d4809bd55e3e1c15b017ab4e58228297"
     file_name: str = "BPI_Challenge_2013_incidents.xes.gz"
+
 
 class BPI13OpenProblems(TUEventLog):
     """BPI Challenge 2013 open problems.
@@ -144,6 +148,7 @@ class BPI13OpenProblems(TUEventLog):
     )
     md5: str = "9663e544a2292edf1fe369747736e7b4"
     file_name: str = "BPI_Challenge_2013_open_problems.xes.gz"
+
 
 class BPI17(TUEventLog):
     """BPI Challenge 2017.
@@ -184,12 +189,13 @@ class BPI17(TUEventLog):
     )
     md5: str = "10b37a2f78e870d78406198403ff13d2"
     file_name: str = "BPI Challenge 2017.xes.gz"
-    
+
     _unbiased_split_params: dict = {
         "start_date": None,
         "end_date": "2017-01",
         "max_days": 47.81,
     }
+
 
 class BPI19(TUEventLog):
     """BPI Challenge 2019.
@@ -235,9 +241,10 @@ class BPI19(TUEventLog):
         "max_days": 143.33,
     }
 
+
 class BPI20PrepaidTravelCosts(TUEventLog):
     """BPI2020 Prepaid Travel Costs.
-    
+
     The BPI 2020 Prepaid Travel Costs event log records two years of travel
     expense claims for a university. In 2017, the data covers two departments,
     while in 2018, it extends to the entire university. The dataset includes
@@ -250,7 +257,7 @@ class BPI20PrepaidTravelCosts(TUEventLog):
     either upon payment of costs or within two months after the trip.
 
     DOI: https://doi.org/10.4121/uuid:5d2fe5e1-f91f-4a3b-ad9b-9e4126870165
-    
+
     Parameters
     ----------
     root_folder : str, optional
@@ -261,13 +268,14 @@ class BPI20PrepaidTravelCosts(TUEventLog):
     train_set : bool, optional
         Whether to use the train set or the test set. If True, use the train
         set. If False, use the test set. Defaults to True.
-        
+
     Examples
     --------
     >>> bpi_20 = BPI20PrepaidTravelCosts()
     >>> bpi_20.download()  # Manually download the event log
     >>> event_log = bpi_20.log  # Access the event log DataFrame
     """
+
     url: str = (
         "https://data.4tu.nl/file/fb84cf2d-166f-4de2-87be-62ee317077e5/612068f6-14d0-4a82-b118-1b51db52e73a"
     )
@@ -280,9 +288,10 @@ class BPI20PrepaidTravelCosts(TUEventLog):
         "max_days": 114.26,
     }
 
+
 class BPI20TravelPermitData(TUEventLog):
     """BPI2020 Travel Permit Data.
-    
+
     The BPI 2020 Travel Permit event log contains 7,065 cases and 86,581
     events, covering two years of travel expense claims at a university. In
     2017, data was gathered from two departments, expanding to the entire
@@ -296,7 +305,7 @@ class BPI20TravelPermitData(TUEventLog):
     upon payment or within two months after the trip.
 
     DOI: https://doi.org/10.4121/uuid:ea03d361-a7cd-4f5e-83d8-5fbdf0362550
-    
+
     Parameters
     ----------
     root_folder : str, optional
@@ -307,13 +316,14 @@ class BPI20TravelPermitData(TUEventLog):
     train_set : bool, optional
         Whether to use the train set or the test set. If True, use the train
         set. If False, use the test set. Defaults to True.
-        
+
     Examples
     --------
     >>> bpi_20 = BPI20TravelPermitData()
     >>> bpi_20.download()  # Manually download the event log
     >>> event_log = bpi_20.log  # Access the event log DataFrame
     """
+
     url: str = (
         "https://data.4tu.nl/file/db35afac-2133-40f3-a565-2dc77a9329a3/12b48cc1-18a8-4089-ae01-7078fc5e8f90"
     )
@@ -326,9 +336,10 @@ class BPI20TravelPermitData(TUEventLog):
         "max_days": 258.81,
     }
 
+
 class BPI20RequestForPayment(TUEventLog):
     """BPI2020 Request For Payment.
-    
+
     The BPI 2020 Request for Payment event log contains 6,886 cases and 36,796
     events, primarily focusing on requests for payment that are not related to
     travel. However, some events may mistakenly be linked to travel, which is
@@ -338,9 +349,9 @@ class BPI20RequestForPayment(TUEventLog):
     declarations: submission by an employee, approval by the travel
     administration, and further approvals by the budget owner and supervisor
     if necessary.
-    
+
     DOI: https://doi.org/10.4121/uuid:895b26fb-6f25-46eb-9e48-0dca26fcd030
-    
+
     Parameters
     ----------
     root_folder : str, optional
@@ -351,27 +362,29 @@ class BPI20RequestForPayment(TUEventLog):
     train_set : bool, optional
         Whether to use the train set or the test set. If True, use the train
         set. If False, use the test set. Defaults to True.
-        
+
     Examples
     --------
     >>> bpi_20 = BPI20RequestForPayment()
     >>> bpi_20.download()  # Manually download the event log
     >>> event_log = bpi_20.log  # Access the event log DataFrame
     """
+
     url: str = (
         "https://data.4tu.nl/file/a6f651a7-5ce0-4bc6-8be1-a7747effa1cc/7b1f2e56-e4a8-43ee-9a09-6e64f45a1a98"
     )
-    md5 : str = "2eb4dd20e70b8de4e32cc3c239bde7f2"
+    md5: str = "2eb4dd20e70b8de4e32cc3c239bde7f2"
     file_name: str = "RequestForPayment.xes.gz"
-    
+
     _unbiased_split_params: dict = {
-        "start_date": None ,
+        "start_date": None,
         "end_date": "2018-12",
         "max_days": 28.86,
     }
 
+
 class BPI20DomesticDeclarations(TUEventLog):
-    """ BPI2020 Domestic Declarations.
+    """BPI2020 Domestic Declarations.
 
     The BPI 2020 Domestic Declarations event log contains 10,500 cases and
     56,437 events. The dataset focuses on domestic travel expense claims over
@@ -409,9 +422,10 @@ class BPI20DomesticDeclarations(TUEventLog):
     md5: str = "6a78c39491498363ce4788e0e8ca75ef"
     file_name: str = "DomesticDeclarations.xes.gz"
 
+
 class BPI20InternationalDeclarations(TUEventLog):
     """BPI2020 International Declarations.
-    
+
     The BPI 2020 International Declarations event log contains 6,449 cases and
     72,151 events, covering two years of travel expense claims at a university.
     In 2017, the data was collected from two departments, expanding to the
@@ -422,9 +436,9 @@ class BPI20InternationalDeclarations(TUEventLog):
     expenses (e.g., flights or conference fees), a reimbursement claim is
     filed, which can be submitted either upon payment or within two months
     after the trip.
-    
+
     DOI: https://doi.org/10.4121/uuid:2bbf8f6a-fc50-48eb-aa9e-c4ea5ef7e8c5
-    
+
     Parameters
     ----------
     root_folder : str, optional
@@ -443,15 +457,17 @@ class BPI20InternationalDeclarations(TUEventLog):
     >>> event_log = bpi_20.log  # Access the event log DataFrame
 
     """
+
     url: str = (
         "https://data.4tu.nl/file/91fd1fa8-4df4-4b1a-9a3f-0116c412378f/d45ee7dc-952c-4885-b950-4579a91ef426"
     )
     md5: str = "1ec65e046f70bb399cc6d2c154cd615a"
     file_name: str = "InternationalDeclarations.xes.gz"
 
+
 class Sepsis(TUEventLog):
     """Sepsis.
-    
+
     The Sepsis event log contains real-life hospital data regarding sepsis
     cases, a life-threatening condition often caused by infection. Each case
     in the log represents a patient's pathway through the hospital. The
@@ -461,9 +477,9 @@ class Sepsis(TUEventLog):
     and information from checklists. All events and attribute values have been
     anonymized. While the timestamps of events have been randomized, the
     intervals between events within a trace remain unchanged.
-    
+
     DOI:: https://doi.org/10.4121/uuid:915d2bfb-7e84-49ad-a286-dc35f063a460
-    
+
     Parameters
     ----------
     root_folder : str, optional
@@ -482,9 +498,10 @@ class Sepsis(TUEventLog):
     >>> event_log = sepsis.log  # Access the event log DataFrame
 
     """
+
     url: str = (
         "https://data.4tu.nl/file/33632f3c-5c48-40cf-8d8f-2db57f5a6ce7/643dccf2-985a-459e-835c-a82bce1c0339"
     )
-    
+
     md5: str = "b5671166ac71eb20680d3c74616c43d2"
     file_name: str = "Sepsis Cases - Event Log.xes.gz"
