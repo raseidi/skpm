@@ -1,5 +1,6 @@
 import pandas as pd
 from skpm.config import EventLogConfig as elc
+from skpm.event_logs.base import TUEventLog
 
 
 def _bounded_dataset(
@@ -51,7 +52,7 @@ def _unbiased(dataset: pd.DataFrame, max_days: int) -> pd.DataFrame:
 
 
 def unbiased(
-    dataset: pd.DataFrame,
+    dataset: pd.DataFrame | TUEventLog,
     start_date: str | pd.Period | None,
     end_date: str | pd.Period | None,
     max_days: int,
@@ -98,6 +99,11 @@ def unbiased(
     [1] Hans Weytjens, Jochen De Weerdt. Creating Unbiased Public Benchmark Datasets with Data Leakage Prevention for Predictive Process Monitoring, 2021. doi: 10.1007/978-3-030-94343-1_2
     [2] https://github.com/hansweytjens/predictive-process-monitoring-benchmarks
     """
+    if isinstance(dataset, TUEventLog):
+        dataset = dataset.dataframe
+        
+    dataset = dataset.copy()
+    
     dataset[elc.timestamp] = pd.to_datetime(
         dataset[elc.timestamp], utc=True
     ).dt.tz_localize(None)
