@@ -1,6 +1,6 @@
 import os
 import typing as t
-from urllib import error, request
+from urllib import request
 
 
 def download_url(
