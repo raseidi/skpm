@@ -7,7 +7,9 @@ from skpm.event_logs.download import download_url
 def _download(test_folder: str = None):
     url = "https://data.4tu.nl/file/1987a2a6-9f5b-4b14-8d26-ab7056b17929/8b99119d-9525-452e-bc8f-236ac76fa9c9"
     file_name = "BPI_Challenge_2013_closed_problems.xes.gz"
-    output_fold_download = download_url(url, folder=test_folder, file_name=file_name)
+    output_fold_download = download_url(
+        url, folder=test_folder, file_name=file_name
+    )
     exists = os.path.exists(output_fold_download)
     assert exists
 

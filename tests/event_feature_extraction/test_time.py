@@ -6,6 +6,7 @@ import pytest
 from skpm.event_feature_extraction import TimestampExtractor
 from skpm.config import EventLogConfig as elc
 
+
 def test_time():
     dummy_data = pd.DataFrame(
         {

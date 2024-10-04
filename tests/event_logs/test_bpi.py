@@ -55,6 +55,7 @@ from skpm.event_logs import BPI13ClosedProblems, BPI19
 
 from tempfile import TemporaryDirectory
 
+
 def test_bpi():
     with TemporaryDirectory() as tmpdirname:
         bpi = BPI13ClosedProblems(root_folder=tmpdirname)

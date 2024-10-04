@@ -34,13 +34,19 @@ def test_resource():
     assert test_out.shape[0] == dummy_data_test.shape[0]
 
     with pytest.raises(Exception) as exc_info:
-        dummy_data_test[elc.resource] = dummy_data_test[elc.resource].replace(2, np.nan)
+        dummy_data_test[elc.resource] = dummy_data_test[elc.resource].replace(
+            2, np.nan
+        )
         rp.transform(dummy_data_test[[elc.activity, elc.resource]])
 
     with pytest.warns():
-        dummy_data_test[elc.resource] = dummy_data_test[elc.resource].fillna(100)
+        dummy_data_test[elc.resource] = dummy_data_test[elc.resource].fillna(
+            100
+        )
         test_out = rp.transform(dummy_data_test)
 
     with pytest.raises(Exception) as exc_info:
-        dummy_data_test[elc.activity] = dummy_data_test[elc.activity].replace(2, np.nan)
+        dummy_data_test[elc.activity] = dummy_data_test[elc.activity].replace(
+            2, np.nan
+        )
         rp.transform(dummy_data_test[[elc.activity, elc.resource]])

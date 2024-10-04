@@ -2,7 +2,9 @@ import pandas as pd
 from skpm.config import EventLogConfig as elc
 
 
-def _bounded_dataset(dataset: pd.DataFrame, start_date, end_date: int) -> pd.DataFrame:
+def _bounded_dataset(
+    dataset: pd.DataFrame, start_date, end_date: int
+) -> pd.DataFrame:
     grouped = dataset.groupby(elc.case_id, as_index=False)[elc.timestamp].agg(
         ["min", "max"]
     )
@@ -13,7 +15,9 @@ def _bounded_dataset(dataset: pd.DataFrame, start_date, end_date: int) -> pd.Dat
         else dataset[elc.timestamp].min().to_period("M")
     )
     end_date = (
-        pd.Period(end_date) if end_date else dataset[elc.timestamp].max().to_period("M")
+        pd.Period(end_date)
+        if end_date
+        else dataset[elc.timestamp].max().to_period("M")
     )
     bounded_cases = grouped[
         (grouped["min"].dt.to_period("M") >= start_date)
@@ -28,14 +32,17 @@ def _unbiased(dataset: pd.DataFrame, max_days: int) -> pd.DataFrame:
         dataset.groupby(elc.case_id, as_index=False)[elc.timestamp]
         .agg(["min", "max"])
         .assign(
-            duration=lambda x: (x["max"] - x["min"]).dt.total_seconds() / (24 * 60 * 60)
+            duration=lambda x: (x["max"] - x["min"]).dt.total_seconds()
+            / (24 * 60 * 60)
         )
     )
 
     # condition 1: cases are shorter than max_duration
     condition_1 = grouped["duration"] <= max_days * 1.00000000001
     # condition 2: drop cases starting after the dataset's last timestamp - the max_duration
-    latest_start = dataset[elc.timestamp].max() - pd.Timedelta(max_days, unit="D")
+    latest_start = dataset[elc.timestamp].max() - pd.Timedelta(
+        max_days, unit="D"
+    )
     condition_2 = grouped["min"] <= latest_start
 
     unbiased_cases = grouped[condition_1 & condition_2][elc.case_id].values
@@ -109,14 +116,20 @@ def unbiased(
 
     ### TEST SET ###
     first_test_case_nr = int(len(grouped) * (1 - test_len))
-    first_test_start_time = grouped["min"].sort_values().values[first_test_case_nr]
+    first_test_start_time = (
+        grouped["min"].sort_values().values[first_test_case_nr]
+    )
     # retain cases that end after first_test_start time
     test_case_nrs = grouped.loc[
         grouped["max"].values >= first_test_start_time, elc.case_id
     ]
-    df_test = dataset[dataset[elc.case_id].isin(test_case_nrs)].reset_index(drop=True)
+    df_test = dataset[dataset[elc.case_id].isin(test_case_nrs)].reset_index(
+        drop=True
+    )
 
     #### TRAINING SET ###
-    df_train = dataset[~dataset[elc.case_id].isin(test_case_nrs)].reset_index(drop=True)
+    df_train = dataset[~dataset[elc.case_id].isin(test_case_nrs)].reset_index(
+        drop=True
+    )
 
     return df_train, df_test

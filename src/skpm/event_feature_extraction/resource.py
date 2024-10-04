@@ -115,7 +115,9 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
         X[elc.resource] = X[elc.resource].map(self.rtoi_)
 
         # building a pairwise frequency matrix
-        freq_matrix = X.groupby([elc.activity, elc.resource]).value_counts().to_dict()
+        freq_matrix = (
+            X.groupby([elc.activity, elc.resource]).value_counts().to_dict()
+        )
 
         # building an activity profile for each resource
 

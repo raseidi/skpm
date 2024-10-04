@@ -78,6 +78,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     >>> df = df.drop(elc.timestamp, axis=1)
     >>> Aggregation().fit_transform(df)
     """
+
     _case_id = elc.case_id
     _parameter_constraints = {
         "method": [
@@ -85,7 +86,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         ],
         "engine": [
             StrOptions({"pandas", "polars"}),
-        ]
+        ],
     }
 
     def __init__(
@@ -93,7 +94,9 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         method: str = "mean",
         window_size: int = None,
         # n_jobs=1,
-        engine: Literal["pandas", "polars"] = "pandas",  # Default to Pandas DataFrame
+        engine: Literal[
+            "pandas", "polars"
+        ] = "pandas",  # Default to Pandas DataFrame
     ) -> None:
         self.method = method
         self.window_size = window_size
@@ -102,8 +105,12 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     @staticmethod
     def validate_engine_with_df(func):
         def _decorator(self, *args, **kwargs):
-            if (self.engine == "pandas" and not isinstance(args[0], pd.DataFrame)) or (
-                self.engine == "polars" and not isinstance(args[0], pl.DataFrame)
+            if (
+                self.engine == "pandas"
+                and not isinstance(args[0], pd.DataFrame)
+            ) or (
+                self.engine == "polars"
+                and not isinstance(args[0], pl.DataFrame)
             ):
                 raise ValueError(
                     "Expected {} dataframe, but received {}".format(
@@ -169,9 +176,8 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         if self.engine == "pandas":  # If using Pandas DataFrame
             return self._transform_pandas(X)
 
-        else: #
+        else:  #
             return self._transform_polars(X)
-
 
     def _transform_pandas(self, X: DataFrame):
         """Transforms Pandas DataFrame."""
@@ -186,12 +192,13 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
 
     def _transform_polars(self, X: PlDataFrame):
         """Transforms Polars DataFrame."""
-        X = X.with_columns([
-            getattr(pl.col(col), f"rolling_{self.method}")(
-                window_size=self.window_size,
-                min_periods=1
-            ).over(self._case_id)
-            for col in X.columns if col != self._case_id
-        ])
+        X = X.with_columns(
+            [
+                getattr(pl.col(col), f"rolling_{self.method}")(
+                    window_size=self.window_size, min_periods=1
+                ).over(self._case_id)
+                for col in X.columns
+                if col != self._case_id
+            ]
+        )
         return X.drop(self._case_id)
-

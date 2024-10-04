@@ -1,6 +1,11 @@
 import numpy as np
 import pytest
-from skpm.utils.graph import frequency_matrix, node_degree, density, nodes_in_cycles
+from skpm.utils.graph import (
+    frequency_matrix,
+    node_degree,
+    density,
+    nodes_in_cycles,
+)
 
 
 @pytest.fixture
@@ -21,7 +26,9 @@ def example_frequency_matrix():
 def test_frequency_matrix(
     example_traces, example_set_of_states, example_frequency_matrix
 ):
-    freq_matrix, stoi, itos = frequency_matrix(example_traces, example_set_of_states)
+    freq_matrix, stoi, itos = frequency_matrix(
+        example_traces, example_set_of_states
+    )
     assert np.array_equal(freq_matrix, example_frequency_matrix)
     assert stoi == {1: 0, 2: 1, 3: 2, 4: 3}
     assert itos == {0: 1, 1: 2, 2: 3, 3: 4}

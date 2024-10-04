@@ -4,6 +4,7 @@ import pytest
 from skpm.bucketing import Bucketing
 from skpm.config import EventLogConfig as elc
 
+
 @pytest.fixture(name="dummy_log")
 def get_dummy_log():
     return pd.DataFrame(
@@ -23,9 +24,7 @@ def test_single(dummy_log):
     assert bucketing_values.shape == (len(dummy_log), 1)
     assert np.unique(bucketing_values) == "b1"
 
-    bucketing = (
-        Bucketing().fit(dummy_log).transform(dummy_log)
-    )
+    bucketing = Bucketing().fit(dummy_log).transform(dummy_log)
     assert isinstance(bucketing, pd.DataFrame)
 
 

@@ -7,12 +7,14 @@ from sklearn.base import (
     TransformerMixin,
     check_is_fitted,
 )
+
 # from sklearn.utils import check_pandas_support
 
 from skpm.config import EventLogConfig as elc
 from skpm.utils import validate_columns, validate_methods_from_class
 
-DataFrame: pd.DataFrame = pd.DataFrame 
+DataFrame: pd.DataFrame = pd.DataFrame
+
 
 class TimestampExtractor(
     ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
@@ -53,10 +55,12 @@ class TimestampExtractor(
     >>> feature_extractor.transform(X)
     """
 
-    def __init__(self, 
-                 case_level: Union[str, list] = "all", 
-                 event_level: Union[str, list] = "all", 
-                 time_unit: str = "secs"):
+    def __init__(
+        self,
+        case_level: Union[str, list] = "all",
+        event_level: Union[str, list] = "all",
+        time_unit: str = "secs",
+    ):
         # TODO: feature time unit (secs, hours, days, etc)
         # TODO: subset of features rather than all
         # TODO: param for event-level and case-level
@@ -88,15 +92,23 @@ class TimestampExtractor(
             Fitted transformer instance.
         """
         _ = self._validate_data(X)
-        
-        self.event_level_features = validate_methods_from_class(class_obj=TimestampEventLevel, methods=self.features)
-        self.case_level_features = validate_methods_from_class(methods=self.features, class_obj=TimestampCaseLevel)
-        
-        self._n_features_out = len(self.event_level_features) + len(self.case_level_features)
+
+        self.event_level_features = validate_methods_from_class(
+            class_obj=TimestampEventLevel, methods=self.features
+        )
+        self.case_level_features = validate_methods_from_class(
+            methods=self.features, class_obj=TimestampCaseLevel
+        )
+
+        self._n_features_out = len(self.event_level_features) + len(
+            self.case_level_features
+        )
         return self
 
     def get_feature_names_out(self):
-        return [f[0] for f in self.case_level_features + self.event_level_features]
+        return [
+            f[0] for f in self.case_level_features + self.event_level_features
+        ]
 
     def transform(self, X: DataFrame, y=None):
         """Transform the input data to calculate timestamp features.
@@ -136,7 +148,10 @@ class TimestampExtractor(
         for feature_name, feature_fn in self.event_level_features:
             X[feature_name] = feature_fn(X[elc.timestamp])
 
-        output_columns = [feature[0] for feature in self.case_level_features + self.event_level_features]
+        output_columns = [
+            feature[0]
+            for feature in self.case_level_features + self.event_level_features
+        ]
         return X.loc[:, output_columns].values
 
     def _validate_data(self, X: DataFrame):
@@ -216,45 +231,44 @@ class TimestampExtractor(
 class TimestampEventLevel:
     """
     Provides methods to extract time-related features from the event level.
-    
+
     Implementing event-level and case-level seperately makes code faster since here we do not need to group by case_id.
-    
+
     """
 
     @classmethod
     def secs_within_day(cls, X):
         """Extract the number of seconds elapsed within each day from the timestamps encoded as value between [-0.5, 0.5]."""
-        return ((X.dt.hour * 3600 + X.dt.minute * 60 + X.dt.second) / 86400) - 0.5
-        
+        return (
+            (X.dt.hour * 3600 + X.dt.minute * 60 + X.dt.second) / 86400
+        ) - 0.5
+
     @classmethod
     def week_of_year(cls, X):
         """Week of year encoded as value between [-0.5, 0.5]"""
         return (X.dt.isocalendar().week - 1) / 52.0 - 0.5
-    
 
     @classmethod
     def sec_of_min(cls, X):
-        """Minute of hour encoded as value between [-0.5, 0.5]"""    
+        """Minute of hour encoded as value between [-0.5, 0.5]"""
         return X.dt.second / 59.0 - 0.5
 
     @classmethod
     def min_of_hour(cls, X):
         """Minute of hour encoded as value between [-0.5, 0.5]"""
-    
+
         return X.dt.minute / 59.0 - 0.5
 
     @classmethod
     def hour_of_day(cls, X):
         """Hour of day encoded as value between [-0.5, 0.5]"""
 
-        
         return X.dt.hour / 23.0 - 0.5
 
     @classmethod
     def day_of_week(cls, X):
         """Hour of day encoded as value between [-0.5, 0.5]"""
 
-        
         return X.dt.dayofweek / 6.0 - 0.5
 
     @classmethod
@@ -266,7 +280,6 @@ class TimestampEventLevel:
     def day_of_year(cls, X):
         """Day of year encoded as value between [-0.5, 0.5]"""
 
-        
         return (X.dt.dayofyear - 1) / 365.0 - 0.5
 
     @classmethod
@@ -274,16 +287,19 @@ class TimestampEventLevel:
         """Month of year encoded as value between [-0.5, 0.5]"""
         return (X.dt.month - 1) / 11.0 - 0.5
 
+
 class TimestampCaseLevel:
     """Provides methods to extract time-related features from the case level
-    
+
     Implementing event-level and case-level seperately makes code faster since, since here is slower due to the groupby dependency.
     """
-    
+
     @classmethod
     def execution_time(cls, case, ix_list):
         """Calculate the execution time of each event in seconds."""
-        return case[elc.timestamp].diff().loc[ix_list].dt.total_seconds().fillna(0)
+        return (
+            case[elc.timestamp].diff().loc[ix_list].dt.total_seconds().fillna(0)
+        )
 
     @classmethod
     def accumulated_time(cls, case, ix_list):

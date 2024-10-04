@@ -63,7 +63,9 @@ def extract_case_attributes(trace: etree._Element, ns: dict) -> Event:
         # Find all attributes of the given type in the trace
         attrs = trace.findall(attr, ns)
         # Update case_attrs with the found attributes
-        case_attrs.update({f'case:{e.get("key")}': e.get("value") for e in attrs})
+        case_attrs.update(
+            {f'case:{e.get("key")}': e.get("value") for e in attrs}
+        )
     return case_attrs
 
 
@@ -119,13 +121,17 @@ def parse_trace(trace: list[etree._Element], ns: dict) -> list[Event]:
     return parsed_events
 
 
-def lazy_serialize(elements: list[etree._Element]) -> Generator[bytes, None, None]:
+def lazy_serialize(
+    elements: list[etree._Element],
+) -> Generator[bytes, None, None]:
     """Lazy serialization of a list of XML elements. Used for parallel processing."""
     for element in elements:
         yield etree.tostring(element)
 
 
-def read_xes(filepath: str, n_jobs: int = None, as_df=True) -> DataFrame | list[Event]:
+def read_xes(
+    filepath: str, n_jobs: int = None, as_df=True
+) -> DataFrame | list[Event]:
     """Reads an event log from a XES file.
 
     Rough overview:
