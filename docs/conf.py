@@ -45,7 +45,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
-# html_static_path = ["_static"]
+html_static_path = ["_static"]
 
 sg_examples_dir = "../examples"
 sg_gallery_dir = "auto_examples"
@@ -77,7 +77,7 @@ linkcode_resolve = make_linkcode_resolve(
     "skpm",
     (
         "https://github.com/raseidi/"
-        "skpm/blob/{revision}/"
+        "skpm/blob/{revision}/src/"
         "{package}/{path}#L{lineno}"
     ),
 )
