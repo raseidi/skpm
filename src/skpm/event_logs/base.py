@@ -127,7 +127,9 @@ class TUEventLog(BasePreprocessing):
         dict: Parameters for the unbiased split of the event log.
         """
         if self._unbiased_split_params is None:
-            raise ValueError("Unbiased split parameters not supported.")
+            raise ValueError(
+                f"Unbiased split not available for {self.__class__.__name__}."
+            )
         return self._unbiased_split_params
 
     def __len__(self):

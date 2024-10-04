@@ -11,7 +11,7 @@ class BPI12(TUEventLog):
     loan request, with relevant information about the case, timestamp, and
     resource involved.
 
-    DOI: 10.4121/uuid:3926db30-f712-4394-aebc-75976070e91f
+    DOI: :doi:`BPI12 <10.4121/uuid:3926db30-f712-4394-aebc-75976070e91f>`.
 
     Parameters
     ----------

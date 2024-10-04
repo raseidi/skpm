@@ -3,13 +3,17 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import os
 import sys
 from sphinx_gallery.sorting import FileNameSortKey
 from pathlib import Path
 
+
 # find project
 sys.path.insert(0, str(Path(__file__).parents[1]))
+sys.path.insert(0, os.path.abspath("sphinxext"))
 
+from github_link import make_linkcode_resolve
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -27,6 +31,8 @@ extensions = [
     "sphinx_gallery.gen_gallery",
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.linkcode",
+    "doi_role",
 ]
 
 autoapi_dirs = ["../src"]
@@ -66,3 +72,12 @@ intersphinx_mapping = {
     ),
     "matplotlib": ("https://matplotlib.org/", None),
 }
+
+linkcode_resolve = make_linkcode_resolve(
+    "skpm",
+    (
+        "https://github.com/raseidi/"
+        "skpm/blob/{revision}/"
+        "{package}/{path}#L{lineno}"
+    ),
+)
