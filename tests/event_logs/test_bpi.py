@@ -55,13 +55,14 @@ from skpm.event_logs import BPI13ClosedProblems, BPI19
 
 from tempfile import TemporaryDirectory
 
+
 def test_bpi():
     with TemporaryDirectory() as tmpdirname:
         bpi = BPI13ClosedProblems(root_folder=tmpdirname)
 
-        assert isinstance(bpi.log, pd.DataFrame)
+        assert isinstance(bpi.dataframe, pd.DataFrame)
         assert isinstance(bpi.__repr__(), str)
-        assert isinstance(len(bpi.log), int)
+        assert isinstance(len(bpi.dataframe), int)
 
         # covering pytest when the file already exists
         bpi = BPI13ClosedProblems(bpi.file_path)

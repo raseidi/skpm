@@ -50,7 +50,11 @@ class Bucketing(TransformerMixin, BaseProcessEstimator):
             The method used for bucketing traces. Possible values are "single", "prefix", or "clustering".
             Default is "single".
         """
-        assert method in ["single", "prefix", "clustering"], f"Invalid method: {method}"
+        assert method in [
+            "single",
+            "prefix",
+            "clustering",
+        ], f"Invalid method: {method}"
         self.method = method
 
     def fit(self, X, y=None):
@@ -93,11 +97,16 @@ class Bucketing(TransformerMixin, BaseProcessEstimator):
         elif self.method == "prefix":
             # For the prefix method, group events by case ID and assign sequential buckets.
             bucket_labels = (
-                X.groupby(elc.case_id).cumcount().apply(lambda x: f"b{x + 1}").values
+                X.groupby(elc.case_id)
+                .cumcount()
+                .apply(lambda x: f"b{x + 1}")
+                .values
             )
         elif self.method == "clustering":
             # Clustering method is not implemented yet.
-            raise NotImplementedError("Clustering method is not implemented yet")
+            raise NotImplementedError(
+                "Clustering method is not implemented yet"
+            )
 
         return bucket_labels
 

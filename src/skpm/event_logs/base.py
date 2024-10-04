@@ -14,8 +14,8 @@ class BasePreprocessing:
         Preprocess the event log by converting the timestamp column to
         datetime format.
         """
-        self.log[elc.timestamp] = pd.to_datetime(
-            self.log[elc.timestamp], utc=True, format="mixed"
+        self._dataframe[elc.timestamp] = pd.to_datetime(
+            self._dataframe[elc.timestamp], utc=True, format="mixed"
         )
 
 
@@ -100,8 +100,15 @@ class TUEventLog(BasePreprocessing):
         if not os.path.exists(self.file_path):
             self.download()
 
-        self.log = self.read_log()
+        self._dataframe = self.read_log()
         self.preprocess()
+
+    @property
+    def dataframe(self) -> pd.DataFrame:
+        """
+        pd.DataFrame: DataFrame containing the event log data.
+        """
+        return self._dataframe
 
     @property
     def file_path(self) -> str:
@@ -132,7 +139,7 @@ class TUEventLog(BasePreprocessing):
         int
             Number of events in the event log.
         """
-        return len(self.log)
+        return len(self._dataframe)
 
     def download(self) -> None:
         """Generic method to download the event log from the 4TU Repository.
@@ -167,7 +174,7 @@ class TUEventLog(BasePreprocessing):
             DataFrame containing the event log data.
         """
         if self.file_path.endswith(".xes"):
-            log = read_xes(self.file_path, as_df=True)
+            log = read_xes(self.file_path)
 
             if self.save_as_pandas:
                 new_file_path = self.file_path.replace(
@@ -196,8 +203,9 @@ class TUEventLog(BasePreprocessing):
         str
             String representation of the TUEventLog object.
         """
-        head = "Event Log " + self.__class__.__name__
-        body = [f"Number of events: {self.__len__()}"]
+        head = f"{self.__class__.__name__} Event Log"
+        body = [f"Number of cases: {self._dataframe[elc.case_id].nunique()}"]
+        body.append(f"Number of events: {self.__len__()}")
         if self.file_path is not None:
             body.append(
                 f"Event log location: {os.path.normpath(self.file_path)}"
@@ -205,7 +213,3 @@ class TUEventLog(BasePreprocessing):
         body += "".splitlines()
         lines = [head] + [" " * 4 + line for line in body]
         return "\n".join(lines)
-
-
-class TUOCEL:
-    pass

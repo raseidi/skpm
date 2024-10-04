@@ -3,7 +3,11 @@ import numpy as np
 import pandas as pd
 from sklearn.exceptions import NotFittedError
 
-from skpm.encoding.ngrams import _trace_to_ngram, traces_to_ngrams, EncodedNgrams
+from skpm.encoding.ngrams import (
+    _trace_to_ngram,
+    traces_to_ngrams,
+    EncodedNgrams,
+)
 from skpm.config import EventLogConfig as elc
 
 
@@ -36,6 +40,7 @@ def test_traces_to_ngrams():
     }
     assert ngrams == expected_ngrams
     assert unique_grams == expected_unique_grams
+
 
 def test_encoded_ngrams():
     # Test EncodedNgrams transformer

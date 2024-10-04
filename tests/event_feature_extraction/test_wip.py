@@ -28,11 +28,7 @@ def test_wip():
     assert wip_values.shape == (len(dummy_log), 1)
 
     # Test set_output with transform="pandas"
-    wip_df = (
-        WorkInProgress()
-        .fit(dummy_log)
-        .transform(dummy_log)
-    )
+    wip_df = WorkInProgress().fit(dummy_log).transform(dummy_log)
     assert isinstance(wip_df, pd.DataFrame)
 
     # Test with empty dataframe

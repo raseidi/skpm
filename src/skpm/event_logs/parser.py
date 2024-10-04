@@ -4,8 +4,6 @@ from joblib import Parallel, delayed
 from typing import Generator
 import pandas as pd
 
-DataFrame = pd.DataFrame
-
 
 class Event(dict):
     pass
@@ -41,7 +39,7 @@ class TagXES:
         return cls._DTYPES
 
 
-tag: TagXES = TagXES
+tag = TagXES
 
 
 def extract_case_attributes(trace: etree._Element, ns: dict) -> Event:
@@ -63,7 +61,9 @@ def extract_case_attributes(trace: etree._Element, ns: dict) -> Event:
         # Find all attributes of the given type in the trace
         attrs = trace.findall(attr, ns)
         # Update case_attrs with the found attributes
-        case_attrs.update({f'case:{e.get("key")}': e.get("value") for e in attrs})
+        case_attrs.update(
+            {f'case:{e.get("key")}': e.get("value") for e in attrs}
+        )
     return case_attrs
 
 
@@ -87,7 +87,7 @@ def extract_event_attributes(event: etree._Element) -> Event:
     return event_attrs
 
 
-def parse_trace(trace: list[etree._Element], ns: dict) -> list[Event]:
+def parse_trace(trace: etree._Element, ns: dict) -> list[Event]:
     """Parses a list of XML elements representing a trace.
 
     Args:
@@ -97,7 +97,7 @@ def parse_trace(trace: list[etree._Element], ns: dict) -> list[Event]:
         list[Event]: The respective events from the trace.
     """
 
-    if type(trace) == bytes:
+    if isinstance(trace, bytes):
         trace = etree.fromstring(trace)
 
     case_attrs = extract_case_attributes(trace, ns)
@@ -119,13 +119,17 @@ def parse_trace(trace: list[etree._Element], ns: dict) -> list[Event]:
     return parsed_events
 
 
-def lazy_serialize(elements: list[etree._Element]) -> Generator[bytes, None, None]:
+def lazy_serialize(
+    elements: list[etree._Element],
+) -> Generator[bytes, None, None]:
     """Lazy serialization of a list of XML elements. Used for parallel processing."""
     for element in elements:
         yield etree.tostring(element)
 
 
-def read_xes(filepath: str, n_jobs: int = None, as_df=True) -> DataFrame | list[Event]:
+def read_xes(
+    filepath: str, n_jobs: int = None
+) -> pd.DataFrame:
     """Reads an event log from a XES file.
 
     Rough overview:
@@ -167,7 +171,6 @@ def read_xes(filepath: str, n_jobs: int = None, as_df=True) -> DataFrame | list[
         )
         log = list(chain(*log))
 
-    if as_df:
-        log = pd.DataFrame(log)
+    log = pd.DataFrame(log)
 
     return log

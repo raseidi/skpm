@@ -9,3 +9,7 @@ class EventLogConfig:
     timestamp: str = "time:timestamp"
 
     default_file_format: str = ".parquet"
+
+    def update(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)

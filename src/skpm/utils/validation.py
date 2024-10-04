@@ -15,7 +15,9 @@ def validate_methods_from_class(
         list[tuple[str, callable]]: a list of tuples
             containing the name of the methods and the callable.
     """
-    available_methods = inspect.getmembers(class_obj, predicate=inspect.ismethod)
+    available_methods = inspect.getmembers(
+        class_obj, predicate=inspect.ismethod
+    )
     out_methods = []
     if methods == "all":
         out_methods = available_methods

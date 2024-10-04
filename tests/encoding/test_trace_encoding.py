@@ -5,6 +5,7 @@ import pandas as pd
 from skpm.encoding import Aggregation
 from skpm.config import EventLogConfig as elc
 
+
 @pytest.fixture(name="pd_df")
 def fixture_dummy_pd():
     return pd.DataFrame(
@@ -14,6 +15,7 @@ def fixture_dummy_pd():
             elc.resource: np.random.randint(0, 3, 1000),
         }
     )
+
 
 def test_aggregation(pd_df):
     # Test default aggregation
@@ -31,7 +33,7 @@ def test_aggregation(pd_df):
     assert out.shape[0] == pd_df.shape[0]
 
     # Test aggregation with invalid input data
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(Exception):
         rp.transform(pd_df[[elc.activity, elc.resource]])
 
 
@@ -51,14 +53,15 @@ def test_aggregation_with_window(pd_df):
     assert out.shape[0] == pd_df.shape[0]
 
     # Test window aggregation with invalid window size
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(Exception):
         rp = Aggregation(window_size=0)
         rp.fit(pd_df)
         out = rp.transform(pd_df)
 
+
 def test_aggregation_with_polars(pd_df):
     pl_df = pl.DataFrame(pd_df)
-    
+
     rp = Aggregation(engine="polars")
     rp.fit(pl_df)
     out = rp.transform(pl_df)
@@ -67,19 +70,16 @@ def test_aggregation_with_polars(pd_df):
     assert out.height == pl_df.height
 
 
-
 def test_aggregation_output(pd_df):
     pl_df = pl.DataFrame(pd_df)
 
     pd_agg = Aggregation(method="sum")
     pl_agg = Aggregation(method="sum", engine="polars")
-    
+
     pd_agg = pd_agg.fit_transform(pd_df)
     pl_agg = pl_agg.fit_transform(pl_df)
-    
+
     pd_agg = pd_agg.astype(pl_agg.dtypes)
-    print(pl_agg)
-    print(pd_agg)
     assert isinstance(pl_agg, pd.DataFrame)
     assert pd_agg.equals(pl_agg)
 
@@ -97,20 +97,20 @@ def test_invalid_input(pd_df):
     with pytest.raises(Exception):
         agg = Aggregation(method="abc")
         agg.fit_transform(pd_df)
-    
+
     # invalid arguments
     from sklearn.utils._param_validation import InvalidParameterError
+
     with pytest.raises(InvalidParameterError):
-        agg = Aggregation(engine='abc')
+        agg = Aggregation(engine="abc")
         agg.fit_transform(pd_df)
-        
+
     # invalid input data
     with pytest.raises(ValueError):
         agg = Aggregation()
-        agg.fit(pd_df.values)    
-    
+        agg.fit(pd_df.values)
+
     # invalid input data
     with pytest.raises(ValueError):
         agg = Aggregation().fit(pd_df)
-        agg.transform(pd_df.values)    
-    
+        agg.transform(pd_df.values)

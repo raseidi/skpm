@@ -130,7 +130,9 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
         self
             Returns the instance itself.
         """
-        ngrams = X.groupby(elc.case_id)[elc.activity].apply(_trace_to_ngram, N=self.N)
+        ngrams = X.groupby(elc.case_id)[elc.activity].apply(
+            _trace_to_ngram, N=self.N
+        )
         # cant use _unique from sklearn.utils._encode
         # because it only works for 1D arrays
         unique_ngrams = set([gram for trace in ngrams for gram in trace])
@@ -161,7 +163,9 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
                 "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator."
             )
 
-        ngrams = X.groupby(elc.case_id)[elc.activity].apply(_trace_to_ngram, N=self.N)
+        ngrams = X.groupby(elc.case_id)[elc.activity].apply(
+            _trace_to_ngram, N=self.N
+        )
         unique_ngrams = set([gram for trace in ngrams for gram in trace])
 
         # check for new ngrams

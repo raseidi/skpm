@@ -1,7 +1,5 @@
-import warnings
 import numpy as np
 import pandas as pd
-import datetime as dt
 
 import pytest
 from skpm.event_feature_extraction import ResourcePoolExtractor
@@ -33,14 +31,20 @@ def test_resource():
     test_out = rp.transform(dummy_data_test)
     assert test_out.shape[0] == dummy_data_test.shape[0]
 
-    with pytest.raises(Exception) as exc_info:
-        dummy_data_test[elc.resource] = dummy_data_test[elc.resource].replace(2, np.nan)
+    with pytest.raises(Exception):
+        dummy_data_test[elc.resource] = dummy_data_test[elc.resource].replace(
+            2, np.nan
+        )
         rp.transform(dummy_data_test[[elc.activity, elc.resource]])
 
     with pytest.warns():
-        dummy_data_test[elc.resource] = dummy_data_test[elc.resource].fillna(100)
+        dummy_data_test[elc.resource] = dummy_data_test[elc.resource].fillna(
+            100
+        )
         test_out = rp.transform(dummy_data_test)
 
-    with pytest.raises(Exception) as exc_info:
-        dummy_data_test[elc.activity] = dummy_data_test[elc.activity].replace(2, np.nan)
+    with pytest.raises(Exception):
+        dummy_data_test[elc.activity] = dummy_data_test[elc.activity].replace(
+            2, np.nan
+        )
         rp.transform(dummy_data_test[[elc.activity, elc.resource]])

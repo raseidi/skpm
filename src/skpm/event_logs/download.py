@@ -66,7 +66,9 @@ def _save_response_content(
             fh.write(chunk)
 
 
-def _urlretrieve(url: str, destination: str, chunk_size: int = 1024 * 32) -> None:
+def _urlretrieve(
+    url: str, destination: str, chunk_size: int = 1024 * 32
+) -> None:
     """
     Retrieve a URL and save its contents to a file.
 
