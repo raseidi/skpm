@@ -47,17 +47,6 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     engine : str, default="pandas"
         The DataFrame engine to use. Supported engines are "pandas" and "polars".
 
-    Attributes
-    ----------
-    n_features_ : int
-        The number of features to encode.
-    features_ : list[str]
-        The features to encode.
-    cat_ : list[str]
-        The categorical features to encode.
-    num_ : list[str]
-        The numerical features to encode.
-
     References
     ----------
     [1] Outcome-Oriented Predictive Process Monitoring: Review and Benchmark, Teinemaa, I., Dumas, M., Maggi, F. M., & La Rosa, M. (2019).

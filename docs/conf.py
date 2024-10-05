@@ -10,13 +10,16 @@ from pathlib import Path
 
 
 # find project
-sys.path.insert(0, str(Path(__file__).parents[1]))
+cwd = os.getcwd()
+parent = os.path.dirname(cwd)
+sys.path.append(parent)
 sys.path.insert(0, os.path.abspath("sphinxext"))
 
 from github_link import make_linkcode_resolve
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+
 
 project = "skpm"
 copyright = "2024, Rafael Oyamada"
@@ -34,12 +37,15 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.linkcode",
     "doi_role",
+    "sphinx.ext.viewcode",
+    "autoapi.extension",
 ]
 
 autoapi_dirs = ["../src"]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+source_suffix = {'.rst': 'restructuredtext', '.md': 'markdown'}
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -62,7 +68,7 @@ sphinx_gallery_conf = {
     "backreferences_dir": "gen_modules/backreferences",
     # Modules for which function level galleries are created.  In
     # this case sphinx_gallery and numpy in a tuple of strings.
-    "doc_module": ("skpm", "src/skpm"),
+    "doc_module": ("skpm"),
     "filename_pattern": "/*.py",
 }
 
@@ -79,10 +85,11 @@ linkcode_resolve = make_linkcode_resolve(
     "skpm",
     (
         "https://github.com/raseidi/"
-        "skpm/blob/{revision}/src/"
+        "skpm/blob/{revision}/"
         "{package}/{path}#L{lineno}"
     ),
 )
+
 autosummary_generate = True
 root_doc = "index"
 

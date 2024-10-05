@@ -23,11 +23,6 @@ class Bucketing(TransformerMixin, BaseProcessEstimator):
         could potentially identify clusters of events that exhibit similar behavior or characteristics, allowing for
         more nuanced and context-aware bucketing.
 
-    Attributes
-    ----------
-    method : str
-        The method used for bucketing traces.
-
     Methods
     -------
     fit(X, y=None)
@@ -55,6 +50,7 @@ class Bucketing(TransformerMixin, BaseProcessEstimator):
             "prefix",
             "clustering",
         ], f"Invalid method: {method}"
+        
         self.method = method
 
     def fit(self, X, y=None):
