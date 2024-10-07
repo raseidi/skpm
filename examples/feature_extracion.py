@@ -25,6 +25,7 @@ uder development so we will focus on the latter.
 # Let's see how it works.
 
 # %%
+import pandas as pd
 from skpm.config import EventLogConfig as elc
 from skpm.event_feature_extraction import TimestampExtractor
 from skpm.event_logs import split, BPI17
@@ -33,15 +34,19 @@ from skpm.event_logs import split, BPI17
 log = BPI17()
 
 # select the columns of interest
-df = log.dataframe[[elc.case_id, elc.activity, elc.timestamp, elc.resource]]
+df = log.dataframe[[elc.case_id, elc.activity, elc.timestamp, elc.resource]].copy()
 
 # split the data into train and test
-train, test = split.unbiased(df, **log.unbiased_split_params)
+train, _ = split.unbiased(df, **log.unbiased_split_params)
+
+# sphinx_gallery_start_ignore
+del log
+del df
+# sphinx_gallery_end_ignore
 
 # extract the features
 te = TimestampExtractor().fit(train)
 train[te.get_feature_names_out()] = te.transform(train)
-test[te.get_feature_names_out()] = te.transform(test)
 
 # first event as an example
 train.iloc[0, :].T
@@ -64,7 +69,6 @@ from skpm.event_feature_extraction import ResourcePoolExtractor
 re = ResourcePoolExtractor().fit(train)
 # re.get_feature_names_out()
 train["resource_role"] = re.transform(train)
-test["resource_role"] = re.transform(test)
 
 train.loc[0, [elc.case_id, elc.activity, elc.resource, "resource_role"]].T
 
@@ -99,19 +103,18 @@ from skpm.event_feature_extraction import WorkInProgress
 wip = WorkInProgress()
 wip.fit(train)
 train["wip"] = wip.transform(train)
-test["wip"] = wip.transform(test)
 
 # visualizing it
-(
+train = (
     train
     .set_index(elc.timestamp)
-    .resample("D")["wip"].mean()
-    .plot(
-        y="wip", 
-        kind="line", 
-        figsize=(10, 5), 
-        title="Average daily \nWork in Progress (WIP) over time")
+    .resample("D")[["wip"]]
+    .mean()
+    .reset_index()
 )
+plt.figure(figsize=(10, 5))
+plt.plot(pd.to_datetime(train[elc.timestamp]), train["wip"])
+plt.title("Average daily \nWork in Progress (WIP) over time")
 
 # %%
 # In this tutorial, we showed how to extract features from timestamps,
