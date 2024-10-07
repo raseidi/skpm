@@ -1,4 +1,4 @@
-from skpm.case_feature_extraction import VariantExtractor
+from .features import VariantExtractor
 
 __all__ = [
     "VariantExtractor",

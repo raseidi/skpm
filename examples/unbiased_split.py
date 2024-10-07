@@ -22,9 +22,11 @@ logs [1] works and how to use it in the `skpm` package.
 # methods make it hard to compare research outcomes. Certain preprocessing
 # choices can even lead to biased results due to the use of domain knowledge
 # that may not be accessible to all researchers.
+#
 # 2. **Data Leakage**: Training and test sets often overlap, with events from
 # the same case appearing in both, which leads to overfitted performance
 # measures and inaccurate predictions.
+#
 # 3. **Test Set Bias**: The test sets frequently suffer from bias due to
 # unequal distributions of case durations and active cases, especially at the
 # start and end of the dataset. This skews evaluation results, making them
@@ -46,7 +48,7 @@ train.shape, test.shape
 
 # %%
 # The hyperparameters for the unbiased split are hardcoded in the original
-# implementation: `start_date`, `end_date`, `max_days`. However, they are
+# implementation. However, they are
 # derived based on an data-driven analysis. In the future, we may consider
 # to implement this generic approach in order to extend the unbiased split
 # to other datasets. The hardcoded hyperparameters are:
@@ -69,17 +71,21 @@ except Exception as e:
     print(e)
 
 # %%
-# The availalbe datasets are:
+# The unbiased split is available for the following datasets:
 #
-# - :class:`~src.skpm.event_logs.BPI12`
 # - :class:`~skpm.event_logs.BPI12`
-# - :class:`~src.skpm.event_logs.bpi.BPI12`
-# - :class:`~skpm.event_logs.bpi.BPI12`
-# - :class:`BPI17`
-# - :class:`BPI19`
-# - :class:`BPI20PrepaidTravelCosts`
-# - :class:`BPI20TravelPermitData`
-# - :class:`BPI20RequestForPayment`
+# - :class:`~skpm.event_logs.BPI17`
+# - :class:`~skpm.event_logs.BPI19`
+# - :class:`~skpm.event_logs.BPI20PrepaidTravelCosts`
+# - :class:`~skpm.event_logs.BPI20TravelPermitData`
+# - :class:`~skpm.event_logs.BPI20RequestForPayment`
+#
+# %%
+# In this tutorial, we showed to use the unbiased split API.
+# We hope you find it useful
+# for your projects. If you have any questions or suggestions, please
+# open an issue on our GitHub repository or
+# `contact me <https://raseidi.github.io/pages/contact.html>`_ directly.
 #
 # References
 # ----------

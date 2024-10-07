@@ -2,7 +2,8 @@ from skpm.event_logs.base import TUEventLog
 
 
 class BPI12(TUEventLog):
-    """BPI Challenge 2012 event log.
+    """:doi:`BPI Challenge 2012 event log
+    <10.4121/uuid:3926db30-f712-4394-aebc-75976070e91f>`.
 
     This dataset is from the Business Process Intelligence (BPI) Challenge
     2012 and contains event logs from a real-life financial institution. The
@@ -11,10 +12,6 @@ class BPI12(TUEventLog):
     loan request, with relevant information about the case, timestamp, and
     resource involved.
 
-    DOI: :doi:`BPI12 <10.4121/uuid:3926db30-f712-4394-aebc-75976070e91f>`.
-    DOI: `:doi:BPI12 <10.4121/uuid:3926db30-f712-4394-aebc-75976070e91f>`.
-    DOI: `doi:10.1162/153244303321897735
-    <10.1162/153244303321897735>`_.
 
     Parameters
     ----------
@@ -49,14 +46,14 @@ class BPI12(TUEventLog):
 
 
 class BPI13ClosedProblems(TUEventLog):
-    """BPI Challenge 2013 Closed problems.
+    """:doi:`BPI Challenge 2013 Closed problems event log
+    <https://doi.org/10.4121/uuid:c2c3b154-ab26-4b31-a0e8-8f2350ddac11>`.
 
     The BPI 2013 Closed Problems log consists of 1487 cases and 6660 events.
     It originates from the problem management process of Volvo IT Belgium,
     focusing on cases where problems were diagnosed and resolved to enhance IT
     service quality.
 
-    DOI: https://doi.org/10.4121/uuid:c2c3b154-ab26-4b31-a0e8-8f2350ddac11
 
 
     Parameters
@@ -85,15 +82,14 @@ class BPI13ClosedProblems(TUEventLog):
 
 
 class BPI13Incidents(TUEventLog):
-    """BPI Challenge 2013 Incidents.
+    """:doi:`BPI Challenge 2013 Incidents
+    <https://doi.org/10.4121/uuid:500573e6-accc-4b0c-9576-aa5468b10cee>`.
 
     The BPI 2013 Incidents log contains 7554 cases and 65533 events.
     It is part of the incident management process at Volvo IT Belgium,
     aimed at restoring normal service operations for customers as quickly as
     possible, while maintaining high levels of service quality and
     availability.
-
-    DOI: https://doi.org/10.4121/uuid:500573e6-accc-4b0c-9576-aa5468b10cee
 
     Parameters
     ----------
@@ -119,14 +115,14 @@ class BPI13Incidents(TUEventLog):
 
 
 class BPI13OpenProblems(TUEventLog):
-    """BPI Challenge 2013 open problems.
+    """:doi:`BPI Challenge 2013 open problems
+    <https://doi.org/10.4121/uuid:3537c19d-6c64-4b1d-815d-915ab0e479da>`.
 
     The BPI 2013 Open Problems log contains 819 cases and 2351 events.
     It originates from the problem management process of Volvo IT Belgium,
     focusing on unresolved problems that are still open and require further
     diagnosis and action to improve IT service quality.
 
-    DOI: https://doi.org/10.4121/uuid:3537c19d-6c64-4b1d-815d-915ab0e479da
 
     Parameters
     ----------
@@ -154,7 +150,8 @@ class BPI13OpenProblems(TUEventLog):
 
 
 class BPI17(TUEventLog):
-    """BPI Challenge 2017.
+    """:doi:`BPI Challenge 2017
+    <https://doi.org/10.4121/uuid:5f3067df-f10b-45da-b98b-86ae4c7a310b>`.
 
     The BPI 2017 event log originates from a loan application process at a
     Dutch financial institution. The data encompasses all loan applications
@@ -164,7 +161,6 @@ class BPI17(TUEventLog):
     application, and these offers are tracked by their IDs within the event
     log.
 
-    DOI: https://doi.org/10.4121/uuid:5f3067df-f10b-45da-b98b-86ae4c7a310b
 
     Parameters
     ----------
@@ -201,7 +197,9 @@ class BPI17(TUEventLog):
 
 
 class BPI19(TUEventLog):
-    """BPI Challenge 2019.
+    """:doi:`BPI Challenge 2019
+    <https://doi.org/10.4121/uuid:d06aff4b-79f0-45e6-8ec8-e19730c248f1>`.
+    
 
     The BPI 2019 event log comes from a large multinational company in the
     coatings and paints industry, based in the Netherlands. It focuses on the
@@ -214,7 +212,6 @@ class BPI19(TUEventLog):
     users. The data is fully anonymized and structured in an IEEE-XES
     compliant format.
 
-    DOI: https://data.4tu.nl/datasets/35ed7122-966a-484e-a0e1-749b64e3366d/1
 
     Parameters
     ----------
@@ -246,7 +243,9 @@ class BPI19(TUEventLog):
 
 
 class BPI20PrepaidTravelCosts(TUEventLog):
-    """BPI2020 Prepaid Travel Costs.
+    """:doi:`BPI2020 Prepaid Travel Costs
+    <https://doi.org/10.4121/uuid:5d2fe5e1-f91f-4a3b-ad9b-9e4126870165>`.
+    
 
     The BPI 2020 Prepaid Travel Costs event log records two years of travel
     expense claims for a university. In 2017, the data covers two departments,
@@ -259,7 +258,6 @@ class BPI20PrepaidTravelCosts(TUEventLog):
     trips do not require prior approval. Reimbursement claims can be filed
     either upon payment of costs or within two months after the trip.
 
-    DOI: https://doi.org/10.4121/uuid:5d2fe5e1-f91f-4a3b-ad9b-9e4126870165
 
     Parameters
     ----------
@@ -293,7 +291,8 @@ class BPI20PrepaidTravelCosts(TUEventLog):
 
 
 class BPI20TravelPermitData(TUEventLog):
-    """BPI2020 Travel Permit Data.
+    """:doi:`BPI2020 Travel Permit Data
+    <https://doi.org/10.4121/uuid:ea03d361-a7cd-4f5e-83d8-5fbdf0362550>`.
 
     The BPI 2020 Travel Permit event log contains 7,065 cases and 86,581
     events, covering two years of travel expense claims at a university. In
@@ -307,7 +306,6 @@ class BPI20TravelPermitData(TUEventLog):
     prior approval. Reimbursement claims for costs can be submitted either
     upon payment or within two months after the trip.
 
-    DOI: https://doi.org/10.4121/uuid:ea03d361-a7cd-4f5e-83d8-5fbdf0362550
 
     Parameters
     ----------
@@ -341,7 +339,9 @@ class BPI20TravelPermitData(TUEventLog):
 
 
 class BPI20RequestForPayment(TUEventLog):
-    """BPI2020 Request For Payment.
+    """:doi:`BPI2020 Request For Payment
+    <https://doi.org/10.4121/uuid:895b26fb-6f25-46eb-9e48-0dca26fcd030>`.
+
 
     The BPI 2020 Request for Payment event log contains 6,886 cases and 36,796
     events, primarily focusing on requests for payment that are not related to
@@ -353,7 +353,6 @@ class BPI20RequestForPayment(TUEventLog):
     administration, and further approvals by the budget owner and supervisor
     if necessary.
 
-    DOI: https://doi.org/10.4121/uuid:895b26fb-6f25-46eb-9e48-0dca26fcd030
 
     Parameters
     ----------
@@ -387,7 +386,9 @@ class BPI20RequestForPayment(TUEventLog):
 
 
 class BPI20DomesticDeclarations(TUEventLog):
-    """BPI2020 Domestic Declarations.
+    """:doi:`BPI2020 Domestic Declarations
+    <https://doi.org/10.4121/uuid:3f422315-ed9d-4882-891f-e180b5b4feb5>`.
+    
 
     The BPI 2020 Domestic Declarations event log contains 10,500 cases and
     56,437 events. The dataset focuses on domestic travel expense claims over
@@ -399,7 +400,6 @@ class BPI20DomesticDeclarations(TUEventLog):
     reviewed by the travel administration and further approved by the budget
     owner and supervisor, if necessary.
 
-    DOI: https://doi.org/10.4121/uuid:3f422315-ed9d-4882-891f-e180b5b4feb5
 
     Parameters
     ----------
@@ -427,7 +427,8 @@ class BPI20DomesticDeclarations(TUEventLog):
 
 
 class BPI20InternationalDeclarations(TUEventLog):
-    """BPI2020 International Declarations.
+    """:doi:`BPI2020 International Declarations
+    <https://doi.org/10.4121/uuid:2bbf8f6a-fc50-48eb-aa9e-c4ea5ef7e8c5>`.
 
     The BPI 2020 International Declarations event log contains 6,449 cases and
     72,151 events, covering two years of travel expense claims at a university.
@@ -440,7 +441,6 @@ class BPI20InternationalDeclarations(TUEventLog):
     filed, which can be submitted either upon payment or within two months
     after the trip.
 
-    DOI: https://doi.org/10.4121/uuid:2bbf8f6a-fc50-48eb-aa9e-c4ea5ef7e8c5
 
     Parameters
     ----------
@@ -469,7 +469,9 @@ class BPI20InternationalDeclarations(TUEventLog):
 
 
 class Sepsis(TUEventLog):
-    """Sepsis.
+    """:doi:`Sepsis
+    <https://doi.org/10.4121/uuid:915d2bfb-7e84-49ad-a286-dc35f063a460>`.
+    
 
     The Sepsis event log contains real-life hospital data regarding sepsis
     cases, a life-threatening condition often caused by infection. Each case
@@ -481,7 +483,6 @@ class Sepsis(TUEventLog):
     anonymized. While the timestamps of events have been randomized, the
     intervals between events within a trace remain unchanged.
 
-    DOI:: https://doi.org/10.4121/uuid:915d2bfb-7e84-49ad-a286-dc35f063a460
 
     Parameters
     ----------

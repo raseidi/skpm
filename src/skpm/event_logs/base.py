@@ -4,8 +4,8 @@ import pandas as pd
 
 from skpm.config import EventLogConfig as elc
 from skpm.event_logs.parser import read_xes
-from .download import download_url
-from .extract import extract_gz
+from skpm.event_logs.download import download_url
+from skpm.event_logs.extract import extract_gz
 
 
 class BasePreprocessing:

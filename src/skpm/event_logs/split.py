@@ -90,12 +90,12 @@ def unbiased(
     >>> from skpm.event_logs import BPI12
     >>> from skpm.event_logs import split
     >>> bpi12 = BPI12()
-    >>> df_train, df_test = split.unbiased(bpi12.log, **bpi12.unbiased_split_params)
+    >>> df_train, df_test = split.unbiased(bpi12, **bpi12.unbiased_split_params)
     >>> df_train.shape, df_test.shape
     ((117546, 7), (55952, 7))
 
     References:
-    ----------
+    -----------
     [1] Hans Weytjens, Jochen De Weerdt. Creating Unbiased Public Benchmark Datasets with Data Leakage Prevention for Predictive Process Monitoring, 2021. doi: 10.1007/978-3-030-94343-1_2
     [2] https://github.com/hansweytjens/predictive-process-monitoring-benchmarks
     """
