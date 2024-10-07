@@ -1,5 +1,5 @@
 """
-API for downloading event logs
+Downloading event logs via API
 ==============================
 
 This example demonstrates how we can easily download well-known process mining event logs
@@ -43,6 +43,13 @@ bpi13
 bpi13.dataframe.head()
 
 # %%
+# In this tutorial, we showed how to user our API to automatically
+# download event logs from the `4TU Repository <https://data.4tu.nl/>`_.
+# We hope you find it useful
+# for your projects. If you have any questions or suggestions, please
+# open an issue on our GitHub repository or
+# `contact me <https://raseidi.github.io/pages/contact.html>`_ directly.
+#
 # References
 # ----------
 # [1] Hans Weytjens, Jochen De Weerdt. Creating Unbiased Public Benchmark Datasets with Data Leakage Prevention for Predictive Process Monitoring, 2021. doi: 10.1007/978-3-030-94343-1_2

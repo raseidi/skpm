@@ -48,7 +48,7 @@ train.shape, test.shape
 
 # %%
 # The hyperparameters for the unbiased split are hardcoded in the original
-# implementation: `start_date`, `end_date`, `max_days`. However, they are
+# implementation. However, they are
 # derived based on an data-driven analysis. In the future, we may consider
 # to implement this generic approach in order to extend the unbiased split
 # to other datasets. The hardcoded hyperparameters are:
@@ -71,7 +71,7 @@ except Exception as e:
     print(e)
 
 # %%
-# The availalbe datasets are:
+# The unbiased split is available for the following datasets:
 #
 # - :class:`~skpm.event_logs.BPI12`
 # - :class:`~skpm.event_logs.BPI17`
@@ -79,6 +79,13 @@ except Exception as e:
 # - :class:`~skpm.event_logs.BPI20PrepaidTravelCosts`
 # - :class:`~skpm.event_logs.BPI20TravelPermitData`
 # - :class:`~skpm.event_logs.BPI20RequestForPayment`
+#
+# %%
+# In this tutorial, we showed to use the unbiased split API.
+# We hope you find it useful
+# for your projects. If you have any questions or suggestions, please
+# open an issue on our GitHub repository or
+# `contact me <https://raseidi.github.io/pages/contact.html>`_ directly.
 #
 # References
 # ----------

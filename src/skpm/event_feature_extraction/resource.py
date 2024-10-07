@@ -11,6 +11,7 @@ from sklearn.base import (
 
 from skpm.utils import validate_columns
 from skpm.config import EventLogConfig as elc
+from skpm.warnings import ConceptDriftWarning
 
 
 class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
@@ -204,10 +205,10 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
         # i.e. if fitted, check unkown labels
         if hasattr(self, "resource_to_roles_"):
             x[elc.resource] = self._check_unknown(
-                x[elc.resource].values, self.rtoi_.keys(), "resource"
+                x[elc.resource].values, self.rtoi_.keys(), elc.resource
             )
             x[elc.activity] = self._check_unknown(
-                x[elc.activity].values, self.atoi_.keys(), "activity"
+                x[elc.activity].values, self.atoi_.keys(), elc.activity
             )
 
             x[elc.activity] = x[elc.activity].map(self.atoi_)
@@ -235,8 +236,10 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
         unkown = set(input) - set(vocab)
         if unkown:
             warnings.warn(
-                message=(f"Unknown {name} labels: {unkown}"),
-                category=UserWarning,
+                message=(
+                    f"The label '{name}' contains unseen values.These values will be set to 'UNK': {unkown}"
+                ),
+                category=ConceptDriftWarning,
                 stacklevel=2,
             )
 
