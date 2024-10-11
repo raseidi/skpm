@@ -10,10 +10,6 @@ from skpm.base import BaseProcessEstimator
 from skpm.config import EventLogConfig as elc
 from skpm.utils.helpers import infer_column_types
 
-DataFrame = pd.DataFrame
-PlDataFrame = pl.DataFrame
-
-
 class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     """Sequence Encoding Transformer.
 
@@ -91,26 +87,21 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         self.window_size = window_size
         self.engine = engine
 
-    @staticmethod
-    def validate_engine_with_df(func):
-        def _decorator(self, *args, **kwargs):
-            if (
-                self.engine == "pandas"
-                and not isinstance(args[0], pd.DataFrame)
-            ) or (
-                self.engine == "polars"
-                and not isinstance(args[0], pl.DataFrame)
-            ):
-                raise ValueError(
-                    "Expected {} dataframe, but received {}".format(
-                        self.engine, type(args[0])
-                    )
-                )
-            return func(self, *args, **kwargs)
+    def validate_engine_with_df(self, X, y=None):
+        if (
+            self.engine == "pandas"
+            and not isinstance(X, pd.DataFrame)
+        ):
+            X = pd.DataFrame(X)
+            y = pd.DataFrame(y) if y is not None else None
+        elif (
+            self.engine == "polars"
+            and not isinstance(X, pl.DataFrame)
+        ):
+            X = pl.DataFrame(X)
+            y = pl.DataFrame(y) if y is not None else None
+        return X, y
 
-        return _decorator
-
-    @validate_engine_with_df
     def fit(self, X, y=None):
         """Fit transformer.
 
@@ -144,8 +135,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
 
         return self
 
-    @validate_engine_with_df
-    def transform(self, X: Union[DataFrame, PlDataFrame], y=None):
+    def transform(self, X: Union[pd.DataFrame, pl.DataFrame], y=None):
         """Performs the aggregation of event features from a trace.
 
         Parameters
@@ -162,13 +152,19 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         check_is_fitted(self, "n_features_")
         X = self._validate_log(X, reset=False)
 
+        X, y = self.validate_engine_with_df(X, y)
         if self.engine == "pandas":  # If using Pandas DataFrame
+            if isinstance(X, pl.DataFrame):
+                X = X.to_pandas()
             return self._transform_pandas(X)
 
-        else:  #
-            return self._transform_polars(X)
+        else:
+            if isinstance(X, pd.DataFrame):
+                X = pl.DataFrame(X)
+            X = self._transform_polars(X)
+            return X.to_pandas()
 
-    def _transform_pandas(self, X: DataFrame):
+    def _transform_pandas(self, X: pd.DataFrame):
         """Transforms Pandas DataFrame."""
         group = X.groupby(self._case_id)
 
@@ -179,7 +175,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         )
         return X
 
-    def _transform_polars(self, X: PlDataFrame):
+    def _transform_polars(self, X: pl.DataFrame):
         """Transforms Polars DataFrame."""
         X = X.with_columns(
             [

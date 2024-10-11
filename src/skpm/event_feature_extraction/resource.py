@@ -237,7 +237,7 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
         if unkown:
             warnings.warn(
                 message=(
-                    f"The label '{name}' contains unseen values.These values will be set to 'UNK': {unkown}"
+                    f"The label '{name}' contains values unseen during fitting. These values will be set to 'UNK': {unkown}"
                 ),
                 category=ConceptDriftWarning,
                 stacklevel=2,
