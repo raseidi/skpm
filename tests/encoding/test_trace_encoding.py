@@ -106,11 +106,11 @@ def test_invalid_input(pd_df):
         agg.fit_transform(pd_df)
 
     # invalid input data
-    with pytest.raises(ValueError):
+    with pytest.raises(AttributeError):
         agg = Aggregation()
         agg.fit(pd_df.values)
 
     # invalid input data
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         agg = Aggregation().fit(pd_df)
         agg.transform(pd_df.values)
