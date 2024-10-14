@@ -19,10 +19,11 @@ SkPM is an open-source extension of the widely used [Scikit-learn](https://sciki
 
 ## Available examples
 
-- [**Event Log Preprocessing**](.): Several feature extraction and trace encoding techniques implemented!
-- [**Pipeline Integration**](.): Easily construct Scikit-learn pipelines composed of event log preprocessing steps!
-- [**Download Public Event Logs**](.): Download well-known event logs (e.g., BPI Challenges) from the 4tu repository!
-- [**Predictive Monitoring**](.): Build end-to-end applications of traditional process mining tasks, such as remaining time and next activity prediction!
+- **NEW** [**ICPM/ML4PM 2024 Tutorial**](https://colab.research.google.com/drive/1s6TxG14bKbh2zlOENLGGd9dy_1BLEBiO?usp=sharing): A notebook highlighting all the available features in SkPM!
+- [**Predictive Monitoring**](https://skpm.readthedocs.io/en/latest/auto_examples/plot_rt_pipeline.html#): Build end-to-end applications of traditional process mining tasks, such as remaining time and next activity prediction!
+- [**Event Log Preprocessing**](https://skpm.readthedocs.io/en/latest/auto_examples/feature_extracion.html): Several feature extraction and trace encoding techniques implemented!
+- [**Download Public Event Logs**](https://skpm.readthedocs.io/en/latest/auto_examples/plot_rt_pipeline.html#download-the-example-dataset): Download well-known event logs (e.g., BPI Challenges) from the 4tu repository!
+- [**Unbiased Event Log Split**](https://skpm.readthedocs.io/en/latest/auto_examples/plot_unbiased_split.html): Temporal and unbiased split of event logs for train/validation.
 
 <p align="center">
   <img src="docs/pipeline.png"/>
@@ -37,7 +38,7 @@ To install SkPM, you can clone the repository and install the required dependenc
 ```bash
 git clone https://github.com/raseidi/skpm.git
 cd skpm
-pip install -r requirements.txt
+pip install .
 ```
 
 ## Usage
@@ -46,8 +47,11 @@ Below is an example of how to use SkPM to build a pipeline for remaining time pr
 
 ```python
 # skpm modules
-from skpm.event_feature_extraction import TimestampExtractor, ResourcePoolExtractor
-from skpm.encoding.trace import TraceAggregator
+from skpm.encoding import Aggregation
+from skpm.event_feature_extraction import (
+    TimestampExtractor,
+    ResourcePoolExtractor,
+)
 
 # sklearn modules
 from sklearn.ensemble import RandomForestRegressor
@@ -87,11 +91,15 @@ Detailed documentation and examples can be found [here](https://skpm.readthedocs
 - Improving documentation by including examples.
 - Implementing new applications and writing tutorials.
 - Adding new methods (feature extraction, trace encoding, and models).
-- Writing tests!
+- Writing unit tests!
 
 ## Contributing
 
-We welcome contributions from the community! To contribute:
+We welcome contributions from the community! 
+
+Check the [sklearn guidelines](https://scikit-learn.org/1.5/developers/contributing.html#reading-the-existing-code-base) to understand the `fit`, `predict`, and `transform` APIs!
+
+Check [our guidelines](CONTRIBUTING.md) as well to see how to open an issue or a PR. In summary:
 
 1. Fork the repository.
 2. Create a feature branch (`git checkout -b feature-branch`).
