@@ -8,7 +8,6 @@ from sklearn.utils.validation import check_is_fitted
 
 from skpm.base import BaseProcessEstimator
 from skpm.config import EventLogConfig as elc
-from skpm.utils.helpers import infer_column_types
 
 class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     """Sequence Encoding Transformer.
@@ -122,12 +121,6 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
                 Fitted aggregator.
 
         """
-        cols = list(X.columns)
-        self._case_id = self._ensure_case_id(columns=cols)
-        if self._case_id in cols:
-            cols.remove(self._case_id)
-        self.features_ = cols
-        self.n_features_ = len(self.features_)
         X = self._validate_log(X)
 
         if self.window_size is None:
@@ -149,8 +142,8 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         X : {DataFrame} of shape (n_samples, n_features)
             The aggregated event log.
         """
-        check_is_fitted(self, "n_features_")
-        X = self._validate_log(X, reset=False)
+        check_is_fitted(self, "n_features_in_")
+        X = self._validate_log(X)
 
         X, y = self.validate_engine_with_df(X, y)
         if self.engine == "pandas":  # If using Pandas DataFrame
