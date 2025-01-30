@@ -3,10 +3,13 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import TransformerMixin
 from sklearn.exceptions import NotFittedError
-from skpm.config import EventLogConfig as elc
+from sklearn.utils._param_validation import Interval
+from numbers import Integral
 
+from skpm.base import BaseProcessEstimator
+from skpm.config import EventLogConfig as elc
 
 def _trace_to_ngram(trace: Union[list, np.array], N: int = 3) -> list:
     """
@@ -74,7 +77,7 @@ def traces_to_ngrams(
     return traces_as_ngrams, unique_grams
 
 
-class EncodedNgrams(TransformerMixin, BaseEstimator):
+class EncodedNgrams(TransformerMixin, BaseProcessEstimator):
     """
     Encode n-grams from a sequence of events.
 
@@ -107,12 +110,14 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
     8       3        0         2
     """
 
+    _parameter_constraints = {
+        "method": [
+            Interval(Integral, 1, None, closed='left'),
+        ],
+    }
     def __init__(self, N: int = 3) -> None:
         super().__init__()
         self.N = N
-
-    def get_feature_names_out(self):
-        return [f"{self.N}-grams"]
 
     def fit(self, X, y=None):
         """
@@ -130,6 +135,8 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
         self
             Returns the instance itself.
         """
+        X = self._validate_log(X)
+        
         ngrams = X.groupby(elc.case_id)[elc.activity].apply(
             _trace_to_ngram, N=self.N
         )
@@ -177,9 +184,9 @@ class EncodedNgrams(TransformerMixin, BaseEstimator):
 
         # args to control this behavior
         ngrams = ngrams.explode().reset_index()
-        ngrams = ngrams[elc.activity].map(self.vocab_ngrams_)
+        ngrams[elc.activity] = ngrams[elc.activity].map(self.vocab_ngrams_)
 
-        return ngrams
+        return ngrams.drop(columns=[elc.case_id])
 
     def _check_is_fitted(self):
         return hasattr(self, "vocab_ngrams_")

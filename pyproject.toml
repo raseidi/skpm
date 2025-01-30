@@ -9,7 +9,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "3.10.16"
 pandas = "2.2.0"
-scikit-learn = "1.5.2"
+scikit-learn = "1.6.1"
 pyarrow = "16.0.0"
 polars = "0.20.16"
 lxml = "5.1.0"
