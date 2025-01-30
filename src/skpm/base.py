@@ -1,6 +1,7 @@
 import polars as pl
 from pandas import DataFrame
 from sklearn.base import BaseEstimator
+from sklearn.utils.validation import validate_data
 
 from .config import EventLogConfig as elc
 from .utils.validation import ensure_list, validate_columns
@@ -21,7 +22,6 @@ class BaseProcessEstimator(BaseEstimator):
         X: DataFrame,
         y: DataFrame = None,
         reset: bool = True,
-        cast_to_ndarray: bool = False,
         copy: bool = True,
     ):
         """
@@ -35,8 +35,6 @@ class BaseProcessEstimator(BaseEstimator):
             The target DataFrame associated with the event log.
         reset : bool, default=True
             Whether to reset the index of the DataFrame after validation.
-        cast_to_ndarray : bool, default=False
-            Whether to cast the DataFrame to a NumPy ndarray after validation.
         copy : bool, default=True
             Whether to create a copy of the DataFrame before validation.
 
@@ -50,10 +48,10 @@ class BaseProcessEstimator(BaseEstimator):
         ValueError
             If the input is not a DataFrame or if the case ID column is missing.
         """
-        polar_df = False
+        is_polars = False
         if isinstance(X, pl.DataFrame):  # For Polars DataFrame
             X = X.to_pandas()
-            polar_df = True
+            is_polars = True
 
         self._validate_params()
 
@@ -68,24 +66,21 @@ class BaseProcessEstimator(BaseEstimator):
         assert isinstance(data, DataFrame), "Input must be a dataframe."
         cols = ensure_list(data.columns)
 
-        case_id = self._ensure_case_id(data.columns)
+        self._case_id = self._ensure_case_id(data.columns)
 
-        self._validate_data(
-            X=X.drop(columns=case_id, axis=1),
+        validate_data(
+            self,
+            X=X.drop(columns=self._case_id, axis=1),
             y=y,
             reset=reset,
-            cast_to_ndarray=cast_to_ndarray,
         )
 
-        # if cols:
         cols = validate_columns(
             input_columns=data.columns,
-            required=[case_id] + self.features_,
+            required=[self._case_id] + list(self.feature_names_in_),
         )
-        # else:
-        #     cols = data.columns
 
-        if polar_df:  # For Polars DataFrame
+        if is_polars:  # For Polars DataFrame
             data = pl.from_pandas(data)
         return data[cols]
 
