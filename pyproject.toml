@@ -7,7 +7,7 @@ license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "3.10.16"
+python = ">=3.10,<3.13"
 pandas = "2.2.0"
 scikit-learn = "1.6.1"
 pyarrow = "16.0.0"
