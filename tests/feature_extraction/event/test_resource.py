@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 import pytest
-from skpm.event_feature_extraction import ResourcePoolExtractor
+from skpm.feature_extraction.event import ResourcePoolExtractor
 from skpm.config import EventLogConfig as elc
 
 

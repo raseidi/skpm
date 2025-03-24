@@ -1,3 +1,3 @@
-from .base import Bucketing
+from .bucketing import Bucketing
 
 __all__ = ["Bucketing"]

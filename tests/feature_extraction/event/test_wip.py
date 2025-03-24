@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from skpm.event_feature_extraction import WorkInProgress
+from skpm.feature_extraction.event import WorkInProgress
 from skpm.config import EventLogConfig as elc
 
 

@@ -2,7 +2,7 @@ import polars as pl
 import pytest
 import numpy as np
 import pandas as pd
-from skpm.encoding import Aggregation
+from skpm.sequence_encoding import Aggregation
 from skpm.config import EventLogConfig as elc
 
 
@@ -15,7 +15,6 @@ def fixture_dummy_pd():
             elc.resource: np.random.randint(0, 3, 1000),
         }
     )
-
 
 def test_aggregation(pd_df):
     # Test default aggregation
@@ -39,14 +38,14 @@ def test_aggregation(pd_df):
 
 def test_aggregation_with_window(pd_df):
     # Test aggregation with different numerical method
-    rp = Aggregation(window_size=3)
+    rp = Aggregation(prefix_len=3)
     rp.fit(pd_df)
     out = rp.transform(pd_df)
     assert isinstance(out, pd.DataFrame)
     assert out.shape[0] == pd_df.shape[0]
 
     # Test window aggregation with window size larger than len(data) must work
-    rp = Aggregation(window_size=len(pd_df) + 1)
+    rp = Aggregation(prefix_len=len(pd_df) + 1)
     rp.fit(pd_df)
     out = rp.transform(pd_df)
     assert isinstance(out, pd.DataFrame)
@@ -54,7 +53,7 @@ def test_aggregation_with_window(pd_df):
 
     # Test window aggregation with invalid window size
     with pytest.raises(Exception):
-        rp = Aggregation(window_size=0)
+        rp = Aggregation(prefix_len=0)
         rp.fit(pd_df)
         out = rp.transform(pd_df)
 
@@ -83,9 +82,9 @@ def test_aggregation_output(pd_df):
     assert isinstance(pl_agg, pd.DataFrame)
     assert pd_agg.equals(pl_agg)
 
-    pd_agg = Aggregation(window_size=3)
+    pd_agg = Aggregation(prefix_len=3)
     pd_agg = pd_agg.fit_transform(pd_df)
-    pl_agg = Aggregation(window_size=3, engine="polars")
+    pl_agg = Aggregation(prefix_len=3, engine="polars")
     pl_agg = pl_agg.fit_transform(pl_df)
     pl_agg = pl_agg.astype(pd_agg.dtypes)
     assert isinstance(pl_agg, pd.DataFrame)
