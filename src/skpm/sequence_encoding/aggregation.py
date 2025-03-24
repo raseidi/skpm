@@ -33,12 +33,11 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
 
     Parameters
     ----------
-    num_method : str, default="mean"
-        The method to aggregate numerical features.
+    method : str, default="mean"
+        The method to aggregate features.
         Possible values: "sum", "mean".
-    cat_method : str, default="sum"
-        The method to aggregate categorical features.
-        Possible values: "frequency", "sum".
+    prefix_len : int, default=None
+        The length of the prefix to consider for aggregation. If None, the length of the longest trace is used.
     engine : str, default="pandas"
         The DataFrame engine to use. Supported engines are "pandas" and "polars".
 
@@ -76,14 +75,14 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     def __init__(
         self,
         method: str = "mean",
-        window_size: int = None,
+        prefix_len: int = None,
         # n_jobs=1,
         engine: Literal[
             "pandas", "polars"
         ] = "pandas",  # Default to Pandas DataFrame
     ) -> None:
         self.method = method
-        self.window_size = window_size
+        self.prefix_len = prefix_len
         self.engine = engine
 
     def validate_engine_with_df(self, X, y=None):
@@ -123,8 +122,8 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         """
         X = self._validate_log(X)
 
-        if self.window_size is None:
-            self.window_size = len(X)
+        if self.prefix_len is None:
+            self.prefix_len = len(X)
 
         return self
 
@@ -162,7 +161,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         group = X.groupby(self._case_id)
 
         X = (
-            group.rolling(window=self.window_size, min_periods=1)
+            group.rolling(window=self.prefix_len, min_periods=1)
             .agg(self.method)
             .reset_index(drop=True)
         )
@@ -173,7 +172,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         X = X.with_columns(
             [
                 getattr(pl.col(col), f"rolling_{self.method}")(
-                    window_size=self.window_size, min_periods=1
+                    window_size=self.prefix_len, min_periods=1
                 ).over(self._case_id)
                 for col in X.columns
                 if col != self._case_id

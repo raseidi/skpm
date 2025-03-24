@@ -1,7 +1,7 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import LabelEncoder
 
-from skpm.case_feature_extraction.helpers import ensure_not_pipeline
+from skpm.feature_extraction.case._helpers import ensure_not_pipeline
 
 
 class VariantExtractor(TransformerMixin, BaseEstimator):
