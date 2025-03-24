@@ -1,4 +1,4 @@
-from typing import Union
+from typing import List, Optional, Union
 
 import pandas as pd
 from sklearn.base import (
@@ -8,13 +8,13 @@ from sklearn.base import (
     check_is_fitted,
 )
 
-# from sklearn.utils import check_pandas_support
-
 from skpm.config import EventLogConfig as elc
 from skpm.utils import validate_columns, validate_methods_from_class
 
-DataFrame: pd.DataFrame = pd.DataFrame
-
+def _to_list(x):
+    if x == "all" or x is None:
+        return x
+    return [x] if not isinstance(x, list) else x
 
 class TimestampExtractor(
     ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
@@ -57,21 +57,21 @@ class TimestampExtractor(
 
     def __init__(
         self,
-        case_level: Union[str, list] = "all",
-        event_level: Union[str, list] = "all",
-        time_unit: str = "secs",
+        case_features: Union[str, list, None] = "all",
+        event_features: Union[str, list, None] = "all",
+        time_unit: str = "s",
     ):
         # TODO: feature time unit (secs, hours, days, etc)
         # TODO: subset of features rather than all
         # TODO: param for event-level and case-level
-        self.features = "all"
-        self.case_level = case_level
-        self.event_level = event_level
+
+        self.case_features = _to_list(case_features)
+        self.event_features = _to_list(event_features)
         self.time_unit = time_unit
 
     def fit(
         self,
-        X: DataFrame,
+        X: pd.DataFrame,
         y=None,
     ):
         """Fit the transformer to the input data.
@@ -93,24 +93,30 @@ class TimestampExtractor(
         """
         _ = self._validate_data(X)
 
-        self.event_level_features = validate_methods_from_class(
-            class_obj=TimestampEventLevel, methods=self.features
+        self.event_features = validate_methods_from_class(
+            class_obj=TimestampEventLevel, 
+            methods=self.event_features
         )
-        self.case_level_features = validate_methods_from_class(
-            methods=self.features, class_obj=TimestampCaseLevel
+        self.case_features = validate_methods_from_class(
+            class_obj=TimestampCaseLevel,
+            methods=self.case_features, 
         )
 
-        self._n_features_out = len(self.event_level_features) + len(
-            self.case_level_features
+        self._n_features_out = len(self.event_features) + len(
+            self.case_features
         )
+        
+        if self._n_features_out == 0:
+            raise ValueError("No features selected. Please select at least one feature either at the event-level or case-level.")
+
         return self
 
     def get_feature_names_out(self):
         return [
-            f[0] for f in self.case_level_features + self.event_level_features
+            f[0] for f in self.case_features + self.event_features
         ]
 
-    def transform(self, X: DataFrame, y=None):
+    def transform(self, X: pd.DataFrame, y=None):
         """Transform the input data to calculate timestamp features.
 
         Parameters:
@@ -139,22 +145,23 @@ class TimestampExtractor(
         kwargs = {
             "case": self.group_,
             "ix_list": X.index.values,
+            "time_unit": self.time_unit,
         }
 
-        for feature_name, feature_fn in self.case_level_features:
+        for feature_name, feature_fn in self.case_features:
             X[feature_name] = feature_fn(**kwargs)
 
         # for event-level features
-        for feature_name, feature_fn in self.event_level_features:
+        for feature_name, feature_fn in self.event_features:
             X[feature_name] = feature_fn(X[elc.timestamp])
 
         output_columns = [
             feature[0]
-            for feature in self.case_level_features + self.event_level_features
+            for feature in self.case_features + self.event_features
         ]
         return X.loc[:, output_columns].values
 
-    def _validate_data(self, X: DataFrame):
+    def _validate_data(self, X: pd.DataFrame):
         """
         Validates the input DataFrame and timestamp column.
 
@@ -168,7 +175,7 @@ class TimestampExtractor(
         X : DataFrame
            Validated DataFrame after processing.
         """
-        assert isinstance(X, DataFrame), "Input must be a dataframe."
+        assert isinstance(X, pd.DataFrame), "Input must be a dataframe."
         x = X.copy()
         x.reset_index(drop=True, inplace=True)
         # x.columns = self._validate_columns(x.columns)
@@ -183,7 +190,7 @@ class TimestampExtractor(
         return x
 
     def _validate_timestamp_format(
-        self, x: DataFrame, timestamp_format: str = "%Y-%m-%d %H:%M:%S"
+        self, x: pd.DataFrame, timestamp_format: str = "%Y-%m-%d %H:%M:%S"
     ):
         """
         Validates the format of the timestamp column.
@@ -235,6 +242,11 @@ class TimestampEventLevel:
     Implementing event-level and case-level seperately makes code faster since here we do not need to group by case_id.
 
     """
+
+    # @classmethod
+    # def numerical_timestamp(cls, X):
+    #     """Numerical representation of the timestamp."""
+    #     return X.astype("int64")
 
     @classmethod
     def secs_within_day(cls, X):
@@ -293,20 +305,34 @@ class TimestampCaseLevel:
 
     Implementing event-level and case-level seperately makes code faster since, since here is slower due to the groupby dependency.
     """
+    TIME_UNIT_MULTIPLIER = {
+        "s": 1,
+        "m": 60,
+        "h": 60 * 60,
+        "d": 60 * 60 * 24,
+        "w": 60 * 60 * 24 * 7,
+    }
 
     @classmethod
-    def execution_time(cls, case, ix_list):
+    def execution_time(cls, case, ix_list, time_unit="s"):
         """Calculate the execution time of each event in seconds."""
         return (
-            case[elc.timestamp].diff().loc[ix_list].dt.total_seconds().fillna(0)
+            case[elc.timestamp]
+            .diff(-1)
+            .dt.total_seconds()
+            .fillna(0)
+            .loc[ix_list]
+            .abs() # to avoid negative numbers caused by diff-1
+            / cls.TIME_UNIT_MULTIPLIER.get(time_unit, 1)
         )
 
     @classmethod
-    def accumulated_time(cls, case, ix_list):
+    def accumulated_time(cls, case, ix_list, time_unit="s"):
         """Calculate the accumulated time from the start of each case in seconds."""
         return (
             case[elc.timestamp]
             .apply(lambda x: x - x.min())
             .loc[ix_list]
             .dt.total_seconds()
+            / cls.TIME_UNIT_MULTIPLIER.get(time_unit, 1)
         )

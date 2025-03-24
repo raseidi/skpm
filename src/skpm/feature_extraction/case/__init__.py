@@ -1,4 +1,4 @@
-from .features import VariantExtractor
+from .variant import VariantExtractor
 
 __all__ = [
     "VariantExtractor",
