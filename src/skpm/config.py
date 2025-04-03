@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+EndOfTrace = str
 
 @dataclass
 class EventLogConfig:
@@ -9,6 +10,8 @@ class EventLogConfig:
     timestamp: str = "time:timestamp"
 
     default_file_format: str = ".parquet"
+    
+    EOT: EndOfTrace = "EOT"
 
     def update(self, **kwargs):
         for key, value in kwargs.items():
