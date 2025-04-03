@@ -3,7 +3,7 @@ import pandas as pd
 import datetime as dt
 
 import pytest
-from skpm.feature_extraction.event import TimestampExtractor
+from skpm.feature_extraction import TimestampExtractor
 from skpm.config import EventLogConfig as elc
 
 @pytest.fixture(name="dummy_data")

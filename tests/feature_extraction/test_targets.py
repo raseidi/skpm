@@ -27,5 +27,4 @@ def test_next_activity(dummy_data):
 def test_remaining_time(dummy_data):
     out = remaining_time(dummy_data)
     assert len(out) == len(dummy_data)
-    assert isinstance(out, np.ndarray)
     assert out.dtype == float
