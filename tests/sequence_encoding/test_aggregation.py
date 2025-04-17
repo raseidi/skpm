@@ -113,3 +113,18 @@ def test_invalid_input(pd_df):
     with pytest.raises(AssertionError):
         agg = Aggregation().fit(pd_df)
         agg.transform(pd_df.values)
+
+def test_methods(pd_df):
+    methods = Aggregation._parameter_constraints["method"][0].options
+    for method in methods:
+        out_pd = Aggregation(method=method).fit_transform(pd_df)
+        out_pl = Aggregation(method=method, engine="polars").fit_transform(pd_df)
+        pd.testing.assert_frame_equal(out_pd, out_pl, check_dtype=False)
+        
+        # pandas engine
+        assert isinstance(out_pd, pd.DataFrame)
+        assert out_pd.shape[0] == pd_df.shape[0]
+        
+        # polars engine
+        assert isinstance(out_pl, pd.DataFrame)
+        assert out_pl.shape[0] == pd_df.shape[0]
