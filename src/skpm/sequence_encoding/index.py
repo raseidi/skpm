@@ -31,7 +31,7 @@ class Indexing(TransformerMixin, BaseProcessEstimator):
         group = X.groupby(elc.case_id)
         
         out_df = pd.DataFrame()
-        lags = range(1, self.n + 1)
+        lags = range(self.n)
         for col in self.attributes:
             lagged_cols = [f"{col}_lag_{lag}" for lag in lags]
             out_df[lagged_cols] = group[col].shift(lags, fill_value=self.fill_value)
