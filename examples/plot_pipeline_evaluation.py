@@ -24,11 +24,11 @@ from sklearn.metrics import root_mean_squared_error
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 
-from skpm.encoding import Aggregation
+from skpm.sequence_encoding import Aggregation
 from skpm.config import EventLogConfig as elc
 from skpm.event_logs import BPI20PrepaidTravelCosts, split
-from skpm.event_feature_extraction.targets import remaining_time
-from skpm.event_feature_extraction import TimestampExtractor, ResourcePoolExtractor
+from skpm.feature_extraction.targets import remaining_time
+from skpm.feature_extraction import TimestampExtractor, ResourcePoolExtractor
 
 # Set random state for reproducible results
 RANDOM_STATE = 44
@@ -73,7 +73,7 @@ data_prep_advanced = Pipeline([
             ("resource_pool", ResourcePoolExtractor(), [elc.case_id, elc.activity, elc.resource]),
             ("case_id_pass", "passthrough", [elc.case_id]),
         ])),
-    ("encode_agg", Aggregation(method="mean", window_size=6)),
+    ("encode_agg", Aggregation(method="mean", prefix_len=6)),
     ("scaling", StandardScaler()),
 ])
 
@@ -83,7 +83,7 @@ data_prep_simple = Pipeline([
             ("activity_encode", OneHotEncoder(sparse_output=False), [elc.activity]),
             ("case_id_pass", "passthrough", [elc.case_id]),
     ])),
-    ("encode_agg", Aggregation(method="mean", window_size=6)),
+    ("encode_agg", Aggregation(method="mean", prefix_len=6)),
     ("scaling", StandardScaler()),
 ])
 

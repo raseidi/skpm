@@ -9,6 +9,24 @@ from sklearn.utils.validation import check_is_fitted
 from skpm.base import BaseProcessEstimator
 from skpm.config import EventLogConfig as elc
 
+def handle_aggregation_method(method):
+    """Handle the aggregation method.
+
+    Parameters
+    ----------
+    method : str
+        The aggregation method to be handled.
+
+    Returns
+    -------
+    str, callable
+        The aggregation method that pandas or polars can use.
+    """
+    if method == "norm":
+        from numpy import linalg
+        return linalg.norm
+    return method
+
 class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     """Sequence Encoding Transformer.
 
@@ -65,7 +83,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     _case_id = elc.case_id
     _parameter_constraints = {
         "method": [
-            StrOptions({"sum", "mean", "median"}),
+            StrOptions({"sum", "mean", "median", "norm"}),
         ],
         "engine": [
             StrOptions({"pandas", "polars"}),
@@ -145,6 +163,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         X = self._validate_log(X)
 
         X, y = self.validate_engine_with_df(X, y)
+        self._method_fn = handle_aggregation_method(self.method)
         if self.engine == "pandas":  # If using Pandas DataFrame
             if isinstance(X, pl.DataFrame):
                 X = X.to_pandas()
@@ -162,20 +181,33 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
 
         X = (
             group.rolling(window=self.prefix_len, min_periods=1)
-            .agg(self.method)
+            .agg(self._method_fn)
             .reset_index(drop=True)
         )
         return X
 
     def _transform_polars(self, X: pl.DataFrame):
         """Transforms Polars DataFrame."""
-        X = X.with_columns(
-            [
-                getattr(pl.col(col), f"rolling_{self.method}")(
-                    window_size=self.prefix_len, min_periods=1
-                ).over(self._case_id)
-                for col in X.columns
-                if col != self._case_id
-            ]
-        )
+        
+        def _make_rolling_expr(col_name: str, method_fn: Union[str, callable]) -> pl.Expr:
+            expr = pl.col(col_name)
+            
+            if isinstance(method_fn, str):
+                builtin = f"rolling_{method_fn}"
+                fn = getattr(expr, builtin)
+                return fn(window_size=self.prefix_len, min_samples=1)
+            else:
+                expr = pl.col(col_name).cast(pl.Float32)
+                return expr.rolling_map(
+                    function=method_fn,
+                    window_size=self.prefix_len,
+                    min_samples=1
+                )
+
+        X = X.with_columns([
+            _make_rolling_expr(c, self._method_fn).over(self._case_id)
+            for c in X.columns
+            if c != self._case_id
+        ])
+ 
         return X.drop(self._case_id)
