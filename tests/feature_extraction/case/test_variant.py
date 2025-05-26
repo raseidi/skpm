@@ -8,6 +8,7 @@ from skpm.config import EventLogConfig as elc
 
 def test_variants():
     n_cases = 100
+    np.random.seed(42)
     dummy_data = pd.DataFrame(
         {
             elc.case_id: np.random.randint(0, n_cases, 1000),

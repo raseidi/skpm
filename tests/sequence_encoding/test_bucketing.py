@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from skpm.bucketing import Bucketing
+from skpm.sequence_encoding import Bucketing
 from skpm.config import EventLogConfig as elc
 
 
