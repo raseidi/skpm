@@ -28,13 +28,13 @@ from sklearn.pipeline import Pipeline, FunctionTransformer
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
 
-from skpm.encoding import Aggregation
+from skpm.sequence_encoding import Aggregation
 from skpm.config import EventLogConfig as elc
-from skpm.event_feature_extraction import (
+from skpm.feature_extraction import (
     TimestampExtractor,
     ResourcePoolExtractor,
 )
-from skpm.event_feature_extraction.targets import remaining_time
+from skpm.feature_extraction.targets import remaining_time
 from skpm.event_logs import BPI13ClosedProblems
 
 # %%

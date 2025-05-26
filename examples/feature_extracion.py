@@ -27,7 +27,7 @@ uder development so we will focus on the latter.
 # %%
 import pandas as pd
 from skpm.config import EventLogConfig as elc
-from skpm.event_feature_extraction import TimestampExtractor
+from skpm.feature_extraction import TimestampExtractor
 from skpm.event_logs import split, BPI17
 
 # download the dataset
@@ -64,7 +64,7 @@ train.iloc[0, :].T
 # resource roles based on the correlation between activities and resources.
 # You can easily use this function as shown below:
 
-from skpm.event_feature_extraction import ResourcePoolExtractor
+from skpm.feature_extraction import ResourcePoolExtractor
 
 re = ResourcePoolExtractor().fit(train)
 # re.get_feature_names_out()
@@ -98,7 +98,7 @@ ax.bar(features, values, edgecolor="black")
 #
 # Let's see how it works:
 
-from skpm.event_feature_extraction import WorkInProgress
+from skpm.feature_extraction import WorkInProgress
 
 wip = WorkInProgress()
 wip.fit(train)

@@ -32,17 +32,18 @@ class TUEventLog(BasePreprocessing):
     load the event logs.
     By default, we keep the .xes files in the raw folder
 
-    Args:
-    -----
-        root_path (str, optional): Path where the event log will be stored.
-            Defaults to "./data".
-        config (Union[str, dict], optional): Configuration of the event log.
-            Defaults to "default" (it just renames a few columns in the
-            current version).
-        transforms (Any, optional): Transformations to be applied to the event
-        log.
-            Defaults to None. To be implemented.
-        kwargs: Additional arguments to be passed to the base class.
+    Parameters
+    ----------
+    root_folder : str, optional
+        Path where the event log will be stored. Defaults to "./data".
+    save_as_pandas : bool, optional
+        Whether to save the event log as a Pandas DataFrame. Defaults to
+        True.
+    train_set : bool, optional
+        Whether the event log is for the training set. Defaults to True.
+    file_path : str, optional
+        Path to the event log file. If None, the file will be downloaded.
+        Defaults to None.
 
     References:
     -----------
@@ -63,24 +64,6 @@ class TUEventLog(BasePreprocessing):
         train_set: bool = True,
         file_path: str = None,
     ) -> None:
-        """
-        Initialize the TUEventLog object.
-
-        TODO: file_name, file_path, root_folder ??
-
-        Parameters
-        ----------
-        root_folder : str, optional
-            Path where the event log will be stored. Defaults to "./data".
-        save_as_pandas : bool, optional
-            Whether to save the event log as a Pandas DataFrame. Defaults to
-            True.
-        train_set : bool, optional
-            Whether the event log is for the training set. Defaults to True.
-        file_path : str, optional
-            Path to the event log file. If None, the file will be downloaded.
-            Defaults to None.
-        """
         super().__init__()
         self.root_folder = root_folder
         self.save_as_pandas = save_as_pandas

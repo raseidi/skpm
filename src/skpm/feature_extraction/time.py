@@ -181,9 +181,16 @@ class TimestampExtractor(
             else:
                 X[feature_name] = feature_fn(X[elc.timestamp])
 
+        # targets
+        for feature_name, feature_fn in self.targets:
+            X[feature_name] = feature_fn(
+                case=self.group_,
+                ix_list=X.index.values,
+                time_unit=self.time_unit,
+            )
         output_columns = [
             feature[0]
-            for feature in self.case_features + self.event_features
+            for feature in self.case_features + self.event_features + self.targets
         ]
         return X.loc[:, output_columns].values
 

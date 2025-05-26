@@ -18,10 +18,7 @@ class Bucketing(TransformerMixin, BaseProcessEstimator):
 
         - "single": Assigns all events to a single bucket.
         - "prefix": Groups events based on the order in which they occur within each case, assigning sequential buckets.
-        - "clustering": The "clustering" strategy, though not implemented in the provided code, would involve
-        using clustering techniques to group events based on similarity or patterns in their attributes. This approach
-        could potentially identify clusters of events that exhibit similar behavior or characteristics, allowing for
-        more nuanced and context-aware bucketing.
+        - "clustering": Not implemented yet, but intended to assign buckets based on clustering of event features.
 
     Methods
     -------
@@ -61,8 +58,6 @@ class Bucketing(TransformerMixin, BaseProcessEstimator):
         ----------
         X : array-like or DataFrame
             The input data.
-        y : array-like or DataFrame, optional
-            The target data. Default is None.
 
         Returns
         -------
@@ -79,8 +74,6 @@ class Bucketing(TransformerMixin, BaseProcessEstimator):
         ----------
         X : array-like or DataFrame
             The input data.
-        y : array-like or DataFrame, optional
-            The target data. Default is None.
 
         Returns
         -------
