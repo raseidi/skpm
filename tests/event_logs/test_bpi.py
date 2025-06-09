@@ -58,11 +58,12 @@ from tempfile import TemporaryDirectory
 
 def test_bpi():
     with TemporaryDirectory() as tmpdirname:
-        bpi = BPI13ClosedProblems(root_folder=tmpdirname)
+        bpi = BPI13ClosedProblems(cache_folder=tmpdirname)
 
         assert isinstance(bpi.dataframe, pd.DataFrame)
         assert isinstance(bpi.__repr__(), str)
         assert isinstance(len(bpi.dataframe), int)
 
         # covering pytest when the file already exists
-        bpi = BPI13ClosedProblems(bpi.file_path)
+        with pytest.raises(ValueError):
+            bpi = BPI13ClosedProblems(bpi.file_path)
