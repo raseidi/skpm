@@ -17,6 +17,28 @@ class EventLogConfig:
     Changes to the global config  automatically propagate to all instances.
     SkPM will never rename columns, so users should ensure their data matches the
     expected column names.
+    
+    Attributes
+    ----------
+    case_id : str
+        Case ID column name.
+    activity : str
+        Activity column name.
+    timestamp : str
+        Timestamp column name.
+
+    Methods
+    -------
+    to_dict() -> Dict[str, str]
+        Convert current configuration to dictionary.
+    get_global_config() -> Dict[str, str]
+        Get the current global configuration.
+    set_global_config(case_id: Optional[str] = None, activity: Optional[str] = None, timestamp: Optional[str] = None) -> None
+        Set the global configuration.
+    reset_global_config() -> None
+        Reset global configuration to defaults.
+    get_summary_stats() -> Dict[str, Any]
+        Get summary statistics for the event log.
 
     Examples
     --------
@@ -25,6 +47,13 @@ class EventLogConfig:
 
     # Reset global configuration to defaults
     EventLogConfig.reset_global_config()
+    
+    Notes
+    -----
+    The global configuration is shared across all instances of EventLogConfig.
+    If you need instance-specific configurations, consider subclassing EventLogConfig.
+    This class is designed to be used as a singleton, where the global configuration
+    is modified through class methods rather than instance methods.
     """
 
     # Global default configuration - shared across all instances
@@ -55,8 +84,6 @@ class EventLogConfig:
             "case_id": self.case_id,
             "activity": self.activity,
             "timestamp": self.timestamp,
-            "resource": self.resource,
-            "default_file_format": self.default_file_format,
         }
 
     @classmethod
@@ -70,7 +97,6 @@ class EventLogConfig:
         case_id: Optional[str] = None,
         activity: Optional[str] = None,
         timestamp: Optional[str] = None,
-        resource: Optional[str] = None,
     ) -> None:
         """
         Set the global configuration.
@@ -85,10 +111,6 @@ class EventLogConfig:
             Activity column name.
         timestamp : Optional[str]
             Timestamp column name.
-        resource : Optional[str]
-            Resource column name.
-        default_file_format : Optional[str]
-            Default file format.
         """
         if case_id is not None:
             cls._GLOBAL_CONFIG["case_id"] = case_id
@@ -96,8 +118,6 @@ class EventLogConfig:
             cls._GLOBAL_CONFIG["activity"] = activity
         if timestamp is not None:
             cls._GLOBAL_CONFIG["timestamp"] = timestamp
-        if resource is not None:
-            cls._GLOBAL_CONFIG["resource"] = resource
 
     @classmethod
     def reset_global_config(cls) -> None:
@@ -209,15 +229,23 @@ class TUEventLog(EventLog):
     Parameters
     ----------
     cache_folder : Union[str, Path], optional
-        Folder to cache downloaded files (default is Path.home() / "skpm" / "event_logs")
+        Folder to cache downloaded files (default is Path.home() / "skpm" / "event_logs")4
+    default_file_format : str, optional
+        Default file format for the event log (options: "parquet", "csv"; default is "parquet")
     Attributes
     ----------
     url : Optional[str]
-        URL to download the event log from (should be set in subclasses)
+        Remote URL to download the event log from (should be set in subclasses)
+    cached_file_name : Path
+        Name of the cached file (will be set based on class name and default file format)
+    cache_folder : Path
+        Folder where the event log file will be cached (default is Path.home() / "skpm" / "event_logs" / class name)
     file_name : Optional[str]
         Name of the file to download (should be set in subclasses)
     file_path : Path
         Path to the event log file (will be set based on file_name and cache_folder)
+    _dataframe : Optional[pd.DataFrame]
+        DataFrame containing the event log data (will be set after loading)
     unbiased_split_params : Optional[Dict[str, Any]]
         Parameters for unbiased data splitting (should be set in subclasses)
     """
@@ -236,16 +264,6 @@ class TUEventLog(EventLog):
         cache_folder: Union[str, Path] = None,
         default_file_format: str = "parquet",
     ) -> None:
-        """
-        Initialize TUEventLog.
-
-        Parameters
-        ----------
-        cache_folder : Union[str, Path]
-            Folder to cache downloaded files (should be provided if file_path is None)
-        default_file_format : str
-            Default file format for the event log for caching (options: 'parquet', 'csv')
-        """
         self.default_file_format = self.file_formats.get(
             default_file_format, ".parquet"
         )
@@ -336,14 +354,7 @@ class TUEventLog(EventLog):
             raise ValueError(f"Unsupported file format: {file_path.suffix}")
 
     def _extract_gz(self):
-        r"""Extracts a gz archive to a specific folder.
-
-        Args:
-            path (str): The path to the tar archive.
-            folder (str): The folder.
-            log (bool, optional): If :obj:`False`, will not print anything to the
-                console. (default: :obj:`True`)
-        """
+        """Extracts a gz archive to a specific folder."""
         import gzip
 
         # self.file_path = a/b/c.xez.gz
