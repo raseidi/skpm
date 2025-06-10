@@ -1,148 +1,21 @@
-import os
 import logging
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
+from urllib import request
 
 import pandas as pd
 
+from skpm.base import EventLogConfigMixin
 from skpm.event_logs.parser import read_xes
-from urllib import request
 
-
-class EventLogConfig:
-    """
-    Global configuration manager for event log column mappings and file formats.
-
-    This class supports global configuration following the classic XES naming.
-    Changes to the global config  automatically propagate to all instances.
-    SkPM will never rename columns, so users should ensure their data matches the
-    expected column names.
+class EventLog(EventLogConfigMixin):
+    """Base class for event log handling with common functionality.
     
-    Attributes
-    ----------
-    case_id : str
-        Case ID column name.
-    activity : str
-        Activity column name.
-    timestamp : str
-        Timestamp column name.
-
-    Methods
-    -------
-    to_dict() -> Dict[str, str]
-        Convert current configuration to dictionary.
-    get_global_config() -> Dict[str, str]
-        Get the current global configuration.
-    set_global_config(case_id: Optional[str] = None, activity: Optional[str] = None, timestamp: Optional[str] = None) -> None
-        Set the global configuration.
-    reset_global_config() -> None
-        Reset global configuration to defaults.
-    get_summary_stats() -> Dict[str, Any]
-        Get summary statistics for the event log.
-
-    Examples
-    --------
-    # Set global configuration
-    EventLogConfig.set_global_config(case_id='case_id', activity='activity')
-
-    # Reset global configuration to defaults
-    EventLogConfig.reset_global_config()
-    
-    Notes
-    -----
-    The global configuration is shared across all instances of EventLogConfig.
-    If you need instance-specific configurations, consider subclassing EventLogConfig.
-    This class is designed to be used as a singleton, where the global configuration
-    is modified through class methods rather than instance methods.
+    Every class that handles event logs should inherit from this class.
+    This class provides methods for preprocessing, validation, and summary statistics
+    of event logs. It also defines the expected structure of an event log,
+    including case ID, activity, and timestamp columns.
     """
-
-    # Global default configuration - shared across all instances
-    _GLOBAL_CONFIG = {
-        "case_id": "case:concept:name",
-        "activity": "concept:name",
-        "timestamp": "time:timestamp",
-    }
-
-    @property
-    def case_id(self) -> str:
-        """Case ID column name."""
-        return self._GLOBAL_CONFIG["case_id"]
-
-    @property
-    def activity(self) -> str:
-        """Activity column name."""
-        return self._GLOBAL_CONFIG["activity"]
-
-    @property
-    def timestamp(self) -> str:
-        """Timestamp column name."""
-        return self._GLOBAL_CONFIG["timestamp"]
-
-    def to_dict(self) -> Dict[str, str]:
-        """Convert current configuration to dictionary."""
-        return {
-            "case_id": self.case_id,
-            "activity": self.activity,
-            "timestamp": self.timestamp,
-        }
-
-    @classmethod
-    def get_global_config(cls) -> Dict[str, str]:
-        """Get the current global configuration."""
-        return cls._GLOBAL_CONFIG.copy()
-
-    @classmethod
-    def set_global_config(
-        cls,
-        case_id: Optional[str] = None,
-        activity: Optional[str] = None,
-        timestamp: Optional[str] = None,
-    ) -> None:
-        """
-        Set the global configuration.
-
-        This will affect all instances that don't have explicit overrides.
-
-        Parameters
-        ----------
-        case_id : Optional[str]
-            Case ID column name.
-        activity : Optional[str]
-            Activity column name.
-        timestamp : Optional[str]
-            Timestamp column name.
-        """
-        if case_id is not None:
-            cls._GLOBAL_CONFIG["case_id"] = case_id
-        if activity is not None:
-            cls._GLOBAL_CONFIG["activity"] = activity
-        if timestamp is not None:
-            cls._GLOBAL_CONFIG["timestamp"] = timestamp
-
-    @classmethod
-    def reset_global_config(cls) -> None:
-        """Reset global configuration to defaults."""
-        cls._GLOBAL_CONFIG = {
-            "case_id": "case:concept:name",
-            "activity": "concept:name",
-            "timestamp": "time:timestamp",
-        }
-
-    def __repr__(self) -> str:
-        """String representation showing current configuration."""
-        config = self.to_dict()
-
-        lines = ["EventLogConfig:"]
-        for key, value in config.items():
-            lines.append(f"  {key}: '{value}'")
-
-        return "\n".join(lines)
-
-
-class EventLog:
-    """Base class for event log handling with common functionality."""
-
-    config: EventLogConfig = EventLogConfig()
     _dataframe: Optional[pd.DataFrame] = None
 
     def __init__(self, dataframe: Optional[pd.DataFrame] = None):
@@ -153,19 +26,8 @@ class EventLog:
 
     @property
     def dataframe(self) -> pd.DataFrame:
+        """Get the event log DataFrame."""
         return self._dataframe
-
-    @property
-    def case_id(self) -> str:
-        return self.config.case_id
-
-    @property
-    def activity(self) -> str:
-        return self.config.activity
-
-    @property
-    def timestamp(self) -> str:
-        return self.config.timestamp
 
     def preprocess(self) -> None:
         """Preprocess the dataframe by converting timestamps."""
@@ -305,7 +167,7 @@ class TUEventLog(EventLog):
 
         df = self._read_log()
         if df is None or df.empty:
-            raise ValueError(f"Failed to load data from {self._file_path}")
+            raise ValueError(f"Failed to load data from {self.file_path}")
 
         super().__init__(dataframe=df)
 
