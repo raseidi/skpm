@@ -3,20 +3,19 @@ from pandas import DataFrame
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import validate_data
 
-from .config import EventLogConfig as elc
+from skpm.config import EventLogConfigMixin
+
 from .utils.validation import ensure_list, validate_columns
 
 
-class BaseProcessEstimator(BaseEstimator):
-    """Base class for all process estimators in skpm.
+class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
+    """Base class for all process estimators in SkPM.
 
     This class implements a common interface for all process,
     aiming at standardizing the validation and transformation
     of event logs.
 
-    For instance, all event logs must have a `case_id` column.
     """
-
     def _validate_log(
         self,
         X: DataFrame,
@@ -99,6 +98,6 @@ class BaseProcessEstimator(BaseEstimator):
             True if the case ID column is found, False otherwise.
         """
         for col in columns:
-            if col.endswith(elc.case_id):
+            if col.endswith(self.case_id):
                 return col
         raise ValueError(f"Case ID column not found.")

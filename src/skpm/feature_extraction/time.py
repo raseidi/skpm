@@ -3,16 +3,16 @@ from typing import Optional, Union
 
 import pandas as pd
 from sklearn.base import (
-    BaseEstimator,
-    ClassNamePrefixFeaturesOutMixin,
+    ClassNamePrefixFeaturesOutMixin, 
     TransformerMixin,
-    check_is_fitted,
+    check_is_fitted
 )
 
-from skpm.config import EventLogConfig as elc
+from skpm.base import BaseProcessEstimator
 from skpm.feature_extraction.case.time import TimestampCaseLevel
 from skpm.feature_extraction.event.time import TimestampEventLevel
 from skpm.utils import validate_columns, validate_methods_from_class
+
 
 def _to_list(x):
     if x == "all" or x is None:
@@ -20,7 +20,7 @@ def _to_list(x):
     return [x] if not isinstance(x, list) else x
 
 class TimestampExtractor(
-    ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
+    ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseProcessEstimator
 ):
     """Extracts features from a timestamp column.
 
@@ -164,7 +164,7 @@ class TimestampExtractor(
 
         # case-level features
         self.group_ = X.groupby(
-            elc.case_id, as_index=False, group_keys=False, observed=True
+            self.case_id, as_index=False, group_keys=False, observed=True
         )
         for feature_name, feature_fn in self.case_features:
             X[feature_name] = feature_fn(
@@ -177,9 +177,9 @@ class TimestampExtractor(
         for feature_name, feature_fn in self.event_features:
             sig = inspect.signature(feature_fn)
             if "time_unit" in sig.parameters:
-                X[feature_name] = feature_fn(X[elc.timestamp], time_unit=self.time_unit)
+                X[feature_name] = feature_fn(X[self.timestamp], time_unit=self.time_unit)
             else:
-                X[feature_name] = feature_fn(X[elc.timestamp])
+                X[feature_name] = feature_fn(X[self.timestamp])
 
         # targets
         for feature_name, feature_fn in self.targets:
@@ -213,12 +213,12 @@ class TimestampExtractor(
         x.reset_index(drop=True, inplace=True)
         # x.columns = self._validate_columns(x.columns)
         valid_cols = validate_columns(
-            input_columns=x.columns, required=[elc.case_id, elc.timestamp]
+            input_columns=x.columns, required=[self.case_id, self.timestamp]
         )
         x = x[valid_cols]
 
         # check if it is a datetime column
-        x[elc.timestamp] = self._validate_timestamp_format(x)
+        x[self.timestamp] = self._validate_timestamp_format(x)
 
         return x
 
@@ -237,10 +237,10 @@ class TimestampExtractor(
 
         Returns:
         --------
-        x[elc.timestamp] : Series
+        x[self.timestamp] : Series
             Series containing the validated timestamps.
         """
-        if not x[elc.timestamp].dtype == "datetime64[ns]":
+        if not x[self.timestamp].dtype == "datetime64[ns]":
             # pd = check_pandas_support(
             #     "'pandas' not found. Please install it to use this method."
             # )
@@ -249,12 +249,12 @@ class TimestampExtractor(
                 # we are assuming that the datetime format is '%Y-%m-%d %H:%M:%S'.
                 # TODO: validate alternative datetime formats.
                 # '%Y-%m-%d %H:%M:%S' format should be mandatory
-                x[elc.timestamp] = pd.to_datetime(
-                    x[elc.timestamp], format=timestamp_format
+                x[self.timestamp] = pd.to_datetime(
+                    x[self.timestamp], format=timestamp_format
                 )
             except:
                 raise ValueError(
-                    f"Column '{elc.timestamp}' is not a valid datetime column."
+                    f"Column '{self.timestamp}' is not a valid datetime column."
                 )
 
         # TODO: ensure datetime format
@@ -265,5 +265,5 @@ class TimestampExtractor(
         # except ValueError:
         #     print(f"'{x}' is not in the correct format '%Y-%m-%d %H:%M:%S'")
         #     pass
-        return x[elc.timestamp]
+        return x[self.timestamp]
 
