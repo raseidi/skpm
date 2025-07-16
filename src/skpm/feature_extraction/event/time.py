@@ -1,5 +1,3 @@
-from skpm.config import EventLogConfig as elc
-
 class TimestampEventLevel:
     """
     Provides methods to extract time-related features from the event level.

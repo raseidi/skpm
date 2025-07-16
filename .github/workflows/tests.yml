@@ -12,50 +12,43 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ['3.10.16']
-        os: [ubuntu-latest] #, windows-latest]
+        python: ['3.10.16', '3.12.0']
+        os: [ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python ${{ matrix.python }}
-        uses: actions/setup-python@v4
+      - name: Install uv and set up Python
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python }}
-          cache: 'pip'
-      
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-    
-      - name: Install Python dependencies
+
+      - name: Install core dependencies
         run: |
-          poetry install
-      
-      - run: |
-          source $VENV
-          pytest --version
+          uv sync
 
-      - name: pytest
-        run: poetry run pytest --cov=skpm tests
+      - name: Add test & coverage tools
+        run: |
+          uv run pip install pytest pytest-cov coverage
 
-      - name: Statistics
+      - name: Check pytest
+        run: uv run pytest --version
+
+      - name: Run tests
+        run: uv run pytest --cov=skpm tests
+
+      - name: Coverage report
         if: success()
         run: |
-          poetry run coverage report
-          poetry run coverage xml
+          uv run coverage report
+          uv run coverage xml
 
-      
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         if: always()
-        # see: https://github.com/actions/toolkit/issues/399
         continue-on-error: true
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage.xml
-          # flags: cpu
           name: Coverage
           fail_ci_if_error: false

@@ -139,3 +139,49 @@ def unbiased(
     )
 
     return df_train, df_test
+
+def temporal(dataset: pd.DataFrame | TUEventLog, test_len: float = 0.2) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Temporal split of event log into training and test set.
+
+    Parameters
+    ----------
+    dataset: pd.DataFrame
+        Event log.
+
+    test_len: float, default=0.2
+        Proportion of cases to be used for the test set.
+
+    Returns
+    -------
+    - df_train: pd.DataFrame, training set
+    - df_test: pd.DataFrame, test set
+    """
+    if isinstance(dataset, TUEventLog):
+        dataset = dataset.dataframe
+        
+    dataset = dataset.copy()
+    
+    dataset[elc.timestamp] = pd.to_datetime(
+        dataset[elc.timestamp], utc=True
+    ).dt.tz_localize(None)
+
+    grouped = dataset.groupby(elc.case_id, as_index=False)[elc.timestamp].agg(
+        ["min", "max"]
+    )
+
+    first_test_case_nr = int(len(grouped) * (1 - test_len))
+    first_test_start_time = (
+        grouped["min"].sort_values().values[first_test_case_nr]
+    )
+    
+    # retain cases that end after first_test_start time
+    test_case_nrs = grouped.loc[
+        grouped["max"].values >= first_test_start_time, elc.case_id
+    ]
+    
+    df_test = dataset[dataset[elc.case_id].isin(test_case_nrs)].reset_index(drop=True)
+    
+    df_train = dataset[~dataset[elc.case_id].isin(test_case_nrs)].reset_index(drop=True)
+
+    return df_train, df_test

@@ -1,200 +1,239 @@
-import os
+import logging
+from pathlib import Path
+from typing import Any, Dict, Optional, Union
+from urllib import request
 
 import pandas as pd
 
-from skpm.config import EventLogConfig as elc
+from skpm.base import EventLogConfigMixin
 from skpm.event_logs.parser import read_xes
-from skpm.event_logs.download import download_url
-from skpm.event_logs.extract import extract_gz
 
-
-class BasePreprocessing:
-    def preprocess(self):
-        """
-        Preprocess the event log by converting the timestamp column to
-        datetime format.
-        """
-        self._dataframe[elc.timestamp] = pd.to_datetime(
-            self._dataframe[elc.timestamp], utc=True, format="mixed"
-        )
-
-
-class TUEventLog(BasePreprocessing):
+class EventLog(EventLogConfigMixin):
+    """Base class for event log handling with common functionality.
+    
+    Every class that handles event logs should inherit from this class.
+    This class provides methods for preprocessing, validation, and summary statistics
+    of event logs. It also defines the expected structure of an event log,
+    including case ID, activity, and timestamp columns.
     """
-    Base class for event logs from the 4TU repository.
+    _dataframe: Optional[pd.DataFrame] = None
 
-    It provides the basic structure for downloading, preprocessing, and
-    splitting
-    Furthermore, it provides the basic structure for caching the logs.
+    def __init__(self, dataframe: Optional[pd.DataFrame] = None):
+        self._dataframe = dataframe
 
-    Event logs from the 4tu repository [1] are downloaded as .xes.gz files
-    and then converted to parquet files. The parquet files are then used to
-    load the event logs.
-    By default, we keep the .xes files in the raw folder
-
-    Parameters
-    ----------
-    root_folder : str, optional
-        Path where the event log will be stored. Defaults to "./data".
-    save_as_pandas : bool, optional
-        Whether to save the event log as a Pandas DataFrame. Defaults to
-        True.
-    train_set : bool, optional
-        Whether the event log is for the training set. Defaults to True.
-    file_path : str, optional
-        Path to the event log file. If None, the file will be downloaded.
-        Defaults to None.
-
-    References:
-    -----------
-    [1] 4TU Research Data: https://data.4tu.nl/
-    """
-
-    url: str = None
-    md5: str = None
-    file_name: str = None
-    meta_data: str = None  # TODO: download DATA.xml from the 4TU repository
-
-    _unbiased_split_params: dict = None
-
-    def __init__(
-        self,
-        root_folder: str = "./data",
-        save_as_pandas: bool = True,
-        train_set: bool = True,
-        file_path: str = None,
-    ) -> None:
-        super().__init__()
-        self.root_folder = root_folder
-        self.save_as_pandas = save_as_pandas
-        self.train_set = train_set
-
-        if file_path is None:
-            self._file_path = os.path.join(
-                self.root_folder,
-                self.__class__.__name__,
-                self.file_name.replace(".gz", "").replace(
-                    ".xes", elc.default_file_format
-                ),
-            )
-        else:
-            self._file_path = file_path
-
-        if not os.path.exists(self.file_path):
-            self.download()
-
-        self._dataframe = self.read_log()
-        self.preprocess()
+        if self._dataframe is not None:
+            self.preprocess()
 
     @property
     def dataframe(self) -> pd.DataFrame:
-        """
-        pd.DataFrame: DataFrame containing the event log data.
-        """
+        """Get the event log DataFrame."""
         return self._dataframe
 
-    @property
-    def file_path(self) -> str:
-        """
-        str: Path to the event log file.
-        """
-        return self._file_path
+    def preprocess(self) -> None:
+        """Preprocess the dataframe by converting timestamps."""
+        if self.dataframe is None:
+            raise ValueError("No dataframe loaded to preprocess")
 
-    @file_path.setter
-    def file_path(self, value):
-        self._file_path = value
-
-    @property
-    def unbiased_split_params(self) -> dict:
-        """
-        dict: Parameters for the unbiased split of the event log.
-        """
-        if self._unbiased_split_params is None:
-            raise ValueError(
-                f"Unbiased split not available for {self.__class__.__name__}."
-            )
-        return self._unbiased_split_params
-
-    def __len__(self):
-        """
-        Get the number of events in the event log.
-
-        Returns
-        -------
-        int
-            Number of events in the event log.
-        """
-        return len(self._dataframe)
-
-    def download(self) -> None:
-        """Generic method to download the event log from the 4TU Repository.
-
-        It downloads the event log from the url, uncompresses
-        it, and stores it. It can be overwritten by the
-        subclasses if needed.
-        """
-        destination_folder = os.path.join("data", self.__class__.__name__)
-        print(f"Downloading {destination_folder}")
-        path = download_url(
-            url=self.url, folder=destination_folder, file_name=self.file_name
+        # More efficient datetime conversion with error handling
+        self._dataframe[self.timestamp] = pd.to_datetime(
+            self._dataframe[self.timestamp],
+            utc=True,
+            format="mixed",
+            errors="coerce",
         )
-        if path.endswith(".xes"):
-            self.file_path = path
-            return
 
-        if path.endswith(".gz"):
-            self.file_path = extract_gz(
-                path=path, folder=os.path.dirname(destination_folder)
-            )
-        # TODO: elif other formats
-        os.remove(path)
+        # Log any failed conversions
+        null_count = self.dataframe[self.timestamp].isnull().sum()
+        if null_count > 0:
+            logging.warning(f"Failed to convert {null_count} timestamps")
 
-    def read_log(self) -> pd.DataFrame:
-        """
-        Read the event log from the file.
+        self._dataframe = self._dataframe.sort_values(
+            by=[self.timestamp], ascending=True
+        ).reset_index(drop=True)
 
-        Returns
-        -------
-        pd.DataFrame
-            DataFrame containing the event log data.
-        """
-        if self.file_path.endswith(".xes"):
-            log = read_xes(self.file_path)
+    def get_summary_stats(self) -> Dict[str, Any]:
+        """Get summary statistics for the event log."""
+        df = self.dataframe
 
-            if self.save_as_pandas:
-                new_file_path = self.file_path.replace(
-                    ".xes", elc.default_file_format
-                )
-                if elc.default_file_format == ".parquet":
-                    log.to_parquet(new_file_path)
-                else:
-                    raise ValueError("File format not implemented.")
-                os.remove(self.file_path)
-                self.file_path = new_file_path
-
-        elif self.file_path.endswith(elc.default_file_format):
-            log = pd.read_parquet(self.file_path)
-        else:
-            raise ValueError("File format not implemented.")
-
-        return log
+        return {
+            "n_cases": df[self.case_id].nunique(),
+            "n_events": len(df),
+            "n_activities": (
+                df[self.activity].nunique()
+                if self.activity in df.columns
+                else 0
+            ),
+        }
 
     def __repr__(self) -> str:
-        """
-        Return a string representation of the TUEventLog object.
+        """String representation of the BaseEventLog object."""
+        if self.dataframe is None:
+            return f"{self.__class__.__name__} (not loaded)"
 
-        Returns
-        -------
-        str
-            String representation of the TUEventLog object.
-        """
-        head = f"{self.__class__.__name__} Event Log"
-        body = [f"Number of cases: {self._dataframe[elc.case_id].nunique()}"]
-        body.append(f"Number of events: {self.__len__()}")
-        if self.file_path is not None:
-            body.append(
-                f"Event log location: {os.path.normpath(self.file_path)}"
-            )
-        body += "".splitlines()
-        lines = [head] + [" " * 4 + line for line in body]
+        stats = self.get_summary_stats()
+
+        lines = [
+            f"{self.__class__.__name__} Event Log",
+            f"    Cases: {stats['n_cases']:,}",
+            f"    Events: {stats['n_events']:,}",
+            f"    Activities: {stats['n_activities']:,}",
+        ]
+
         return "\n".join(lines)
+
+
+class TUEventLog(EventLog):
+    """
+    Class for downloading and managing 4TU repository data. This class
+    should be subclassed for specific event logs. The data will be either
+    downloaded from the 4TU repository or read from a default cached folder.
+
+    Parameters
+    ----------
+    cache_folder : Union[str, Path], optional
+        Folder to cache downloaded files (default is Path.home() / "skpm" / "event_logs")4
+    default_file_format : str, optional
+        Default file format for the event log (options: "parquet", "csv"; default is "parquet")
+    Attributes
+    ----------
+    url : Optional[str]
+        Remote URL to download the event log from (should be set in subclasses)
+    cached_file_name : Path
+        Name of the cached file (will be set based on class name and default file format)
+    cache_folder : Path
+        Folder where the event log file will be cached (default is Path.home() / "skpm" / "event_logs" / class name)
+    file_name : Optional[str]
+        Name of the file to download (should be set in subclasses)
+    file_path : Path
+        Path to the event log file (will be set based on file_name and cache_folder)
+    _dataframe : Optional[pd.DataFrame]
+        DataFrame containing the event log data (will be set after loading)
+    unbiased_split_params : Optional[Dict[str, Any]]
+        Parameters for unbiased data splitting (should be set in subclasses)
+    """
+
+    url: Optional[str] = None
+    file_name: Optional[str] = None
+    _unbiased_split_params: Optional[Dict[str, Any]] = None
+
+    file_formats = {
+        "parquet": ".parquet",
+        "csv": ".csv",
+    }
+
+    def __init__(
+        self,
+        cache_folder: Union[str, Path] = None,
+        default_file_format: str = "parquet",
+    ) -> None:
+        self.default_file_format = self.file_formats.get(
+            default_file_format, ".parquet"
+        )
+
+        if cache_folder is not None:
+            cache_folder = Path(cache_folder)
+            if not cache_folder.is_dir():
+                raise ValueError(
+                    f"cache_folder must be a directory: {cache_folder}"
+                )
+        self.cache_folder = (
+            Path(cache_folder) / Path(self.__class__.__name__)
+            if cache_folder
+            else Path.home()
+            / "skpm"
+            / "event_logs"
+            / Path(self.__class__.__name__)
+        )
+
+        self._ensure_data_loaded()
+
+    def _ensure_data_loaded(self) -> None:
+        """Ensure data is downloaded and loaded."""
+        if self._dataframe is not None:
+            return
+
+        self.cached_file_name = Path(self.__class__.__name__).with_suffix(
+            self.default_file_format
+        )
+        cached_file = self.cache_folder / self.cached_file_name
+        if not cached_file.exists():
+            self.cache_folder.mkdir(exist_ok=True)
+            self.file_path = self.cache_folder / self.file_name  # xes file
+        else:
+            self.file_path = cached_file
+
+        if not self.file_path.exists():
+            self._download()
+
+        df = self._read_log()
+        if df is None or df.empty:
+            raise ValueError(f"Failed to load data from {self.file_path}")
+
+        super().__init__(dataframe=df)
+
+    def _download(self) -> None:
+        if not self.url or not self.file_name:
+            raise ValueError("URL and file_name must be set for download")
+
+        with request.urlopen(request.Request(self.url)) as response:
+            with open(self.file_path, "wb") as fh:
+                while True:
+                    chunk = response.read(1024 * 32)
+                    if not chunk:
+                        break
+                    fh.write(chunk)
+
+        if self.file_path.suffix == ".gz":
+            self._extract_gz()
+
+    def _read_log(self) -> pd.DataFrame:
+        """Read event log from file with format detection."""
+        file_path = self.file_path
+
+        if file_path.suffix == ".xes":
+            log = read_xes(str(file_path))
+
+            # delete xes and save as pandas
+            self.file_path.unlink()
+            self.file_path = self.cache_folder / self.cached_file_name
+
+            if self.default_file_format == ".parquet":
+                log.to_parquet(self.file_path, index=False)
+            elif self.default_file_format == ".csv":
+                log.to_csv(self.file_path, index=False)
+            else:
+                raise ValueError(
+                    f"Unsupported format: {self.default_file_format}"
+                )
+
+            return log
+
+        elif file_path.suffix == ".parquet":
+            return pd.read_parquet(file_path)
+        elif file_path.suffix == ".csv":
+            return pd.read_csv(file_path)
+        else:
+            raise ValueError(f"Unsupported file format: {file_path.suffix}")
+
+    def _extract_gz(self):
+        """Extracts a gz archive to a specific folder."""
+        import gzip
+
+        # self.file_path = a/b/c.xez.gz
+        with gzip.open(self.file_path, "r") as r:
+            with open(self.file_path.with_suffix(""), "wb") as w:
+                w.write(r.read())
+
+        # self.file_path = a/b/c.xez
+        old_file_path = self.file_path
+        self.file_path = self.file_path.with_suffix("")
+        old_file_path.unlink()
+
+    @property
+    def unbiased_split_params(self) -> Dict[str, Any]:
+        """Parameters for unbiased data splitting."""
+        if self._unbiased_split_params is None:
+            raise ValueError(
+                f"Unbiased split not available for {self.__class__.__name__}"
+            )
+        return self._unbiased_split_params

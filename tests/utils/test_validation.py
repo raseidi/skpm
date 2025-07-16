@@ -1,8 +1,6 @@
 import os
 import pytest
 import numpy as np
-from skpm.event_logs.download import download_url
-from skpm.event_logs.extract import extract_gz
 from skpm.utils import validation as v
 
 
