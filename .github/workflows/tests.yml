@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ['3.10.16']
+        python: ['3.10.16', '3.12.0']
         os: [ubuntu-latest]
 
     steps:
@@ -21,19 +21,23 @@ jobs:
       - name: Install uv and set up Python
         uses: astral-sh/setup-uv@v6
         with:
-          python-version: ${{ matrix.python }}      
+          python-version: ${{ matrix.python }}
 
-      - name: Install dependencies (incl. dev)
+      - name: Install core dependencies
         run: |
-          uv sync --extra dev
+          uv sync
+
+      - name: Add test & coverage tools
+        run: |
+          uv run pip install pytest pytest-cov coverage
 
       - name: Check pytest
         run: uv run pytest --version
 
-      - name: pytest
+      - name: Run tests
         run: uv run pytest --cov=skpm tests
 
-      - name: Statistics
+      - name: Coverage report
         if: success()
         run: |
           uv run coverage report
