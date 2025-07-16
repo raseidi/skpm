@@ -1,34 +1,36 @@
-[tool.poetry]
+[project]
 name = "skpm"
 version = "0.0.1"
 description = "A process mining library built upon scikit-learn!"
-authors = ["Rafael Oyamada"]
-license = "MIT"
+authors = [{ name = "Rafael Oyamada" }]
+requires-python = ">=3.10"
 readme = "README.md"
+license = { text = "MIT" }
+dependencies = [
+    "scikit-learn>=1.6.1",
+    "pandas>=2.2.0",
+    "pyarrow>=16.0.0",
+    "polars>=0.20.16",
+    "lxml==5.1.0",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10"
-scikit-learn = ">=1.6.1"
-pandas = ">=2.2.0"
-pyarrow = ">=16.0.0"
-polars = ">=0.20.16"
-lxml = "5.1.0"
-
-[tool.poetry.group.dev.dependencies]
-pytest = ">=7.4.4"
-pytest-cov = ">=4.1.0"
-sphinx-autoapi = ">=3.0.0"
-sphinx-rtd-theme = ">=2.0.0"
-sphinx-gallery = ">=0.17.1"
-black = ">=24.1.1"
-codecov = ">=2.1.13"
-mypy = ">=1.8.0"
-coverage = ">=7.4.1"
-matplotlib = ">=3.8"
+[dependency-groups]
+dev = [
+    "pytest>=7.4.4",
+    "pytest-cov>=4.1.0",
+    "sphinx-autoapi>=3.0.0",
+    "sphinx-rtd-theme>=2.0.0",
+    "sphinx-gallery>=0.17.1",
+    "black>=24.1.1",
+    "codecov>=2.1.13",
+    "mypy>=1.8.0",
+    "coverage>=7.4.1",
+    "matplotlib>=3.8",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
 
 [tool.black]
 line-length = 80
