@@ -195,7 +195,9 @@ class TUEventLog(EventLog):
         for ix, file_path in enumerate(self.file_path):
             if file_path.suffix == ".xes":
                 log = read_xes(str(file_path))
-                log['log_version'] = file_path.stem  # Add log version from file name
+                
+                if len(self.file_path) > 1:
+                    log['log_version'] = file_path.stem  # Add log version from file name
                 df = pd.concat([df, log], ignore_index=True)
 
                 # delete xes and save as pandas
