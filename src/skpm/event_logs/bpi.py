@@ -1,5 +1,10 @@
 from skpm.event_logs.base import TUEventLog
 
+class BPI11(TUEventLog):
+    url: tuple[str] = (
+        "https://data.4tu.nl/file/5ea5bb88-feaa-4e6f-a743-6460a755e05b/6f9640f9-0f1e-44d2-9495-ef9d1bd82218",
+    )
+    file_name: tuple[str] = ("Hospital_log.xes.gz",)
 
 class BPI12(TUEventLog):
     """:doi:`BPI Challenge 2012 event log
@@ -29,13 +34,13 @@ class BPI12(TUEventLog):
     --------
     >>> bpi_12 = BPI12()
     >>> bpi_12.download()  # Manually download the event log
-    >>> event_log = bpi_12.dataframe()  # Access the event log DataFrame
+    >>> event_log = bpi_12.dataframe  # Access the event log DataFrame
     """
 
-    url: str = (
-        "https://data.4tu.nl/file/533f66a4-8911-4ac7-8612-1235d65d1f37/3276db7f-8bee-4f2b-88ee-92dbffb5a893"
+    url: tuple[str] = (
+        "https://data.4tu.nl/file/533f66a4-8911-4ac7-8612-1235d65d1f37/3276db7f-8bee-4f2b-88ee-92dbffb5a893",
     )
-    file_name: str = "BPI_Challenge_2012.xes.gz"
+    file_name: tuple[str] = ("BPI_Challenge_2012.xes.gz",)
     unbiased_split_params: dict = {
         "start_date": None,
         "end_date": "2012-02",
@@ -69,13 +74,13 @@ class BPI13ClosedProblems(TUEventLog):
     --------
     >>> bpi_13_incidents = BPI13Incidents()
     >>> bpi_13_incidents.download()  # Manually download the event log
-    >>> event_log = bpi_13_incidents.dataframe()  # Access the event log DataFrame
+    >>> event_log = bpi_13_incidents.dataframe  # Access the event log DataFrame
     """
 
-    url: str = (
-        "https://data.4tu.nl/file/1987a2a6-9f5b-4b14-8d26-ab7056b17929/8b99119d-9525-452e-bc8f-236ac76fa9c9"
+    url: tuple[str] = (
+        "https://data.4tu.nl/file/1987a2a6-9f5b-4b14-8d26-ab7056b17929/8b99119d-9525-452e-bc8f-236ac76fa9c9",
     )
-    file_name: str = "BPI_Challenge_2013_closed_problems.xes.gz"
+    file_name: tuple[str] = ("BPI_Challenge_2013_closed_problems.xes.gz",)
 
 
 class BPI13Incidents(TUEventLog):
@@ -101,13 +106,13 @@ class BPI13Incidents(TUEventLog):
     --------
     >>> bpi_13_open_problems = BPI13OpenProblems()
     >>> bpi_13_open_problems.download()  # Manually download the event log
-    >>> event_log = bpi_13_open_problems.dataframe()  # Access the event log DataFrame
+    >>> event_log = bpi_13_open_problems.dataframe  # Access the event log DataFrame
     """
 
-    url: str = (
-        "https://data.4tu.nl/file/0fc5c579-e544-4fab-9143-fab1f5192432/aa51ffbb-25fd-4b5a-b0b8-9aba659b7e8c"
+    url: tuple[str] = (
+        "https://data.4tu.nl/file/0fc5c579-e544-4fab-9143-fab1f5192432/aa51ffbb-25fd-4b5a-b0b8-9aba659b7e8c",
     )
-    file_name: str = "BPI_Challenge_2013_incidents.xes.gz"
+    file_name: tuple[str] = ("BPI_Challenge_2013_incidents.xes.gz",)
 
 
 class BPI13OpenProblems(TUEventLog):
@@ -135,14 +140,102 @@ class BPI13OpenProblems(TUEventLog):
     --------
     >>> bpi_13_open_problems = BPI13OpenProblems()
     >>> bpi_13_open_problems.download()  # Manually download the event log
-    >>> event_log = bpi_13_open_problems.dataframe()  # Access the event log DataFrame
+    >>> event_log = bpi_13_open_problems.dataframe  # Access the event log DataFrame
     """
 
-    url: str = (
-        "https://data.4tu.nl/file/7aafbf5b-97ae-48ba-bd0a-4d973a68cd35/0647ad1a-fa73-4376-bdb4-1b253576c3a1"
+    url: tuple[str] = (
+        "https://data.4tu.nl/file/7aafbf5b-97ae-48ba-bd0a-4d973a68cd35/0647ad1a-fa73-4376-bdb4-1b253576c3a1",
     )
-    file_name: str = "BPI_Challenge_2013_open_problems.xes.gz"
+    file_name: tuple[str] = ("BPI_Challenge_2013_open_problems.xes.gz",)
 
+
+class BPI15(TUEventLog):
+    """:doi:`BPI Challenge 2015 M5
+    <https://doi.org/10.4121/uuid:b32c6fe5-f212-4286-9774-58dd53511cf8>`.
+
+    The BPI 2015 event log is composed of five sub-logs (municipality 1-5).
+    This class concatenates these sub-logs into a single event log.
+
+    This data is provided by five Dutch municipalities. 
+    The data contains all building permit applications over a period of 
+    approximately four years. There are many different activities present, 
+    denoted by both codes (attribute concept:name) and labels, both in Dutch 
+    (attribute taskNameNL) and in English (attribute taskNameEN). The cases 
+    in the log contain information on the main application as well as objection 
+    procedures in various stages. Furthermore, information is available about 
+    the resource that carried out the task and on the cost of the application 
+    (attribute SUMleges). The processes in the five municipalities should be 
+    identical, but may differ slightly. Especially when changes are made to 
+    procedures, rules or regulations the time at which these changes are 
+    pushed into the five municipalities may differ. Of course, over the four 
+    year period, the underlying processes have changed. The municipalities 
+    have a number of questions, namely: What are the roles of the people 
+    involved in the various stages of the process and how do these roles 
+    differ across municipalities? What are the possible points for improvement 
+    on the organizational structure for each of the municipalities? The 
+    employees of two of the five municipalities have physically moved into 
+    the same location recently. Did this lead to a change in the processes 
+    and if so, what is different? Some of the procedures will be outsourced 
+    from 2018, i.e. they will be removed from the process and the applicant 
+    needs to have these activities performed by an external party before 
+    submitting the application. What will be the effect of this on the 
+    organizational structures in the five municipalities? Where are differences 
+    in throughput times between the municipalities and how can these be 
+    explained? What are the differences in control flow between the 
+    municipalities? There are five different log files available in this 
+    collection. Events are labeled with both a code and a Dutch and English 
+    label. Each activity code consists of three parts: two digits, a variable 
+    number of characters, and then three digits. The first two digits as well 
+    as the characters indicate the subprocess the activity belongs to. For 
+    instance '01_HOOFD_xxx' indicates the main process and '01_BB_xxx' 
+    indicates the 'objections and complaints' ('Beroep en Bezwaar' in Dutch) 
+    subprocess. The last three digits hint on the order in which activities 
+    are executed, where the first digit often indicates a phase within a 
+    process. Each trace and each event, contain several data attributes that 
+    can be used for various checks and predictions. Furthermore, some employees 
+    may have performed tasks for different municipalities, i.e. if the employee 
+    number is the same, it is safe to assume the same person is being 
+    identified.
+
+
+    Parameters
+    ----------
+    root_folder : str, optional
+        Path where the event log will be stored. Defaults to "data/".
+    save_as_pandas : bool, optional
+        Whether to save the event log as a pandas parquet file. Defaults to True.
+    train_set : bool, optional
+        Whether to use the train set or the test set. If True, use the train set. If False, use the test set. Defaults to True.
+
+    Examples
+    --------
+    >>> bpi_15 = BPI15()
+    >>> bpi_15.download()  # Manually download the event log
+    >>> event_log = bpi_15.dataframe  # Access the event log DataFrame
+    """
+
+    url: tuple[str] = (
+        "https://data.4tu.nl/file/32b70553-0765-4808-b155-aa5319802c8a/d39e1365-e4b8-4cb8-83d3-0b01cbf6f8c2",
+        "https://data.4tu.nl/file/34216d8a-f054-46d4-bf03-d9352f90967e/68923819-b085-43be-abe2-e084a0f1381f",
+        "https://data.4tu.nl/file/d6741425-5f62-4a59-92c5-08bae64b4611/21b574ab-02ba-4dfb-badc-bb46ce0edc44",
+        "https://data.4tu.nl/file/372d0cad-3fb1-4627-8ea9-51a09923d331/d653a8ec-4cd1-4029-8b61-6cfde4f4a666",
+        "https://data.4tu.nl/file/6f35269e-4ce7-4bc4-9abb-b3cea04cad00/2c8d5827-3e08-471d-98e2-6ffdec92f958",
+    )
+    file_name: tuple[str] = (
+        "BPIC15_5.xes",
+        "BPIC15_4.xes",
+        "BPIC15_3.xes",
+        "BPIC15_2.xes",
+        "BPIC15_1.xes",
+    )
+    
+    def __init__(self) -> None:
+        super().__init__()
+        
+        cols_to_drop = ["activityNameNL", "concept:name",]
+        self._dataframe = self._dataframe.drop(columns=cols_to_drop, errors="ignore")
+        self._dataframe = self._dataframe.rename(columns={"activityNameEN": "concept:name",})
+        
 
 class BPI17(TUEventLog):
     """:doi:`BPI Challenge 2017
@@ -175,13 +268,13 @@ class BPI17(TUEventLog):
     --------
     >>> bpi_17 = BPI17()
     >>> bpi_17.download()  # Manually download the event log
-    >>> event_log = bpi_17.dataframe()  # Access the event log DataFrame
+    >>> event_log = bpi_17.dataframe  # Access the event log DataFrame
     """
 
-    url: str = (
-        "https://data.4tu.nl/file/34c3f44b-3101-4ea9-8281-e38905c68b8d/f3aec4f7-d52c-4217-82f4-57d719a8298c"
+    url: tuple[str] = (
+        "https://data.4tu.nl/file/34c3f44b-3101-4ea9-8281-e38905c68b8d/f3aec4f7-d52c-4217-82f4-57d719a8298c",
     )
-    file_name: str = "BPI Challenge 2017.xes.gz"
+    file_name: tuple[str] = ("BPI Challenge 2017.xes.gz",)
     unbiased_split_params: dict = {
         "start_date": None,
         "end_date": "2017-01",
@@ -192,7 +285,7 @@ class BPI17(TUEventLog):
 class BPI19(TUEventLog):
     """:doi:`BPI Challenge 2019
     <https://doi.org/10.4121/uuid:d06aff4b-79f0-45e6-8ec8-e19730c248f1>`.
-    
+
 
     The BPI 2019 event log comes from a large multinational company in the
     coatings and paints industry, based in the Netherlands. It focuses on the
@@ -219,13 +312,13 @@ class BPI19(TUEventLog):
     --------
     >>> bpi_19 = BPI19()
     >>> bpi_19.download()  # Manually download the event log
-    >>> event_log = bpi_19.dataframe()  # Access the event log DataFrame
+    >>> event_log = bpi_19.dataframe  # Access the event log DataFrame
     """
 
-    url: str = (
-        "https://data.4tu.nl/file/35ed7122-966a-484e-a0e1-749b64e3366d/864493d1-3a58-47f6-ad6f-27f95f995828"
+    url: tuple[str] = (
+        "https://data.4tu.nl/file/35ed7122-966a-484e-a0e1-749b64e3366d/864493d1-3a58-47f6-ad6f-27f95f995828",
     )
-    file_name: str = "BPI_Challenge_2019.xes"
+    file_name: tuple[str] = ("BPI_Challenge_2019.xes",)
     unbiased_split_params: dict = {
         "start_date": "2018-01",
         "end_date": "2019-02",
@@ -236,7 +329,7 @@ class BPI19(TUEventLog):
 class BPI20PrepaidTravelCosts(TUEventLog):
     """:doi:`BPI2020 Prepaid Travel Costs
     <https://doi.org/10.4121/uuid:5d2fe5e1-f91f-4a3b-ad9b-9e4126870165>`.
-    
+
 
     The BPI 2020 Prepaid Travel Costs event log records two years of travel
     expense claims for a university. In 2017, the data covers two departments,
@@ -265,13 +358,13 @@ class BPI20PrepaidTravelCosts(TUEventLog):
     --------
     >>> bpi_20 = BPI20PrepaidTravelCosts()
     >>> bpi_20.download()  # Manually download the event log
-    >>> event_log = bpi_20.dataframe()  # Access the event log DataFrame
+    >>> event_log = bpi_20.dataframe  # Access the event log DataFrame
     """
 
-    url: str = (
-        "https://data.4tu.nl/file/fb84cf2d-166f-4de2-87be-62ee317077e5/612068f6-14d0-4a82-b118-1b51db52e73a"
+    url: tuple[str] = (
+        "https://data.4tu.nl/file/fb84cf2d-166f-4de2-87be-62ee317077e5/612068f6-14d0-4a82-b118-1b51db52e73a",
     )
-    file_name: str = "PrepaidTravelCost.xes.gz"
+    file_name: tuple[str] = ("PrepaidTravelCost.xes.gz",)
     unbiased_split_params: dict = {
         "start_date": None,
         "end_date": "2019-01",
@@ -311,13 +404,13 @@ class BPI20TravelPermitData(TUEventLog):
     --------
     >>> bpi_20 = BPI20TravelPermitData()
     >>> bpi_20.download()  # Manually download the event log
-    >>> event_log = bpi_20.dataframe()  # Access the event log DataFrame
+    >>> event_log = bpi_20.dataframe  # Access the event log DataFrame
     """
 
-    url: str = (
-        "https://data.4tu.nl/file/db35afac-2133-40f3-a565-2dc77a9329a3/12b48cc1-18a8-4089-ae01-7078fc5e8f90"
+    url: tuple[str] = (
+        "https://data.4tu.nl/file/db35afac-2133-40f3-a565-2dc77a9329a3/12b48cc1-18a8-4089-ae01-7078fc5e8f90",
     )
-    file_name: str = "PermitLog.xes.gz"
+    file_name: tuple[str] = ("PermitLog.xes.gz",)
     unbiased_split_params: dict = {
         "start_date": None,
         "end_date": "2019-10",
@@ -356,13 +449,13 @@ class BPI20RequestForPayment(TUEventLog):
     --------
     >>> bpi_20 = BPI20RequestForPayment()
     >>> bpi_20.download()  # Manually download the event log
-    >>> event_log = bpi_20.dataframe()  # Access the event log DataFrame
+    >>> event_log = bpi_20.dataframe  # Access the event log DataFrame
     """
 
-    url: str = (
-        "https://data.4tu.nl/file/a6f651a7-5ce0-4bc6-8be1-a7747effa1cc/7b1f2e56-e4a8-43ee-9a09-6e64f45a1a98"
+    url: tuple[str] = (
+        "https://data.4tu.nl/file/a6f651a7-5ce0-4bc6-8be1-a7747effa1cc/7b1f2e56-e4a8-43ee-9a09-6e64f45a1a98",
     )
-    file_name: str = "RequestForPayment.xes.gz"
+    file_name: tuple[str] = ("RequestForPayment.xes.gz",)
     unbiased_split_params: dict = {
         "start_date": None,
         "end_date": "2018-12",
@@ -373,7 +466,7 @@ class BPI20RequestForPayment(TUEventLog):
 class BPI20DomesticDeclarations(TUEventLog):
     """:doi:`BPI2020 Domestic Declarations
     <https://doi.org/10.4121/uuid:3f422315-ed9d-4882-891f-e180b5b4feb5>`.
-    
+
 
     The BPI 2020 Domestic Declarations event log contains 10,500 cases and
     56,437 events. The dataset focuses on domestic travel expense claims over
@@ -401,13 +494,13 @@ class BPI20DomesticDeclarations(TUEventLog):
     --------
     >>> bpi_20 = BPI20DomesticDeclarations()
     >>> bpi_20.download()  # Manually download the event log
-    >>> event_log = bpi_20.dataframe()  # Access the event log DataFrame
+    >>> event_log = bpi_20.dataframe  # Access the event log DataFrame
     """
 
-    url: str = (
-        "https://data.4tu.nl/file/6a0a26d2-82d0-4018-b1cd-89afb0e8627f/6eeb0328-f991-48c7-95f2-35033504036e"
+    url: tuple[str] = (
+        "https://data.4tu.nl/file/6a0a26d2-82d0-4018-b1cd-89afb0e8627f/6eeb0328-f991-48c7-95f2-35033504036e",
     )
-    file_name: str = "DomesticDeclarations.xes.gz"
+    file_name: tuple[str] = ("DomesticDeclarations.xes.gz",)
 
 
 class BPI20InternationalDeclarations(TUEventLog):
@@ -441,20 +534,20 @@ class BPI20InternationalDeclarations(TUEventLog):
     --------
     >>> bpi_20 = BPI20InternationalDeclarations()
     >>> bpi_20.download()  # Manually download the event log
-    >>> event_log = bpi_20.dataframe()  # Access the event log DataFrame
+    >>> event_log = bpi_20.dataframe  # Access the event log DataFrame
 
     """
 
-    url: str = (
-        "https://data.4tu.nl/file/91fd1fa8-4df4-4b1a-9a3f-0116c412378f/d45ee7dc-952c-4885-b950-4579a91ef426"
+    url: tuple[str] = (
+        "https://data.4tu.nl/file/91fd1fa8-4df4-4b1a-9a3f-0116c412378f/d45ee7dc-952c-4885-b950-4579a91ef426",
     )
-    file_name: str = "InternationalDeclarations.xes.gz"
+    file_name: tuple[str] = ("InternationalDeclarations.xes.gz",)
 
 
 class Sepsis(TUEventLog):
     """:doi:`Sepsis
     <https://doi.org/10.4121/uuid:915d2bfb-7e84-49ad-a286-dc35f063a460>`.
-    
+
 
     The Sepsis event log contains real-life hospital data regarding sepsis
     cases, a life-threatening condition often caused by infection. Each case
@@ -482,11 +575,11 @@ class Sepsis(TUEventLog):
     --------
     >>> sepsis = Sepsis()
     >>> sepsis.download()  # Manually download the event log
-    >>> event_log = sepsis.dataframe()  # Access the event log DataFrame
+    >>> event_log = sepsis.dataframe  # Access the event log DataFrame
 
     """
 
-    url: str = (
-        "https://data.4tu.nl/file/33632f3c-5c48-40cf-8d8f-2db57f5a6ce7/643dccf2-985a-459e-835c-a82bce1c0339"
+    url: tuple[str] = (
+        "https://data.4tu.nl/file/33632f3c-5c48-40cf-8d8f-2db57f5a6ce7/643dccf2-985a-459e-835c-a82bce1c0339",
     )
-    file_name: str = "Sepsis Cases - Event Log.xes.gz"
+    file_name: tuple[str] = ("Sepsis Cases - Event Log.xes.gz",)
