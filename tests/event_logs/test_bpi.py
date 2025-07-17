@@ -66,4 +66,4 @@ def test_bpi():
 
         # covering pytest when the file already exists
         with pytest.raises(ValueError):
-            bpi = BPI13ClosedProblems(bpi.file_path)
+            bpi = BPI13ClosedProblems(bpi.file_path[0])
