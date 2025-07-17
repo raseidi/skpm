@@ -229,8 +229,8 @@ class BPI15(TUEventLog):
         "BPIC15_1.xes",
     )
     
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
         
         cols_to_drop = ["activityNameNL", "concept:name",]
         self._dataframe = self._dataframe.drop(columns=cols_to_drop, errors="ignore")
