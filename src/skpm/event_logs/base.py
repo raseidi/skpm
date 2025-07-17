@@ -158,11 +158,13 @@ class TUEventLog(EventLog):
         cached_file = self.cache_folder / self.cached_file_name
         if not cached_file.exists():
             self.cache_folder.mkdir(exist_ok=True)
-            self.file_path = self.cache_folder / self.file_name  # xes file
+            self.file_path = []
+            for file in self.file_name:
+                self.file_path.append(self.cache_folder / file)  # xes file
         else:
-            self.file_path = cached_file
+            self.file_path = [cached_file]
 
-        if not self.file_path.exists():
+        if not self.file_path[0].exists():
             self._download()
 
         df = self._read_log()
@@ -175,59 +177,65 @@ class TUEventLog(EventLog):
         if not self.url or not self.file_name:
             raise ValueError("URL and file_name must be set for download")
 
-        with request.urlopen(request.Request(self.url)) as response:
-            with open(self.file_path, "wb") as fh:
-                while True:
-                    chunk = response.read(1024 * 32)
-                    if not chunk:
-                        break
-                    fh.write(chunk)
+        for ix, url in enumerate(self.url):
+            with request.urlopen(request.Request(url)) as response:
+                with open(self.file_path[ix], "wb") as fh:
+                    while True:
+                        chunk = response.read(1024 * 32)
+                        if not chunk:
+                            break
+                        fh.write(chunk)
 
-        if self.file_path.suffix == ".gz":
+        if self.file_path[0].suffix == ".gz":
             self._extract_gz()
 
     def _read_log(self) -> pd.DataFrame:
         """Read event log from file with format detection."""
-        file_path = self.file_path
+        df = pd.DataFrame()
+        for ix, file_path in enumerate(self.file_path):
+            if file_path.suffix == ".xes":
+                log = read_xes(str(file_path))
+                log['log_version'] = file_path.stem  # Add log version from file name
+                df = pd.concat([df, log], ignore_index=True)
 
-        if file_path.suffix == ".xes":
-            log = read_xes(str(file_path))
+                # delete xes and save as pandas
+                file_path.unlink()
 
-            # delete xes and save as pandas
-            self.file_path.unlink()
-            self.file_path = self.cache_folder / self.cached_file_name
+                if ix == len(self.file_path) - 1:
+                    file_path = self.cache_folder / self.cached_file_name
+                    if self.default_file_format == ".parquet":
+                        df.to_parquet(file_path, index=False)
+                    elif self.default_file_format == ".csv":
+                        df.to_csv(file_path, index=False)
+                    else:
+                        raise ValueError(
+                            f"Unsupported format: {self.default_file_format}"
+                        )
 
-            if self.default_file_format == ".parquet":
-                log.to_parquet(self.file_path, index=False)
-            elif self.default_file_format == ".csv":
-                log.to_csv(self.file_path, index=False)
+            elif file_path.suffix == ".parquet":
+                log = pd.read_parquet(file_path)
+                df = pd.concat([df, log], ignore_index=True)
+            elif file_path.suffix == ".csv":
+                log = pd.read_csv(file_path)
+                df = pd.concat([df, log], ignore_index=True)
             else:
-                raise ValueError(
-                    f"Unsupported format: {self.default_file_format}"
-                )
-
-            return log
-
-        elif file_path.suffix == ".parquet":
-            return pd.read_parquet(file_path)
-        elif file_path.suffix == ".csv":
-            return pd.read_csv(file_path)
-        else:
-            raise ValueError(f"Unsupported file format: {file_path.suffix}")
+                raise ValueError(f"Unsupported file format: {file_path.suffix}")
+        return df
 
     def _extract_gz(self):
         """Extracts a gz archive to a specific folder."""
         import gzip
 
-        # self.file_path = a/b/c.xez.gz
-        with gzip.open(self.file_path, "r") as r:
-            with open(self.file_path.with_suffix(""), "wb") as w:
-                w.write(r.read())
+        for file_path in self.file_path:
+            # self.file_path = a/b/c.xez.gz
+            with gzip.open(file_path, "r") as r:
+                with open(file_path.with_suffix(""), "wb") as w:
+                    w.write(r.read())
 
-        # self.file_path = a/b/c.xez
-        old_file_path = self.file_path
-        self.file_path = self.file_path.with_suffix("")
-        old_file_path.unlink()
+            # self.file_path = a/b/c.xez
+            old_file_path = file_path
+            self.file_path = (file_path.with_suffix(""),)
+            old_file_path.unlink()
 
     @property
     def unbiased_split_params(self) -> Dict[str, Any]:
