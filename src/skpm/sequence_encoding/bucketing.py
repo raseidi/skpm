@@ -1,10 +1,10 @@
 import numpy as np
-from sklearn.base import TransformerMixin
+from sklearn.calibration import StrOptions
 from skpm.config import EventLogConfig as elc
-from skpm.base import BaseProcessEstimator
+from skpm.base import BaseProcessTransformer
 
 
-class Bucketing(TransformerMixin, BaseProcessEstimator):
+class Bucketing(BaseProcessTransformer):
     """
     Event Bucketing Transformer inherits from :class:`sklearn.base.TransformerMixin` and :class:`skpm.base.BaseProcessEstimator`.
 
@@ -31,7 +31,8 @@ class Bucketing(TransformerMixin, BaseProcessEstimator):
     get_feature_names_out()
         Get the names of the output features.
     """
-
+    _parameter_constraints = {"method": [StrOptions({"single", "prefix", "clustering"})]}
+    
     def __init__(self, method="single"):
         """
         Initialize Bucketing Transformer.
@@ -42,31 +43,9 @@ class Bucketing(TransformerMixin, BaseProcessEstimator):
             The method used for bucketing traces. Possible values are "single", "prefix", or "clustering".
             Default is "single".
         """
-        assert method in [
-            "single",
-            "prefix",
-            "clustering",
-        ], f"Invalid method: {method}"
-        
         self.method = method
 
-    def fit(self, X, y=None):
-        """
-        Fit the transformer.
-
-        Parameters
-        ----------
-        X : array-like or DataFrame
-            The input data.
-
-        Returns
-        -------
-        self : Bucketing
-            Returns the instance itself.
-        """
-        return self
-
-    def transform(self, X, y=None):
+    def _transform(self, X, y=None):
         """
         Transform input data by bucketing traces.
 

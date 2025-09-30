@@ -1,14 +1,13 @@
 from numbers import Integral, Real
 
 import pandas as pd
-from sklearn.base import TransformerMixin
 from sklearn.utils._param_validation import Interval
 
-from skpm.base import BaseProcessEstimator
+from skpm.base import BaseProcessTransformer
 from skpm.config import EventLogConfig as elc
-pd.options
 
-class Indexing(TransformerMixin, BaseProcessEstimator):
+
+class Indexing(BaseProcessTransformer):
     _parameter_constraints = {
         "n": [Interval(type=Integral, left=1, right=None, closed="left"), None],  # type: ignore
         "attributes": [str, list, None],
@@ -28,17 +27,13 @@ class Indexing(TransformerMixin, BaseProcessEstimator):
         self.fill_cat_value = fill_cat_value
         self.fill_num_value = fill_num_value
     
-    def fit(self, X, y=None):
-        self._validate_params()  # type: ignore
-        return self
-
-    def transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:        
+    def _transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:        
         if self.attributes is None:
             self.attributes = X.columns.difference([elc.case_id]).tolist()
         elif isinstance(self.attributes, str):
             self.attributes = [self.attributes]
         
-        group = X.groupby(elc.case_id)
+        group = X.groupby(self._case_id)
 
         out_df = pd.DataFrame()
         if self.n is not None:
