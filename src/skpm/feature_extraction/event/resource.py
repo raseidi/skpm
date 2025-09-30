@@ -3,18 +3,16 @@ import warnings
 import numpy as np
 from pandas import DataFrame
 from scipy.sparse.csgraph import connected_components
-from sklearn.base import (
-    BaseEstimator,
-    TransformerMixin,
-    check_is_fitted,
-)
+from sklearn.base import check_is_fitted
+from sklearn.discriminant_analysis import Interval, Real
 
-from skpm.utils import validate_columns
+from skpm.base import BaseProcessTransformer
 from skpm.config import EventLogConfig as elc
+from skpm.utils import validate_columns
 from skpm.warnings import ConceptDriftWarning
 
 
-class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
+class ResourcePoolExtractor(BaseProcessTransformer):
     """
     Extracts resource roles based on resource-activity correlations.
 
@@ -71,6 +69,11 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
     [0 1 0 1]
     """
 
+    _parameter_constraints = {
+        "threshold": [Interval(Real, 0, 1, closed="both")],
+    }
+    _requires_case_id: bool = False
+
     def __init__(self, threshold=0.7):
         """
         Initialize the ResourcePoolExtractor.
@@ -93,7 +96,7 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
         """
         return ["resource_roles"]
 
-    def fit(self, X: DataFrame, y=None):
+    def _fit(self, X: DataFrame, y=None):
         """Fit the ResourcePoolExtractor.
 
         Parameters:
@@ -109,15 +112,15 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
         X = self._validate_data(X)
 
         # defining vocabs for activities and resources
-        self.atoi_, self.itoa_ = self._define_vocabs(X[elc.activity].unique())
-        self.rtoi_, self.itor_ = self._define_vocabs(X[elc.resource].unique())
+        self.atoi_, self.itoa_ = self._define_vocabs(X[self.activity].unique())
+        self.rtoi_, self.itor_ = self._define_vocabs(X[self.resource].unique())
 
-        X[elc.activity] = X[elc.activity].map(self.atoi_)
-        X[elc.resource] = X[elc.resource].map(self.rtoi_)
+        X[self.activity] = X[self.activity].map(self.atoi_)
+        X[self.resource] = X[self.resource].map(self.rtoi_)
 
         # building a pairwise frequency matrix
         freq_matrix = (
-            X.groupby([elc.activity, elc.resource]).value_counts().to_dict()
+            X.groupby([self.activity, self.resource]).value_counts().to_dict()
         )
 
         # building an activity profile for each resource
@@ -158,7 +161,7 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
 
         return self
 
-    def transform(self, X: DataFrame, y=None):
+    def _transform(self, X: DataFrame, y=None):
         """Transform the input data to extract resource roles.
 
         Parameters:
@@ -173,7 +176,7 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
         """
         check_is_fitted(self, "resource_to_roles_")
         X = self._validate_data(X)
-        resource_roles = X[elc.resource].map(self.resource_to_roles_).values
+        resource_roles = X[self.resource].map(self.resource_to_roles_).values
         return resource_roles
 
     def _validate_data(self, X: DataFrame):
@@ -193,26 +196,26 @@ class ResourcePoolExtractor(TransformerMixin, BaseEstimator):
         x = X.copy()
         x.reset_index(drop=True, inplace=True)
         columns = validate_columns(
-            input_columns=x.columns, required=[elc.activity, elc.resource]
+            input_columns=x.columns, required=[self.activity, self.resource]
         )
         x = x[columns]
 
-        if x[elc.activity].isnull().any():
+        if x[self.activity].isnull().any():
             raise ValueError("Activity column contains null values.")
-        if x[elc.resource].isnull().any():
+        if x[self.resource].isnull().any():
             raise ValueError("Resource column contains null values.")
 
         # i.e. if fitted, check unkown labels
         if hasattr(self, "resource_to_roles_"):
-            x[elc.resource] = self._check_unknown(
-                x[elc.resource].values, self.rtoi_.keys(), elc.resource
+            x[self.resource] = self._check_unknown(
+                x[self.resource].values, self.rtoi_.keys(), self.resource
             )
-            x[elc.activity] = self._check_unknown(
-                x[elc.activity].values, self.atoi_.keys(), elc.activity
+            x[self.activity] = self._check_unknown(
+                x[self.activity].values, self.atoi_.keys(), self.activity
             )
 
-            x[elc.activity] = x[elc.activity].map(self.atoi_)
-            x[elc.resource] = x[elc.resource].map(self.rtoi_)
+            x[self.activity] = x[self.activity].map(self.atoi_)
+            x[self.resource] = x[self.resource].map(self.rtoi_)
 
         return x
 

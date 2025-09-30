@@ -1,12 +1,11 @@
 import pandas as pd
-from sklearn.base import (
-    BaseEstimator,
-    TransformerMixin,
-)
+from sklearn.utils._param_validation import StrOptions
+
+from skpm.base import BaseProcessTransformer
 from skpm.config import EventLogConfig as elc
 
 
-class WorkInProgress(TransformerMixin, BaseEstimator):
+class WorkInProgress(BaseProcessTransformer):
     """Work in Progress (WIP) feature extractor.
 
     This transformer calculates the number of cases (work) in progress within
@@ -39,6 +38,9 @@ class WorkInProgress(TransformerMixin, BaseEstimator):
     """
 
     # see https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
+    _parameter_constraints = {
+        "window_size": [StrOptions({"1D", "2D"})]
+    }
     def __init__(
         self,
         window_size="1D",
@@ -48,7 +50,7 @@ class WorkInProgress(TransformerMixin, BaseEstimator):
     def get_feature_names_out(self):
         return ["wip"]
 
-    def fit(
+    def _fit(
         self,
         X: pd.DataFrame,
         y=None,
@@ -57,7 +59,7 @@ class WorkInProgress(TransformerMixin, BaseEstimator):
 
         return self
 
-    def transform(self, X: pd.DataFrame):
+    def _transform(self, X: pd.DataFrame, y=None):
         """Transform the input DataFrame to calculate the Work in Progress (WIP) feature.
 
         This method calculates the number of cases in progress within specified time windows based on the input event data.
@@ -82,9 +84,9 @@ class WorkInProgress(TransformerMixin, BaseEstimator):
         """
         self._grouped_wip = X.groupby(
             pd.Grouper(key=elc.timestamp, freq=self.window_size)
-        )[elc.case_id].nunique()
+        )[self._case_id].nunique()
         self._bins = pd.cut(
-            X[elc.timestamp],
+            X[self.timestamp],
             bins=self._grouped_wip.index,
             labels=self._grouped_wip.index[:-1],
         )
