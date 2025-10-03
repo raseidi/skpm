@@ -179,7 +179,7 @@ class Aggregation(OneToOneFeatureMixin, BaseProcessTransformer):
 
     def _transform_pandas(self, X: pd.DataFrame):
         """Transforms Pandas DataFrame."""
-        group = X.groupby(self.case_id)
+        group = X.groupby(self._case_id)
 
         X = (
             group.rolling(window=self.prefix_len, min_periods=1)
@@ -207,9 +207,9 @@ class Aggregation(OneToOneFeatureMixin, BaseProcessTransformer):
                 )
 
         X = X.with_columns([
-            _make_rolling_expr(c, self._method_fn).over(self.case_id)
+            _make_rolling_expr(c, self._method_fn).over(self._case_id)
             for c in X.columns
-            if c != self.case_id
+            if c != self._case_id
         ])
  
-        return X.drop(self.case_id)
+        return X.drop(self._case_id)

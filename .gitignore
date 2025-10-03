@@ -15,7 +15,7 @@ __pycache__/
 dist/
 
 # Sphinx documentation
-docs/_build/
+docs/build/
 docs/auto_examples/
 docs/gen_modules/
 docs/sg_execution_times.rst
