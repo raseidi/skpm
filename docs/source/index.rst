@@ -12,9 +12,18 @@ This work is still in progress! So far, we have focused more on feature extracti
 
 .. toctree::
    :maxdepth: 1
+   :caption: Installation
+   
+   installation
+
+.. toctree::
+   :maxdepth: 1
    :caption: Tutorials
    
    examples/00_intro.ipynb
+   examples/01_data_api.ipynb
+   examples/02_unbiased_split.ipynb
+   examples/03_pipeline_eval.ipynb
 
 .. toctree::
    :maxdepth: 1

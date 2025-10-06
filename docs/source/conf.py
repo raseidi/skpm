@@ -42,4 +42,3 @@ html_static_path = ['_static']
 nbsphinx_execute = "never"  # always  # whether to run notebooks
 nbsphinx_allow_errors = False  # False
 nbsphinx_timeout = 600  # seconds, set to -1 to disable timeout
-nbsphinx_requirejs_path = ''
