@@ -1,12 +1,12 @@
 import polars as pl
 from pandas import DataFrame
-from sklearn.base import BaseEstimator
-from sklearn.utils.validation import validate_data
+from sklearn.base import BaseEstimator, TransformerMixin
 
 from skpm.config import EventLogConfigMixin
 
 from .utils.validation import ensure_list, validate_columns
 
+__all__ = ["BaseProcessEstimator", "BaseProcessTransformer"]
 
 class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
     """Base class for all process estimators in SkPM.
@@ -16,11 +16,11 @@ class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
     of event logs.
 
     """
+    _requires_case_id: bool = True
     def _validate_log(
         self,
-        X: DataFrame,
-        y: DataFrame = None,
-        reset: bool = True,
+        X: DataFrame | pl.DataFrame,
+        y: DataFrame | pl.DataFrame | None = None,
         copy: bool = True,
     ):
         """
@@ -47,12 +47,12 @@ class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
         ValueError
             If the input is not a DataFrame or if the case ID column is missing.
         """
+        self._validate_params()
+        
         is_polars = False
         if isinstance(X, pl.DataFrame):  # For Polars DataFrame
             X = X.to_pandas()
             is_polars = True
-
-        self._validate_params()
 
         # TODO: the validation of a dataframe might be done
         # through the `pd.api.extensions`.
@@ -65,19 +65,13 @@ class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
         assert isinstance(data, DataFrame), "Input must be a dataframe."
         cols = ensure_list(data.columns)
 
-        self._case_id = self._ensure_case_id(data.columns)
+        if self._requires_case_id:
+            self._case_id = self._ensure_case_id(data.columns)
 
-        validate_data(
-            self,
-            X=X.drop(columns=self._case_id, axis=1),
-            y=y,
-            reset=reset,
-        )
-
-        cols = validate_columns(
-            input_columns=data.columns,
-            required=[self._case_id] + list(self.feature_names_in_),
-        )
+        # cols = validate_columns(
+        #     input_columns=data.columns,
+        #     required=[self._case_id] + list(self.feature_names_in_),
+        # )
 
         if is_polars:  # For Polars DataFrame
             data = pl.from_pandas(data)
@@ -101,3 +95,21 @@ class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
             if col.endswith(self.case_id):
                 return col
         raise ValueError(f"Case ID column not found.")
+    
+class BaseProcessTransformer(TransformerMixin, BaseProcessEstimator):
+    def fit(self, X, y=None):
+        self._validate_log(X)
+        
+        self._fit(X, y)
+        return self
+    
+    def transform(self, X, y=None):
+        out = self._transform(X, y)
+        
+        return out
+                
+    def _fit(self, X, y=None):
+        return self
+    
+    def _transform(self, X, y=None):
+        raise NotImplementedError("Abstract Base Method")

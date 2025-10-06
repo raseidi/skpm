@@ -4,23 +4,23 @@ from typing import Optional, Union
 import pandas as pd
 from sklearn.base import (
     ClassNamePrefixFeaturesOutMixin, 
-    TransformerMixin,
     check_is_fitted
 )
+from sklearn.calibration import StrOptions
 
-from skpm.base import BaseProcessEstimator
+from skpm.base import BaseProcessTransformer
 from skpm.feature_extraction.case.time import TimestampCaseLevel
 from skpm.feature_extraction.event.time import TimestampEventLevel
 from skpm.utils import validate_columns, validate_methods_from_class
 
 
-def _to_list(x):
+def _to_list(x) -> list:
     if x == "all" or x is None:
         return x
     return [x] if not isinstance(x, list) else x
 
 class TimestampExtractor(
-    ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseProcessEstimator
+    ClassNamePrefixFeaturesOutMixin, BaseProcessTransformer
 ):
     """Extracts features from a timestamp column.
 
@@ -73,6 +73,12 @@ class TimestampExtractor(
     """
     available_targets = ["execution_time", "remaining_time"]
 
+    _parameter_constraints = {
+        "case_features": [StrOptions({"all"}), list, None],
+        "event_features": [StrOptions({"all"}), list, None],
+        "targets": [StrOptions({"remaining_time"}), list, None],
+        "time_unit": [StrOptions({"s", "m", "h", "d"})]
+    }
     def __init__(
         self,
         case_features: Union[str, list, None] = "all",
@@ -89,7 +95,7 @@ class TimestampExtractor(
         self.targets = _to_list(targets)
         self.time_unit = time_unit
 
-    def fit(
+    def _fit(
         self,
         X: pd.DataFrame,
         y=None,
@@ -141,7 +147,7 @@ class TimestampExtractor(
             f[0] for f in self.case_features + self.event_features + self.targets
         ]
 
-    def transform(self, X: pd.DataFrame, y=None):
+    def _transform(self, X: pd.DataFrame, y=None):
         """Transform the input data to calculate timestamp features.
 
         Parameters:

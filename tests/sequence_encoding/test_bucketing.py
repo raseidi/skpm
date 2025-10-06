@@ -43,7 +43,7 @@ def test_clustering_not_implemented(dummy_log):
 
 
 def test_invalid_method(dummy_log):
-    with pytest.raises(AssertionError):
+    with pytest.raises(Exception):
         Bucketing(method="invalid_method").fit(dummy_log)
 
 

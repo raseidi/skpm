@@ -1,12 +1,17 @@
+from ast import Call
+from collections.abc import Callable
 from typing import Literal, Union
 
 import pandas as pd
 import polars as pl
-from sklearn.base import OneToOneFeatureMixin, TransformerMixin
+from sklearn.base import OneToOneFeatureMixin
+from sklearn.calibration import Integral
+from sklearn.discriminant_analysis import Interval
 from sklearn.utils._param_validation import StrOptions
 from sklearn.utils.validation import check_is_fitted
 
-from skpm.base import BaseProcessEstimator
+from skpm.base import BaseProcessTransformer
+
 
 def handle_aggregation_method(method):
     """Handle the aggregation method.
@@ -26,7 +31,7 @@ def handle_aggregation_method(method):
         return linalg.norm
     return method
 
-class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
+class Aggregation(OneToOneFeatureMixin, BaseProcessTransformer):
     """Sequence Encoding Transformer.
 
     This module implements a method for encoding sequences by
@@ -83,6 +88,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         "method": [
             StrOptions({"sum", "mean", "median", "norm"}),
         ],
+        "prefix_len": [Interval(Integral, 1, None, closed="left"), None],
         "engine": [
             StrOptions({"pandas", "polars"}),
         ],
@@ -91,7 +97,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     def __init__(
         self,
         method: str = "mean",
-        prefix_len: int = None,
+        prefix_len: int | None = None,
         # n_jobs=1,
         engine: Literal[
             "pandas", "polars"
@@ -116,7 +122,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
             y = pl.DataFrame(y) if y is not None else None
         return X, y
 
-    def fit(self, X, y=None):
+    def _fit(self, X, y=None):
         """Fit transformer.
 
         Checks if the input is a dataframe, if it
@@ -136,14 +142,12 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
                 Fitted aggregator.
 
         """
-        X = self._validate_log(X)
-
         if self.prefix_len is None:
             self.prefix_len = len(X)
 
         return self
 
-    def transform(self, X: Union[pd.DataFrame, pl.DataFrame], y=None):
+    def _transform(self, X: Union[pd.DataFrame, pl.DataFrame], y=None):
         """Performs the aggregation of event features from a trace.
 
         Parameters
@@ -157,7 +161,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
         X : {DataFrame} of shape (n_samples, n_features)
             The aggregated event log.
         """
-        check_is_fitted(self, "n_features_in_")
+        check_is_fitted(self, "prefix_len")
         X = self._validate_log(X)
 
         X, y = self.validate_engine_with_df(X, y)
@@ -175,7 +179,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
 
     def _transform_pandas(self, X: pd.DataFrame):
         """Transforms Pandas DataFrame."""
-        group = X.groupby(self.case_id)
+        group = X.groupby(self._case_id)
 
         X = (
             group.rolling(window=self.prefix_len, min_periods=1)
@@ -187,7 +191,7 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
     def _transform_polars(self, X: pl.DataFrame):
         """Transforms Polars DataFrame."""
         
-        def _make_rolling_expr(col_name: str, method_fn: Union[str, callable]) -> pl.Expr:
+        def _make_rolling_expr(col_name: str, method_fn: Union[str, Callable]) -> pl.Expr:
             expr = pl.col(col_name)
             
             if isinstance(method_fn, str):
@@ -203,9 +207,9 @@ class Aggregation(OneToOneFeatureMixin, TransformerMixin, BaseProcessEstimator):
                 )
 
         X = X.with_columns([
-            _make_rolling_expr(c, self._method_fn).over(self.case_id)
+            _make_rolling_expr(c, self._method_fn).over(self._case_id)
             for c in X.columns
-            if c != self.case_id
+            if c != self._case_id
         ])
  
-        return X.drop(self.case_id)
+        return X.drop(self._case_id)

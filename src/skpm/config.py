@@ -179,3 +179,7 @@ class EventLogConfigMixin:
     @property
     def timestamp(self) -> str:
         return self._config.timestamp
+    
+    @property
+    def resource(self) -> str:
+        return self._config.resource

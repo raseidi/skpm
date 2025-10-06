@@ -1,10 +1,10 @@
-from sklearn.base import BaseEstimator, TransformerMixin
+from skpm.base import BaseProcessTransformer
 from sklearn.preprocessing import LabelEncoder
 
 from skpm.feature_extraction.case._helpers import ensure_not_pipeline
 
 
-class VariantExtractor(TransformerMixin, BaseEstimator):
+class VariantExtractor(BaseProcessTransformer):
     """Extract trace variants from an event log."""
 
     def __init__(self, strategy="default"):
