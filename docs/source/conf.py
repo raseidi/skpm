@@ -26,7 +26,7 @@ extensions = [
 ]
 
 autoapi_dirs = ["../../src"]
-
+pygments_style = "sphinx"
 
 templates_path = ['_templates']
 exclude_patterns = []
