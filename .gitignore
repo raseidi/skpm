@@ -31,3 +31,6 @@ __pypackages__/
 *.log
 *.csv
 *.parquet
+
+.claude/
+CLAUDE.md

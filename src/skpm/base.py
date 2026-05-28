@@ -98,8 +98,9 @@ class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
     
 class BaseProcessTransformer(TransformerMixin, BaseProcessEstimator):
     def fit(self, X, y=None):
+        self._snapshot_config()
         self._validate_log(X)
-        
+
         self._fit(X, y)
         return self
     
