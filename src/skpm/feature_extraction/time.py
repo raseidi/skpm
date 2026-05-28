@@ -143,7 +143,7 @@ class TimestampExtractor(
         return self
 
     def get_feature_names_out(self):
-        return [
+        return [self.case_id] + [
             f[0] for f in self.case_features + self.event_features + self.targets
         ]
 
@@ -194,11 +194,11 @@ class TimestampExtractor(
                 ix_list=X.index.values,
                 time_unit=self.time_unit,
             )
-        output_columns = [
+        output_columns = [self.case_id] + [
             feature[0]
             for feature in self.case_features + self.event_features + self.targets
         ]
-        return X.loc[:, output_columns].values
+        return X.loc[:, output_columns]
 
     def _validate_data(self, X: pd.DataFrame):
         """

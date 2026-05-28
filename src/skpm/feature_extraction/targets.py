@@ -36,10 +36,11 @@ def remaining_time(log: pd.DataFrame, time_unit="s"):
         A dataframe with the remaining time of each trace.
     """
     from skpm.feature_extraction import TimestampExtractor
-    
-    return TimestampExtractor(
-        case_features=None, 
-        event_features=None, 
-        targets="remaining_time", 
-        time_unit=time_unit
+
+    out = TimestampExtractor(
+        case_features=None,
+        event_features=None,
+        targets="remaining_time",
+        time_unit=time_unit,
     ).set_output(transform="default").fit_transform(log)
+    return out["remaining_time"].values

@@ -19,23 +19,26 @@ def fixture_dummy_pd():
     )
     
 def test_time(dummy_data):
-    # test TimeStampExtractor
+    # The extractor preserves the case_id column in the output so it can compose
+    # with downstream BaseProcessTransformer steps (e.g. Aggregation). The
+    # expected column count is therefore _n_features_out + 1.
     t = TimestampExtractor()
     t.fit(dummy_data)
     out = t.transform(dummy_data)
-    assert out.shape[1] == t._n_features_out
+    assert out.shape[1] == t._n_features_out + 1
     assert isinstance(out, pd.DataFrame)
+    assert elc.case_id in out.columns
 
     t = TimestampExtractor(case_features="execution_time", event_features=None)
     t.fit(dummy_data)
     out = t.transform(dummy_data)
-    assert out.shape[1] == 1
+    assert out.shape[1] == 1 + 1
     assert isinstance(out, pd.DataFrame)
 
     t = TimestampExtractor(case_features="execution_time", event_features=["month_of_year", "day_of_week"])
     t.fit(dummy_data)
     out = t.transform(dummy_data)
-    assert out.shape[1] == 1 + 2
+    assert out.shape[1] == 1 + 2 + 1
     assert isinstance(out, pd.DataFrame)
 
     with pytest.raises(Exception):
