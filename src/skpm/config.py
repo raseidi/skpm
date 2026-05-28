@@ -26,7 +26,7 @@ class _EventLogConfig:
 
     A single module-level instance, :data:`EventLogConfig`, holds the mapping
     between semantic keys (``case_id``, ``activity``, ``timestamp``,
-    ``resource``, ``EOT``) and the DataFrame column names SkPM expects.
+    ``resource``) and the DataFrame column names SkPM expects.
     Defaults follow the XES standard.
 
     Users can either:
@@ -62,10 +62,6 @@ class _EventLogConfig:
     @property
     def resource(self) -> str:
         return self._state["resource"]
-
-    @property
-    def EOT(self) -> str:
-        return self._state["EOT"]
 
     def to_dict(self) -> Dict[str, str]:
         """Return a copy of the current configuration."""
@@ -167,13 +163,13 @@ class EventLogConfigMixin:
     """Mixin providing event-log column-name properties.
 
     Before fit, the properties (``case_id``, ``activity``, ``timestamp``,
-    ``resource``, ``EOT``) read live values from the shared
+    ``resource``) read live values from the shared
     :data:`EventLogConfig` singleton, so estimators pick up the user's
     current configuration as a sensible default.
 
     At fit time, :meth:`_snapshot_config` copies the current values into
     trailing-underscore attributes (``case_id_``, ``activity_``,
-    ``timestamp_``, ``resource_``, ``EOT_``). From that point on, the
+    ``timestamp_``, ``resource_``,). From that point on, the
     properties return the snapshot, mirroring scikit-learn's convention
     that fitted estimators expose their learned state via
     ``trailing_underscore_`` attributes (``feature_names_in_``,
@@ -208,15 +204,11 @@ class EventLogConfigMixin:
     def resource(self) -> str:
         return self.resource_ if hasattr(self, "resource_") else self._config.resource
 
-    @property
-    def EOT(self) -> str:
-        return self.EOT_ if hasattr(self, "EOT_") else self._config.EOT
-
     def _snapshot_config(self) -> None:
         """Freeze the current global column-name config onto this estimator.
 
         Sets ``case_id_``, ``activity_``, ``timestamp_``, ``resource_``,
-        and ``EOT_`` from :data:`EventLogConfig`. Call this from ``fit``
+        and from :data:`EventLogConfig`. Call this from ``fit``
         before any computation so the rest of fit/transform reads a
         consistent snapshot, regardless of later changes to the global
         config.
@@ -226,4 +218,3 @@ class EventLogConfigMixin:
         self.activity_ = cfg.activity
         self.timestamp_ = cfg.timestamp
         self.resource_ = cfg.resource
-        self.EOT_ = cfg.EOT
