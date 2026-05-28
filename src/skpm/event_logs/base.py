@@ -1,24 +1,44 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Mapping, Optional, Union
 from urllib import request
 
 import pandas as pd
 
 from skpm.base import EventLogConfigMixin
+from skpm.config import EventLogConfig
 from skpm.event_logs.parser import read_xes
 
 class EventLog(EventLogConfigMixin):
     """Base class for event log handling with common functionality.
-    
+
     Every class that handles event logs should inherit from this class.
     This class provides methods for preprocessing, validation, and summary statistics
     of event logs. It also defines the expected structure of an event log,
     including case ID, activity, and timestamp columns.
+
+    Parameters
+    ----------
+    dataframe : pandas.DataFrame, optional
+        Event log to load. Columns are normalized to the configured
+        standard names via :meth:`EventLogConfig.normalize_columns`.
+    column_mapping : Mapping[str, str], optional
+        Mapping from semantic key (``"case_id"``, ``"activity"``,
+        ``"timestamp"``, ``"resource"``) to the source column name in
+        ``dataframe``. Only used when the standard name is not already
+        present in the DataFrame.
     """
     _dataframe: Optional[pd.DataFrame] = None
 
-    def __init__(self, dataframe: Optional[pd.DataFrame] = None):
+    def __init__(
+        self,
+        dataframe: Optional[pd.DataFrame] = None,
+        column_mapping: Optional[Mapping[str, str]] = None,
+    ):
+        if dataframe is not None:
+            dataframe = EventLogConfig.normalize_columns(
+                dataframe, mapping=column_mapping
+            )
         self._dataframe = dataframe
 
         if self._dataframe is not None:
