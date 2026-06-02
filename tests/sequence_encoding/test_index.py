@@ -45,5 +45,5 @@ def test_indexing(pd_df):
         rp = Indexing(n=None)
         rp.fit_transform(pd_df)
     
-    rp = Indexing(n=None, attributes="concept:name")
+    rp = Indexing(n=None, attributes=elc.activity)
     rp.fit_transform(pd_df)

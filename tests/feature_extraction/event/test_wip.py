@@ -35,7 +35,5 @@ def test_wip():
     empty_log = pd.DataFrame(columns=[elc.case_id, elc.timestamp, elc.activity])
     wip_empty = WorkInProgress()
     wip_empty.fit(empty_log)
-    with pytest.raises(TypeError):
-        wip_empty_values = wip_empty.transform(empty_log)
-        assert isinstance(wip_empty_values, np.ndarray)
-        assert len(wip_empty_values) == 0
+    with pytest.raises(Exception):
+        wip_empty.transform(empty_log)

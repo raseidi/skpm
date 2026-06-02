@@ -1,13 +1,16 @@
+import pandas as pd
+
 from skpm.config import EventLogConfigMixin
 
-class TimestampCaseLevel(EventLogConfigMixin):
-    """
-    Extracts time-related features at the case level.
 
-    Notes
-    -----
-    Separating the implementation for event-level and case-level features improves performance.
-    The case-level implementation is slower due to the use of `groupby`.
+class TimestampCaseLevel(EventLogConfigMixin):
+    """Case-level time features.
+
+    The methods take a ``pd.Series`` of timestamps indexed by the
+    canonical event-log MultiIndex (``case_id`` is level 0) and return
+    a Series aligned to the same index. They use ``groupby(level="case_id")``
+    internally so they remain correct under any row order and benefit from
+    pandas' fast grouped-aggregations.
     """
 
     TIME_UNIT_MULTIPLIER = {
@@ -19,43 +22,28 @@ class TimestampCaseLevel(EventLogConfigMixin):
     }
 
     @classmethod
-    def accumulated_time(cls, case, ix_list, time_unit="s"):
-        """Calculate the accumulated time from the start of each case in seconds."""
-        return (
-            case[cls().timestamp]
-            .apply(lambda x: x - x.min())
-            .loc[ix_list]
-            .dt.total_seconds()
-            / cls().TIME_UNIT_MULTIPLIER.get(time_unit, 1)
+    def accumulated_time(cls, timestamps: pd.Series, time_unit: str = "s") -> pd.Series:
+        """Seconds elapsed since the first event of each case."""
+        first = timestamps.groupby(level="case_id", sort=False, observed=True).transform("min")
+        return (timestamps - first).dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(
+            time_unit, 1
         )
 
     @classmethod
-    def execution_time(cls, case, ix_list, time_unit="s"):
-        """Calculate the execution time of each event in seconds.
-        
-        **NOTE**: This should be used as a target feature, since the _next_ step is 
-        needed to calculate the execution time of each event."""
-        return (
-            case[cls().timestamp]
+    def execution_time(cls, timestamps: pd.Series, time_unit: str = "s") -> pd.Series:
+        """Seconds until the next event in the case (0 for the last event)."""
+        diffs = (
+            timestamps.groupby(level="case_id", sort=False, observed=True)
             .diff(-1)
-            .dt.total_seconds()
-            .fillna(0)
-            .loc[ix_list]
-            .abs() # to avoid negative numbers caused by diff-1
-            / cls().TIME_UNIT_MULTIPLIER.get(time_unit, 1)
+            .abs()
+            .fillna(pd.Timedelta(0))
         )
+        return diffs.dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(time_unit, 1)
 
     @classmethod
-    def remaining_time(cls, case, ix_list, time_unit="s"):
-        """Calculate the remaining time until the end of each case in seconds.
-        
-        **NOTE**: This should be used as a target feature, since the _last_ step 
-        is needed to calculate the remaining time of each event."""
-        
-        return (
-            case[cls().timestamp]
-            .apply(lambda x: x.max() - x)
-            .loc[ix_list]
-            .dt.total_seconds()
-            / cls().TIME_UNIT_MULTIPLIER.get(time_unit, 1)
+    def remaining_time(cls, timestamps: pd.Series, time_unit: str = "s") -> pd.Series:
+        """Seconds remaining until the last event of each case."""
+        last = timestamps.groupby(level="case_id", sort=False, observed=True).transform("max")
+        return (last - timestamps).dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(
+            time_unit, 1
         )

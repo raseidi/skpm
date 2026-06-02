@@ -1,116 +1,165 @@
+import pandas as pd
 import polars as pl
 from pandas import DataFrame
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from skpm.config import EventLogConfigMixin
+from skpm.event_logs.base import has_event_log_index, to_event_log
 
-from .utils.validation import ensure_list, validate_columns
+__all__ = [
+    "BaseProcessEstimator",
+    "BaseProcessTransformer",
+    "CaseLevelTransformer",
+]
 
-__all__ = ["BaseProcessEstimator", "BaseProcessTransformer"]
 
 class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
     """Base class for all process estimators in SkPM.
 
-    This class implements a common interface for all process,
-    aiming at standardizing the validation and transformation
-    of event logs.
+    Estimators operate on the canonical event-log shape: a DataFrame whose
+    index is the ``MultiIndex(case_id, timestamp, event_id)`` (see
+    :func:`skpm.event_logs.base.to_event_log`). :meth:`_validate_log` enforces
+    that shape, promoting a flat DataFrame on the fly so ad-hoc callers can
+    hand in unprocessed input.
 
+    Polars input is currently rejected (``NotImplementedError``) — temporarily
+    unsupported pending a polars path.
     """
-    _requires_case_id: bool = True
-    def _validate_log(
-        self,
-        X: DataFrame | pl.DataFrame,
-        y: DataFrame | pl.DataFrame | None = None,
-        copy: bool = True,
-    ):
-        """
-        Validate and preprocess the input event log DataFrame.
 
-        Parameters
-        ----------
-        X : DataFrame
-            The input DataFrame representing the event log.
-        y : DataFrame, default=None
-            The target DataFrame associated with the event log.
-        reset : bool, default=True
-            Whether to reset the index of the DataFrame after validation.
-        copy : bool, default=True
-            Whether to create a copy of the DataFrame before validation.
+    def _validate_log(self, X, copy: bool = True) -> DataFrame:
+        """Validate ``X`` and return it in canonical event-log form.
 
-        Returns
-        -------
-        DataFrame
-            The preprocessed and validated event log DataFrame.
-
-        Raises
-        ------
-        ValueError
-            If the input is not a DataFrame or if the case ID column is missing.
+        Promotes a flat DataFrame via :func:`to_event_log`. An
+        already-canonical frame is returned as-is (copied when ``copy``).
         """
         self._validate_params()
-        
-        is_polars = False
-        if isinstance(X, pl.DataFrame):  # For Polars DataFrame
-            X = X.to_pandas()
-            is_polars = True
 
-        # TODO: the validation of a dataframe might be done
-        # through the `pd.api.extensions`.
-        # This would decrease the dependency between data validation
-        # and sklearn estimators.
-        # See: https://pandas.pydata.org/pandas-docs/stable/development/extending.html#extending-pandas
-        data = X.copy() if copy else X
+        if isinstance(X, pl.DataFrame):
+            raise NotImplementedError(
+                "Polars DataFrames are not yet supported. "
+                "Please convert to a pandas DataFrame."
+            )
+        if not isinstance(X, DataFrame):
+            raise TypeError(
+                f"Input must be a pandas DataFrame, got {type(X).__name__}."
+            )
 
-        # despite the bottlenecks, event logs are better handled as dataframes
-        assert isinstance(data, DataFrame), "Input must be a dataframe."
-        cols = ensure_list(data.columns)
+        if has_event_log_index(X):
+            return X.copy() if copy else X
+        # to_event_log returns a fresh frame, so no extra copy is needed.
+        return to_event_log(X)
 
-        if self._requires_case_id:
-            self._case_id = self._ensure_case_id(data.columns)
+    @staticmethod
+    def _case_ids(X: DataFrame) -> pd.Series:
+        """Return the ``case_id`` index level as a Series aligned to ``X.index``."""
+        return X.index.get_level_values("case_id").to_series(
+            index=X.index, name="case_id"
+        )
 
-        # cols = validate_columns(
-        #     input_columns=data.columns,
-        #     required=[self._case_id] + list(self.feature_names_in_),
-        # )
+    @staticmethod
+    def _timestamps(X: DataFrame) -> pd.Series:
+        """Return the ``timestamp`` index level as a Series aligned to ``X.index``."""
+        return X.index.get_level_values("timestamp").to_series(
+            index=X.index, name="timestamp"
+        )
 
-        if is_polars:  # For Polars DataFrame
-            data = pl.from_pandas(data)
-        return data[cols]
+    @staticmethod
+    def _event_ids(X: DataFrame) -> pd.Series:
+        """Return the ``event_id`` index level as a Series aligned to ``X.index``.
 
-    def _ensure_case_id(self, columns: list[str]):
+        ``event_id`` is the globally-unique, per-event row counter assigned
+        at load. For an event's position *within its trace*, use
+        :meth:`_trace_positions` instead.
         """
-        Ensure that the case ID column is present in the list of columns.
+        return X.index.get_level_values("event_id").to_series(
+            index=X.index, name="event_id"
+        )
 
-        Parameters
-        ----------
-        columns : list[str]
-            The list of column names to check for the presence of the case ID.
+    @staticmethod
+    def _trace_positions(X: DataFrame) -> pd.Series:
+        """Return each event's 0-based position within its case (trace position).
 
-        Returns
-        -------
-        bool
-            True if the case ID column is found, False otherwise.
+        Distinct from ``event_id`` (a globally-unique row counter): this
+        restarts at 0 for every case, encoding an event's index within its
+        trace (i.e. prefix length minus one). Computed on demand, not stored.
         """
-        for col in columns:
-            if col.endswith(self.case_id):
-                return col
-        raise ValueError(f"Case ID column not found.")
-    
+        return (
+            X.groupby(level="case_id", sort=False, observed=True)
+            .cumcount()
+            .rename("trace_position")
+        )
+
+
 class BaseProcessTransformer(TransformerMixin, BaseProcessEstimator):
-    def fit(self, X, y=None):
-        self._snapshot_config()
-        self._validate_log(X)
+    """Base class for **event-level** process transformers (row-preserving).
 
+    The output has one row per input event and preserves the event-log
+    ``MultiIndex``. Subclasses implement :meth:`_fit` and :meth:`_transform`
+    and **must not** override :meth:`fit` / :meth:`transform` — the base
+    handles validation (input is already canonical when ``_fit`` / ``_transform``
+    receive it), the fitted marker, and the output/feature-name check.
+
+    For transformers that reduce the log to one row per case, subclass
+    :class:`CaseLevelTransformer` instead.
+    """
+
+    #: "event" (one output row per event) vs "case" (one row per case).
+    _cardinality: str = "event"
+
+    def fit(self, X, y=None):
+        X = self._validate_log(X)
         self._fit(X, y)
+        self.fitted_ = True
         return self
-    
+
     def transform(self, X, y=None):
+        X = self._validate_log(X, copy=False)
         out = self._transform(X, y)
-        
+        self._check_feature_names_out(out)
         return out
-                
+
     def _fit(self, X, y=None):
         return self
-    
+
     def _transform(self, X, y=None):
         raise NotImplementedError("Abstract Base Method")
+
+    def _check_feature_names_out(self, out) -> None:
+        """Best-effort guard: if ``_transform`` returns a DataFrame and the
+        subclass declares ``get_feature_names_out``, the columns must match.
+
+        Silently skipped when ``get_feature_names_out`` is undefined or raises
+        (e.g. mixins that need ``feature_names_in_``), so it only ever fires on
+        a genuine contributor mistake.
+        """
+        if not isinstance(out, DataFrame):
+            return
+        try:
+            declared = list(self.get_feature_names_out())
+        except Exception:
+            return
+        if list(out.columns) != declared:
+            raise ValueError(
+                f"{type(self).__name__}._transform produced columns "
+                f"{list(out.columns)} but get_feature_names_out() declares "
+                f"{declared}; they must match."
+            )
+
+
+class CaseLevelTransformer(BaseProcessTransformer):
+    """Base for **trace-level** transformers that emit one row per case.
+
+    Unlike event-level transformers (which preserve ``n_samples`` and the event
+    ``MultiIndex``), a case-level transformer collapses the log to one row per
+    case. It is therefore a **terminal** step: it does not compose as an
+    intermediate step of a scikit-learn :class:`~sklearn.pipeline.Pipeline`,
+    because the change in row count breaks alignment with ``y`` and downstream
+    steps. Use it standalone.
+
+    (This replaces the old stack-inspection guard: rather than trying to detect
+    Pipeline membership at runtime, the cardinality is declared explicitly and
+    misuse fails fast — a following event-level step receives case-indexed data
+    and its ``_validate_log`` raises a clear error.)
+    """
+
+    _cardinality: str = "case"

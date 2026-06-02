@@ -18,13 +18,18 @@ def fixture_dummy_pd():
     )
 
 def test_next_activity(dummy_data):
-    # test next_activity
     out = next_activity(dummy_data)
+    assert isinstance(out, pd.Series)
     assert len(out) == len(dummy_data)
-    assert isinstance(out, np.ndarray)
     assert out.dtype == object
-    
+    assert out.name == "next_activity"
+    assert tuple(out.index.names) == ("case_id", "timestamp", "event_id")
+
+
 def test_remaining_time(dummy_data):
     out = remaining_time(dummy_data)
+    assert isinstance(out, pd.Series)
     assert len(out) == len(dummy_data)
     assert out.dtype == float
+    assert out.name == "remaining_time"
+    assert tuple(out.index.names) == ("case_id", "timestamp", "event_id")

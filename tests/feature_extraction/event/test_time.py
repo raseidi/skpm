@@ -19,12 +19,14 @@ def fixture_dummy_pd():
     )
     
 def test_time(dummy_data):
-    # test TimeStampExtractor
+    # case_id and timestamp live in the event-log MultiIndex; the extractor
+    # output contains only the requested features.
     t = TimestampExtractor()
     t.fit(dummy_data)
     out = t.transform(dummy_data)
     assert out.shape[1] == t._n_features_out
     assert isinstance(out, pd.DataFrame)
+    assert tuple(out.index.names) == ("case_id", "timestamp", "event_id")
 
     t = TimestampExtractor(case_features="execution_time", event_features=None)
     t.fit(dummy_data)

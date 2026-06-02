@@ -4,217 +4,205 @@ import pandas as pd
 
 __all__ = ["EventLogConfig", "EventLogConfigMixin"]
 
-
-_XES_DEFAULTS: Final[Dict[str, str]] = {
-    "case_id": "case:concept:name",
-    "activity": "concept:name",
-    "timestamp": "time:timestamp",
-    "resource": "org:resource",
-}
-
-_REQUIRED_KEYS: Final[Tuple[str, ...]] = ("case_id", "activity", "timestamp")
-_RENAMEABLE_KEYS: Final[Tuple[str, ...]] = (
+# Fixed canonical field names — how skpm addresses an event log's semantic
+# columns internally, once loaded. NOT configurable. (case_id + timestamp
+# become index levels; activity + resource stay as columns.)
+CANONICAL_FIELDS: Final[Tuple[str, ...]] = (
     "case_id",
-    "activity",
     "timestamp",
+    "activity",
     "resource",
 )
 
+# An event log is defined by case_id + timestamp + activity; resource is
+# optional.
+REQUIRED_FIELDS: Final[Tuple[str, ...]] = ("case_id", "timestamp", "activity")
+
+# Default *source* column names skpm expects in raw input (the XES standard).
+# These are the single expected name per field — not a set of aliases. Users
+# override them via set_global_config(...) or the per-call column_mapping.
+_XES_SOURCE_NAMES: Final[Dict[str, str]] = {
+    "case_id": "case:concept:name",
+    "timestamp": "time:timestamp",
+    "activity": "concept:name",
+    "resource": "org:resource",
+}
+
 
 class _EventLogConfig:
-    """Global configuration for event log column names.
+    """Declares how an event log's source columns are named, and maps them to
+    skpm's fixed canonical names at load.
 
-    A single module-level instance, :data:`EventLogConfig`, holds the mapping
-    between semantic keys (``case_id``, ``activity``, ``timestamp``,
-    ``resource``) and the DataFrame column names SkPM expects.
-    Defaults follow the XES standard.
+    Two distinct notions:
 
-    Users can either:
+    * **Canonical names** (:data:`CANONICAL_FIELDS`) — ``case_id``,
+      ``timestamp``, ``activity``, ``resource`` — are constants and are how
+      skpm addresses columns internally. Exposed as the ``.case_id`` etc.
+      properties.
+    * **Source names** — the column names skpm expects in *raw* input, one per
+      field, defaulting to the XES standard. This is what's configurable.
 
-    1. Reconfigure the global standard column names via
-       :meth:`set_global_config`, so SkPM looks for *those* names in event
-       logs; or
-    2. Provide a source-to-standard mapping at load time via
-       :meth:`normalize_columns`, which renames source columns to the
-       configured standard names.
-
-    The configuration is shared across the process; estimators read it
-    through :class:`EventLogConfigMixin`.
+    Declare your source naming globally with :meth:`set_global_config` (e.g.
+    ``set_global_config(case_id="CaseID")`` if your logs call it ``CaseID``),
+    or per call via the ``mapping`` argument of :meth:`normalize_columns`.
+    There is no alias guessing: a field resolves only from an explicit
+    mapping, the configured source name, or an already-canonical column.
     """
 
-    __slots__ = ("_state",)
+    __slots__ = ("_source_names",)
 
     def __init__(self) -> None:
-        self._state: Dict[str, str] = dict(_XES_DEFAULTS)
+        self._source_names: Dict[str, str] = dict(_XES_SOURCE_NAMES)
 
+    # -- fixed canonical names (how skpm addresses columns internally) --------
     @property
     def case_id(self) -> str:
-        return self._state["case_id"]
-
-    @property
-    def activity(self) -> str:
-        return self._state["activity"]
+        return "case_id"
 
     @property
     def timestamp(self) -> str:
-        return self._state["timestamp"]
+        return "timestamp"
+
+    @property
+    def activity(self) -> str:
+        return "activity"
 
     @property
     def resource(self) -> str:
-        return self._state["resource"]
+        return "resource"
 
-    def to_dict(self) -> Dict[str, str]:
-        """Return a copy of the current configuration."""
-        return dict(self._state)
-
-    def get_global_config(self) -> Dict[str, str]:
-        """Return a copy of the current global configuration."""
-        return dict(self._state)
-
+    # -- source-name configuration -------------------------------------------
     def set_global_config(
         self,
         case_id: Optional[str] = None,
-        activity: Optional[str] = None,
         timestamp: Optional[str] = None,
+        activity: Optional[str] = None,
         resource: Optional[str] = None,
     ) -> None:
-        """Update one or more standard column names."""
-        updates = {
-            "case_id": case_id,
-            "activity": activity,
-            "timestamp": timestamp,
-            "resource": resource,
-        }
-        for key, value in updates.items():
-            if value is not None:
-                self._state[key] = value
+        """Declare the source column names used in your event logs.
+
+        Each argument sets the expected *source* name for that field,
+        replacing the default. e.g. ``set_global_config(case_id="CaseID")``
+        tells skpm your case-id column is named ``CaseID``. The canonical
+        output names are unaffected.
+        """
+        for field, name in (
+            ("case_id", case_id),
+            ("timestamp", timestamp),
+            ("activity", activity),
+            ("resource", resource),
+        ):
+            if name is not None:
+                self._source_names[field] = name
 
     def reset_global_config(self) -> None:
-        """Reset the global configuration to XES defaults."""
-        self._state.clear()
-        self._state.update(_XES_DEFAULTS)
+        """Reset the expected source names to the XES defaults."""
+        self._source_names = dict(_XES_SOURCE_NAMES)
+
+    def get_global_config(self) -> Dict[str, str]:
+        """Return the configured source column names (field -> source name)."""
+        return dict(self._source_names)
+
+    def to_dict(self) -> Dict[str, str]:
+        """Return the fixed canonical names (field -> canonical name)."""
+        return {field: getattr(self, field) for field in CANONICAL_FIELDS}
+
+    # -- resolution -----------------------------------------------------------
+    def _resolve_field(
+        self, field: str, columns: list, mapping: Mapping[str, str]
+    ) -> Optional[str]:
+        """Return the source column in ``columns`` that maps to ``field``."""
+        # 1. explicit mapping wins
+        if field in mapping:
+            src = mapping[field]
+            if src not in columns:
+                raise ValueError(
+                    f"column_mapping[{field!r}] = {src!r}, which is not a "
+                    f"column of the DataFrame ({columns})."
+                )
+            return src
+        # 2. configured source name present
+        configured = self._source_names[field]
+        if configured in columns:
+            return configured
+        # 3. already canonical
+        if field in columns:
+            return field
+        return None
 
     def normalize_columns(
         self,
         df: pd.DataFrame,
         mapping: Optional[Mapping[str, str]] = None,
     ) -> pd.DataFrame:
-        """Rename source columns to the configured standard names.
+        """Rename an event log's source columns to the fixed canonical names.
 
-        For each semantic key (``case_id``, ``activity``, ``timestamp``,
-        ``resource``), if the configured standard name is already present
-        in ``df``, the column is left untouched. Otherwise, if ``mapping``
-        provides a source column name for that key and it exists in
-        ``df``, that column is renamed to the standard name.
-
-        Parameters
-        ----------
-        df : pandas.DataFrame
-            Event log to normalize.
-        mapping : Mapping[str, str], optional
-            Mapping from semantic key (``"case_id"``, ``"activity"``,
-            ``"timestamp"``, ``"resource"``) to the source column name in
-            ``df``.
-
-        Returns
-        -------
-        pandas.DataFrame
-            A DataFrame with standardized column names. The input is not
-            mutated.
+        For each field the source column is resolved by precedence — explicit
+        ``mapping`` > configured source name > already-canonical column — then
+        renamed to the canonical name. Required fields (``case_id``,
+        ``timestamp``, ``activity``) raise if unresolved; ``resource`` is
+        optional. The input is not mutated.
 
         Raises
         ------
         ValueError
-            If a required column (``case_id``, ``activity``,
-            ``timestamp``) cannot be resolved from either the standard
-            name or the provided mapping.
+            If a required field cannot be resolved, or an explicit mapping
+            points at a column that is not present.
         """
         mapping = dict(mapping or {})
+        columns = list(df.columns)
         rename_map: Dict[str, str] = {}
-        for key in _RENAMEABLE_KEYS:
-            standard = self._state[key]
-            if standard in df.columns:
-                continue
-            source = mapping.get(key)
-            if source is not None and source in df.columns:
-                rename_map[source] = standard
-            elif key in _REQUIRED_KEYS:
-                raise ValueError(
-                    f"Cannot resolve required column for '{key}': "
-                    f"standard name {standard!r} not present in DataFrame "
-                    f"and no valid source column provided in `mapping`."
-                )
+        for field in CANONICAL_FIELDS:
+            src = self._resolve_field(field, columns, mapping)
+            if src is None:
+                if field in REQUIRED_FIELDS:
+                    raise ValueError(
+                        f"Cannot resolve required column {field!r}: expected "
+                        f"source name {self._source_names[field]!r} (configure via "
+                        f"set_global_config or pass column_mapping={{'{field}': "
+                        f"'<column>'}}) is not among {columns}."
+                    )
+                continue  # optional field absent
+            if src != field:
+                rename_map[src] = field
 
-        if rename_map:
-            df = df.rename(columns=rename_map)
-        return df
+        return df.rename(columns=rename_map) if rename_map else df
 
     def __repr__(self) -> str:
-        lines = ["EventLogConfig("]
-        for key, value in self._state.items():
-            lines.append(f"  {key}='{value}'")
-        return "\n".join(lines) + "\n)"
+        lines = ["EventLogConfig(canonical <- source)"]
+        for field in CANONICAL_FIELDS:
+            req = "required" if field in REQUIRED_FIELDS else "optional"
+            lines.append(f"  {field} ({req}) <- {self._source_names[field]!r}")
+        return "\n".join(lines)
 
 
 EventLogConfig: _EventLogConfig = _EventLogConfig()
 
 
 class EventLogConfigMixin:
-    """Mixin providing event-log column-name properties.
+    """Mixin exposing the canonical event-log field names to estimators.
 
-    Before fit, the properties (``case_id``, ``activity``, ``timestamp``,
-    ``resource``) read live values from the shared
-    :data:`EventLogConfig` singleton, so estimators pick up the user's
-    current configuration as a sensible default.
-
-    At fit time, :meth:`_snapshot_config` copies the current values into
-    trailing-underscore attributes (``case_id_``, ``activity_``,
-    ``timestamp_``, ``resource_``,). From that point on, the
-    properties return the snapshot, mirroring scikit-learn's convention
-    that fitted estimators expose their learned state via
-    ``trailing_underscore_`` attributes (``feature_names_in_``,
-    ``classes_``, ...).
-
-    The consequence is that a fitted estimator is self-contained: later
-    mutations to the global :data:`EventLogConfig` do not change its
-    behavior, and pickling preserves the column-name contract it was
-    trained under. Each step in a scikit-learn :class:`Pipeline`
-    snapshots independently when its ``fit`` runs.
+    The names (``case_id``, ``timestamp``, ``activity``, ``resource``) are
+    fixed constants supplied by :data:`EventLogConfig`. They are how estimators
+    address the index levels (``case_id``/``timestamp``) and the activity /
+    resource columns of a canonical event log. Because the names are constant
+    there is no fit-time state to snapshot.
     """
 
     _config: _EventLogConfig = EventLogConfig
 
     @property
     def case_id(self) -> str:
-        return self.case_id_ if hasattr(self, "case_id_") else self._config.case_id
-
-    @property
-    def activity(self) -> str:
-        return self.activity_ if hasattr(self, "activity_") else self._config.activity
+        return self._config.case_id
 
     @property
     def timestamp(self) -> str:
-        return (
-            self.timestamp_
-            if hasattr(self, "timestamp_")
-            else self._config.timestamp
-        )
+        return self._config.timestamp
+
+    @property
+    def activity(self) -> str:
+        return self._config.activity
 
     @property
     def resource(self) -> str:
-        return self.resource_ if hasattr(self, "resource_") else self._config.resource
-
-    def _snapshot_config(self) -> None:
-        """Freeze the current global column-name config onto this estimator.
-
-        Sets ``case_id_``, ``activity_``, ``timestamp_``, ``resource_``,
-        and from :data:`EventLogConfig`. Call this from ``fit``
-        before any computation so the rest of fit/transform reads a
-        consistent snapshot, regardless of later changes to the global
-        config.
-        """
-        cfg = self._config
-        self.case_id_ = cfg.case_id
-        self.activity_ = cfg.activity
-        self.timestamp_ = cfg.timestamp
-        self.resource_ = cfg.resource
+        return self._config.resource
