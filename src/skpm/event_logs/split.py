@@ -1,173 +1,120 @@
 import pandas as pd
-from skpm.config import EventLogConfig as elc
-from skpm.event_logs.base import TUEventLog
+
+from skpm.event_logs.base import EventLog, to_event_log
 
 
-def _bounded_dataset(
-    dataset: pd.DataFrame, start_date, end_date: int
-) -> pd.DataFrame:
-    grouped = dataset.groupby(elc.case_id, as_index=False)[elc.timestamp].agg(
+def _as_event_log(dataset: pd.DataFrame | EventLog) -> pd.DataFrame:
+    if isinstance(dataset, EventLog):
+        return dataset.dataframe
+    return to_event_log(dataset)
+
+
+def _case_bounds(dataset: pd.DataFrame) -> pd.DataFrame:
+    """Per-case (min, max) timestamp summary read from the event-log index."""
+    timestamps = dataset.index.get_level_values("timestamp").to_series(
+        index=dataset.index, name="timestamp"
+    )
+    return timestamps.groupby(level="case_id", sort=False, observed=True).agg(
         ["min", "max"]
     )
 
-    start_date = (
-        pd.Period(start_date)
-        if start_date
-        else dataset[elc.timestamp].min().to_period("M")
+
+def _select_cases(dataset: pd.DataFrame, case_ids) -> pd.DataFrame:
+    mask = dataset.index.get_level_values("case_id").isin(case_ids)
+    return dataset[mask]
+
+
+def _bounded_dataset(
+    dataset: pd.DataFrame, start_date, end_date
+) -> pd.DataFrame:
+    bounds = _case_bounds(dataset)
+    timestamps = dataset.index.get_level_values("timestamp")
+
+    start = pd.Period(start_date) if start_date else timestamps.min().to_period("M")
+    end = pd.Period(end_date) if end_date else timestamps.max().to_period("M")
+
+    keep = (
+        (bounds["min"].dt.to_period("M") >= start)
+        & (bounds["max"].dt.to_period("M") <= end)
     )
-    end_date = (
-        pd.Period(end_date)
-        if end_date
-        else dataset[elc.timestamp].max().to_period("M")
-    )
-    bounded_cases = grouped[
-        (grouped["min"].dt.to_period("M") >= start_date)
-        & (grouped["max"].dt.to_period("M") <= end_date)
-    ][elc.case_id].values
-    dataset = dataset[dataset[elc.case_id].isin(bounded_cases)]
-    return dataset
+    return _select_cases(dataset, bounds.index[keep])
 
 
 def _unbiased(dataset: pd.DataFrame, max_days: int) -> pd.DataFrame:
-    grouped = (
-        dataset.groupby(elc.case_id, as_index=False)[elc.timestamp]
-        .agg(["min", "max"])
-        .assign(
-            duration=lambda x: (x["max"] - x["min"]).dt.total_seconds()
-            / (24 * 60 * 60)
-        )
+    bounds = _case_bounds(dataset).assign(
+        duration=lambda x: (x["max"] - x["min"]).dt.total_seconds() / (24 * 60 * 60)
     )
 
-    # condition 1: cases are shorter than max_duration
-    condition_1 = grouped["duration"] <= max_days * 1.00000000001
-    # condition 2: drop cases starting after the dataset's last timestamp - the max_duration
-    latest_start = dataset[elc.timestamp].max() - pd.Timedelta(
+    condition_1 = bounds["duration"] <= max_days * 1.00000000001
+    latest_start = dataset.index.get_level_values("timestamp").max() - pd.Timedelta(
         max_days, unit="D"
     )
-    condition_2 = grouped["min"] <= latest_start
+    condition_2 = bounds["min"] <= latest_start
 
-    unbiased_cases = grouped[condition_1 & condition_2][elc.case_id].values
-    dataset = dataset[dataset[elc.case_id].isin(unbiased_cases)]
-    return dataset
+    keep = condition_1 & condition_2
+    return _select_cases(dataset, bounds.index[keep])
 
 
 def unbiased(
-    dataset: pd.DataFrame | TUEventLog,
+    dataset: pd.DataFrame | EventLog,
     start_date: str | pd.Period | None,
     end_date: str | pd.Period | None,
     max_days: int,
     test_len: float = 0.2,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Unbiased split of event log into training and test set [1].
+    """Unbiased split of an event log into training and test sets [1]_.
 
-    Code adapted from [2].
+    The event log is expected in canonical form (
+    :func:`skpm.event_logs.base.to_event_log`); raw DataFrames are
+    promoted on entry.
 
     Parameters
     ----------
-    dataset: pd.DataFrame
-        Event log.
+    dataset : pd.DataFrame or EventLog
+    start_date, end_date : str or pd.Period or None
+        Optional bounds on the case start/end (monthly resolution).
+    max_days : int
+        Maximum allowed case duration in days.
+    test_len : float, default=0.2
+        Proportion of cases to use for the test set.
 
-    start_date: str
-        Start date of the event log.
-
-    end_date: str
-        End date of the event log.
-
-    max_days: int
-        Maximum duration of cases.
-
-    test_len: float, default=0.2
-        Proportion of cases to be used for the test set.
-
-    Returns
-    -------
-    - df_train: pd.DataFrame, training set
-    - df_test: pd.DataFrame, test set
-
-    Example
-    -------
-    >>> from skpm.event_logs import BPI12
-    >>> from skpm.event_logs import split
-    >>> bpi12 = BPI12()
-    >>> df_train, df_test = split.unbiased(bpi12, **bpi12.unbiased_split_params)
-    >>> df_train.shape, df_test.shape
-    ((117546, 7), (55952, 7))
-
-    References:
-    -----------
-    [1] Hans Weytjens, Jochen De Weerdt. Creating Unbiased Public Benchmark Datasets with Data Leakage Prevention for Predictive Process Monitoring, 2021. doi: 10.1007/978-3-030-94343-1_2
-    [2] https://github.com/hansweytjens/predictive-process-monitoring-benchmarks
+    References
+    ----------
+    .. [1] Hans Weytjens, Jochen De Weerdt. Creating Unbiased Public
+       Benchmark Datasets with Data Leakage Prevention for Predictive
+       Process Monitoring, 2021. doi:10.1007/978-3-030-94343-1_2
     """
-    if isinstance(dataset, TUEventLog):
-        dataset = dataset.dataframe
-        
-    dataset = dataset.copy()
-    
-    dataset[elc.timestamp] = pd.to_datetime(
-        dataset[elc.timestamp], utc=True
-    ).dt.tz_localize(None)
+    dataset = _as_event_log(dataset).copy()
 
-    # bounding the event log
     if start_date or end_date:
         dataset = _bounded_dataset(dataset, start_date, end_date)
-
-    # drop longest cases and debiasing end of dataset
     dataset = _unbiased(dataset, max_days)
 
-    # preliminaries
-    grouped = dataset.groupby(elc.case_id, as_index=False)[elc.timestamp].agg(
-        ["min", "max"]
-    )
+    bounds = _case_bounds(dataset)
 
-    ### TEST SET ###
-    first_test_case_nr = int(len(grouped) * (1 - test_len))
-    first_test_start_time = (
-        grouped["min"].sort_values().values[first_test_case_nr]
-    )
-    # retain cases that end after first_test_start time
-    test_case_nrs = grouped.loc[
-        grouped["max"].values >= first_test_start_time, elc.case_id
-    ]
-    df_test = dataset[dataset[elc.case_id].isin(test_case_nrs)].reset_index(
-        drop=True
-    )
+    first_test_case_nr = int(len(bounds) * (1 - test_len))
+    first_test_start_time = bounds["min"].sort_values().values[first_test_case_nr]
+    test_cases = bounds.index[bounds["max"].values >= first_test_start_time]
 
-    #### TRAINING SET ###
-    df_train = dataset[~dataset[elc.case_id].isin(test_case_nrs)].reset_index(
-        drop=True
-    )
-
+    df_test = _select_cases(dataset, test_cases)
+    df_train = _select_cases(dataset, bounds.index.difference(test_cases))
     return df_train, df_test
 
-def temporal(dataset: pd.DataFrame | TUEventLog, test_len: float = 0.2) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Temporal split of event log into training and test set.
 
-    Parameters
-    ----------
-    dataset: pd.DataFrame
-        Event log.
-
-    test_len: float, default=0.2
-        Proportion of cases to be used for the test set.
-
-    Returns
-    -------
-    - df_train: pd.DataFrame, training set
-    - df_test: pd.DataFrame, test set
-    """
-    if isinstance(dataset, TUEventLog):
-        dataset = dataset.dataframe
-        
-    dataset = dataset.sort_values(by=[elc.case_id, elc.timestamp])
-    start = dataset[elc.timestamp].min()
-    end = dataset[elc.timestamp].max()
-    
+def temporal(
+    dataset: pd.DataFrame | EventLog, test_len: float = 0.2
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Temporal split: any case whose first event is at or before the
+    cutoff goes to train, the rest to test."""
+    dataset = _as_event_log(dataset)
+    timestamps = dataset.index.get_level_values("timestamp")
+    start, end = timestamps.min(), timestamps.max()
     split_point = start + (end - start) * (1 - test_len)
-    train_cases = dataset[dataset[elc.timestamp] <= split_point][elc.case_id].unique()
-    
-    train_dataset = dataset[dataset[elc.case_id].isin(train_cases)]
-    test_dataset = dataset[~dataset[elc.case_id].isin(train_cases)]
 
-    return train_dataset.reset_index(drop=True), test_dataset.reset_index(drop=True)
+    train_mask_per_event = dataset.index.get_level_values("timestamp") <= split_point
+    case_ids = dataset.index.get_level_values("case_id")
+    train_cases = case_ids[train_mask_per_event].unique()
+
+    df_train = _select_cases(dataset, train_cases)
+    df_test = dataset[~dataset.index.get_level_values("case_id").isin(train_cases)]
+    return df_train, df_test

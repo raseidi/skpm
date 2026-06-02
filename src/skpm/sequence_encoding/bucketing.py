@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.calibration import StrOptions
-from skpm.config import EventLogConfig as elc
+
 from skpm.base import BaseProcessTransformer
 
 
@@ -46,37 +46,21 @@ class Bucketing(BaseProcessTransformer):
         self.method = method
 
     def _transform(self, X, y=None):
-        """
-        Transform input data by bucketing traces.
+        """Transform input data by bucketing traces."""
+        X = self._validate_log(X, copy=False)
 
-        Parameters
-        ----------
-        X : array-like or DataFrame
-            The input data.
-
-        Returns
-        -------
-        bucket_labels : array
-            An array containing the bucket labels assigned to each event.
-        """
         if self.method == "single":
-            # For the single method, assign all events to a single bucket.
-            bucket_labels = np.array(["b1"] * len(X))
-        elif self.method == "prefix":
-            # For the prefix method, group events by case ID and assign sequential buckets.
-            bucket_labels = (
-                X.groupby(elc.case_id)
+            return np.array(["b1"] * len(X))
+        if self.method == "prefix":
+            return (
+                X.groupby(level="case_id", sort=False, observed=True)
                 .cumcount()
-                .apply(lambda x: f"b{x + 1}")
+                .map(lambda x: f"b{x + 1}")
                 .values
             )
-        elif self.method == "clustering":
-            # Clustering method is not implemented yet.
-            raise NotImplementedError(
-                "Clustering method is not implemented yet"
-            )
-
-        return bucket_labels
+        if self.method == "clustering":
+            raise NotImplementedError("Clustering method is not implemented yet")
+        raise ValueError(f"Unknown bucketing method: {self.method}")
 
     def get_feature_names_out(self):
         """
