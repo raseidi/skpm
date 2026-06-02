@@ -1,27 +1,102 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional, Union
+from typing import Any, Dict, Mapping, Optional, Tuple, Union
 from urllib import request
 
 import pandas as pd
 
-from skpm.base import EventLogConfigMixin
-from skpm.config import EventLogConfig
+from skpm.config import EventLogConfig, EventLogConfigMixin
 from skpm.event_logs.parser import read_xes
+
+#: Canonical index level names used everywhere in skpm. They are semantic
+#: constants, independent of the configured column names — ``EventLogConfig``
+#: governs how source columns are *named*, this constant governs how the
+#: event-log shape is *addressed* once loaded.
+EVENT_LOG_INDEX: Tuple[str, str, str] = ("case_id", "timestamp", "event_id")
+
+
+def has_event_log_index(df: pd.DataFrame) -> bool:
+    """Whether ``df`` already carries the canonical event-log MultiIndex."""
+    return tuple(df.index.names) == EVENT_LOG_INDEX
+
+
+def to_event_log(
+    df: pd.DataFrame,
+    *,
+    column_mapping: Optional[Mapping[str, str]] = None,
+) -> pd.DataFrame:
+    """Promote a flat event-log DataFrame into the canonical MultiIndex shape.
+
+    The result has a ``MultiIndex`` with levels ``(case_id, timestamp,
+    event_id)`` and contains the remaining columns (activity, resource,
+    case attributes, ...) as ordinary columns. ``case_id`` and
+    ``timestamp`` are *moved* into the index — they no longer appear as
+    columns.
+
+    Steps:
+
+    1. Normalize column names via :meth:`EventLogConfig.normalize_columns`.
+    2. Parse timestamps to UTC datetime.
+    3. Sort by ``(case_id, timestamp)`` with a stable sort, which
+       preserves original document order whenever timestamps tie.
+    4. Assign ``event_id`` as the per-case 0-based sequence number.
+    5. Set the ``(case_id, timestamp, event_id)`` MultiIndex.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Flat event log. Must contain at least the columns named by
+        :data:`EventLogConfig.case_id`, :data:`EventLogConfig.timestamp`,
+        and :data:`EventLogConfig.activity` (either under those names,
+        or via ``column_mapping``).
+    column_mapping : Mapping[str, str], optional
+        Source-name → semantic-key mapping forwarded to
+        :meth:`EventLogConfig.normalize_columns`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame whose index is ``MultiIndex`` with names
+        ``("case_id", "timestamp", "event_id")``.
+    """
+    if has_event_log_index(df):
+        return df
+
+    cfg = EventLogConfig
+    df = cfg.normalize_columns(df, mapping=column_mapping).copy()
+
+    df[cfg.timestamp] = pd.to_datetime(
+        df[cfg.timestamp], utc=True, format="mixed", errors="coerce"
+    )
+    null_ts = df[cfg.timestamp].isnull().sum()
+    if null_ts:
+        logging.warning("Failed to convert %d timestamps", null_ts)
+
+    df = df.sort_values(
+        by=[cfg.case_id, cfg.timestamp], kind="stable"
+    ).reset_index(drop=True)
+    df["event_id"] = df.index.values
+    df = df.rename(
+        columns={cfg.case_id: "case_id", cfg.timestamp: "timestamp"}
+    )
+    return df.set_index(list(EVENT_LOG_INDEX))
+
 
 class EventLog(EventLogConfigMixin):
     """Base class for event log handling with common functionality.
 
     Every class that handles event logs should inherit from this class.
-    This class provides methods for preprocessing, validation, and summary statistics
-    of event logs. It also defines the expected structure of an event log,
-    including case ID, activity, and timestamp columns.
+    It owns a pandas DataFrame whose index is the canonical event-log
+    ``MultiIndex(case_id, timestamp, event_id)``. The loader normalizes
+    column names and promotes the frame on construction; downstream
+    estimators rely on this shape contract.
 
     Parameters
     ----------
     dataframe : pandas.DataFrame, optional
-        Event log to load. Columns are normalized to the configured
-        standard names via :meth:`EventLogConfig.normalize_columns`.
+        Event log to load. The frame is normalized via
+        :meth:`EventLogConfig.normalize_columns` and reshaped via
+        :func:`to_event_log`.
     column_mapping : Mapping[str, str], optional
         Mapping from semantic key (``"case_id"``, ``"activity"``,
         ``"timestamp"``, ``"resource"``) to the source column name in
@@ -36,52 +111,25 @@ class EventLog(EventLogConfigMixin):
         column_mapping: Optional[Mapping[str, str]] = None,
     ):
         if dataframe is not None:
-            dataframe = EventLogConfig.normalize_columns(
-                dataframe, mapping=column_mapping
-            )
+            dataframe = to_event_log(dataframe, column_mapping=column_mapping)
         self._dataframe = dataframe
-
-        if self._dataframe is not None:
-            self.preprocess()
 
     @property
     def dataframe(self) -> pd.DataFrame:
         """Get the event log DataFrame."""
         return self._dataframe
 
-    def preprocess(self) -> None:
-        """Preprocess the dataframe by converting timestamps."""
-        if self.dataframe is None:
-            raise ValueError("No dataframe loaded to preprocess")
-
-        # More efficient datetime conversion with error handling
-        self._dataframe[self.timestamp] = pd.to_datetime(
-            self._dataframe[self.timestamp],
-            utc=True,
-            format="mixed",
-            errors="coerce",
-        )
-
-        # Log any failed conversions
-        null_count = self.dataframe[self.timestamp].isnull().sum()
-        if null_count > 0:
-            logging.warning(f"Failed to convert {null_count} timestamps")
-
-        self._dataframe = self._dataframe.sort_values(
-            by=[self.timestamp], ascending=True
-        ).reset_index(drop=True)
-
     def get_summary_stats(self) -> Dict[str, Any]:
         """Get summary statistics for the event log."""
         df = self.dataframe
 
         return {
-            "n_cases": df[self.case_id].nunique(),
+            "n_cases": df.index.get_level_values("case_id").nunique(),
             "n_events": len(df),
             "n_activities": (
                 df[self.activity].nunique()
                 if self.activity in df.columns
-                else 0
+                else "N/A"
             ),
         }
 
@@ -93,7 +141,7 @@ class EventLog(EventLogConfigMixin):
         stats = self.get_summary_stats()
 
         lines = [
-            f"{self.__class__.__name__} Event Log",
+            f"{self.__class__.__name__}",
             f"    Cases: {stats['n_cases']:,}",
             f"    Events: {stats['n_events']:,}",
             f"    Activities: {stats['n_activities']:,}",
