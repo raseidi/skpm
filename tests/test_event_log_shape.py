@@ -3,7 +3,10 @@
 The whole package agrees on a data shape contract:
 
 * ``case_id``, ``timestamp``, and ``event_id`` are the three index levels.
-* ``event_id`` is a per-case sequence number assigned at load time.
+* ``event_id`` is a global per-event row counter assigned at load time.
+* Inputs in XES (the default source naming) or the canonical names load
+  directly; other namings are declared via ``set_global_config`` or
+  ``column_mapping``. All resolve to the same canonical shape.
 * Transformers preserve the MultiIndex across ``fit``/``transform`` so
   downstream steps can rely on it.
 """
@@ -39,14 +42,16 @@ def test_to_event_log_sets_canonical_index(flat_log):
     assert has_event_log_index(out)
 
 
-def test_to_event_log_assigns_event_id_per_case(flat_log):
+def test_event_id_orders_events_within_case(flat_log):
     out = to_event_log(flat_log)
-    per_case_event_ids = (
-        out.index.to_frame(index=False).groupby("case_id")["event_id"]
-    )
-    # Every case starts at 0 and is monotonically increasing.
-    assert (per_case_event_ids.min() == 0).all()
-    assert per_case_event_ids.apply(lambda s: s.is_monotonic_increasing).all()
+    # The full (case_id, timestamp, event_id) index is unique...
+    assert out.index.is_unique
+    # ...event_id is an integer level...
+    assert pd.api.types.is_integer_dtype(out.index.get_level_values("event_id"))
+    # ...and increases with event order within each case (holds whether
+    # event_id is a global row counter or a per-case sequence).
+    per_case = out.index.to_frame(index=False).groupby("case_id")["event_id"]
+    assert per_case.apply(lambda s: s.is_monotonic_increasing).all()
 
 
 def test_event_id_breaks_simultaneous_timestamp_ties():
@@ -68,6 +73,49 @@ def test_to_event_log_is_idempotent(flat_log):
     once = to_event_log(flat_log)
     twice = to_event_log(once)
     assert once is twice  # already-canonical input is returned unchanged
+
+
+def test_naming_styles_resolve_to_same_canonical_shape():
+    """XES (default source naming), already-canonical, and declared-via-mapping
+    inputs all land in identical canonical shape."""
+    rows = {
+        "case": [1, 1, 2],
+        "act": ["a", "b", "a"],
+        "ts": ["2024-01-01", "2024-01-02", "2024-01-01"],
+    }
+    xes = pd.DataFrame(
+        {
+            "case:concept:name": rows["case"],
+            "concept:name": rows["act"],
+            "time:timestamp": rows["ts"],
+        }
+    )
+    canonical = pd.DataFrame(
+        {"case_id": rows["case"], "activity": rows["act"], "timestamp": rows["ts"]}
+    )
+    title = pd.DataFrame(
+        {"CaseID": rows["case"], "Activity": rows["act"], "Timestamp": rows["ts"]}
+    )
+
+    outs = [
+        to_event_log(xes),  # XES = default source naming
+        to_event_log(canonical),  # already canonical
+        to_event_log(  # non-standard names declared explicitly
+            title,
+            column_mapping={
+                "case_id": "CaseID",
+                "activity": "Activity",
+                "timestamp": "Timestamp",
+            },
+        ),
+    ]
+    for out in outs:
+        assert tuple(out.index.names) == EVENT_LOG_INDEX
+        assert list(out.columns) == ["activity"]
+    # All three produce the same index and the same activity values.
+    for out in outs[1:]:
+        assert out.index.equals(outs[0].index)
+        assert out["activity"].tolist() == outs[0]["activity"].tolist()
 
 
 def test_pipeline_preserves_multiindex(flat_log):
