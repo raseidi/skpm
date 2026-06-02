@@ -62,23 +62,21 @@ def to_event_log(
     if has_event_log_index(df):
         return df
 
-    cfg = EventLogConfig
-    df = cfg.normalize_columns(df, mapping=column_mapping).copy()
+    # Resolve source columns to the fixed canonical names (case_id, timestamp,
+    # activity, resource). After this, columns are addressed by literal name.
+    df = EventLogConfig.normalize_columns(df, mapping=column_mapping).copy()
 
-    df[cfg.timestamp] = pd.to_datetime(
-        df[cfg.timestamp], utc=True, format="mixed", errors="coerce"
+    df["timestamp"] = pd.to_datetime(
+        df["timestamp"], utc=True, format="mixed", errors="coerce"
     )
-    null_ts = df[cfg.timestamp].isnull().sum()
+    null_ts = df["timestamp"].isnull().sum()
     if null_ts:
         logging.warning("Failed to convert %d timestamps", null_ts)
 
-    df = df.sort_values(
-        by=[cfg.case_id, cfg.timestamp], kind="stable"
-    ).reset_index(drop=True)
-    df["event_id"] = df.index.values
-    df = df.rename(
-        columns={cfg.case_id: "case_id", cfg.timestamp: "timestamp"}
+    df = df.sort_values(by=["case_id", "timestamp"], kind="stable").reset_index(
+        drop=True
     )
+    df["event_id"] = df.index.values
     return df.set_index(list(EVENT_LOG_INDEX))
 
 
@@ -315,3 +313,49 @@ class TUEventLog(EventLog):
                 f"Unbiased split not available for {self.__class__.__name__}"
             )
         return self._unbiased_split_params
+
+
+# --- public index accessors -------------------------------------------------
+# Convenience for pulling the canonical index levels out of an event log,
+# accepting either an EventLog or a (flat or canonical) DataFrame. Each returns
+# a Series aligned to the event-log index.
+
+
+def _coerce(log) -> pd.DataFrame:
+    if isinstance(log, EventLog):
+        log = log.dataframe
+    return log if has_event_log_index(log) else to_event_log(log)
+
+
+def case_ids(log) -> pd.Series:
+    """Case id of each event, as a Series aligned to the event-log index."""
+    df = _coerce(log)
+    return df.index.get_level_values("case_id").to_series(
+        index=df.index, name="case_id"
+    )
+
+
+def timestamps(log) -> pd.Series:
+    """Timestamp of each event, as a Series aligned to the event-log index."""
+    df = _coerce(log)
+    return df.index.get_level_values("timestamp").to_series(
+        index=df.index, name="timestamp"
+    )
+
+
+def event_ids(log) -> pd.Series:
+    """Global per-event id of each event, aligned to the event-log index."""
+    df = _coerce(log)
+    return df.index.get_level_values("event_id").to_series(
+        index=df.index, name="event_id"
+    )
+
+
+def trace_positions(log) -> pd.Series:
+    """0-based position of each event within its case (trace position)."""
+    df = _coerce(log)
+    return (
+        df.groupby(level="case_id", sort=False, observed=True)
+        .cumcount()
+        .rename("trace_position")
+    )

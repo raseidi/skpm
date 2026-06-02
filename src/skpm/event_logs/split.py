@@ -24,18 +24,39 @@ def _select_cases(dataset: pd.DataFrame, case_ids) -> pd.DataFrame:
     return dataset[mask]
 
 
+def _check_nonempty_split(df_train: pd.DataFrame, df_test: pd.DataFrame) -> None:
+    """Guard against the silent empty-side footgun."""
+    if len(df_train) == 0 or len(df_test) == 0:
+        raise ValueError(
+            f"Split produced an empty side (train={len(df_train)} events, "
+            f"test={len(df_test)} events). This usually means every case falls "
+            f"on one side of the cutoff; adjust test_len / date bounds, or use a "
+            f"case-level holdout."
+        )
+
+
 def _bounded_dataset(
     dataset: pd.DataFrame, start_date, end_date
 ) -> pd.DataFrame:
     bounds = _case_bounds(dataset)
     timestamps = dataset.index.get_level_values("timestamp")
 
-    start = pd.Period(start_date) if start_date else timestamps.min().to_period("M")
-    end = pd.Period(end_date) if end_date else timestamps.max().to_period("M")
+    # Drop tz before to_period — we only need the calendar month, and this
+    # avoids pandas' "Converting to PeriodArray will drop timezone" warning.
+    start = (
+        pd.Period(start_date)
+        if start_date
+        else timestamps.min().tz_localize(None).to_period("M")
+    )
+    end = (
+        pd.Period(end_date)
+        if end_date
+        else timestamps.max().tz_localize(None).to_period("M")
+    )
 
     keep = (
-        (bounds["min"].dt.to_period("M") >= start)
-        & (bounds["max"].dt.to_period("M") <= end)
+        (bounds["min"].dt.tz_localize(None).dt.to_period("M") >= start)
+        & (bounds["max"].dt.tz_localize(None).dt.to_period("M") <= end)
     )
     return _select_cases(dataset, bounds.index[keep])
 
@@ -98,6 +119,7 @@ def unbiased(
 
     df_test = _select_cases(dataset, test_cases)
     df_train = _select_cases(dataset, bounds.index.difference(test_cases))
+    _check_nonempty_split(df_train, df_test)
     return df_train, df_test
 
 
@@ -117,4 +139,5 @@ def temporal(
 
     df_train = _select_cases(dataset, train_cases)
     df_test = dataset[~dataset.index.get_level_values("case_id").isin(train_cases)]
+    _check_nonempty_split(df_train, df_test)
     return df_train, df_test

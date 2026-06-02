@@ -61,16 +61,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-
-from skpm.event_logs.base import EventLog
-from skpm.event_logs import BPI20RequestForPayment
-
-df = BPI20RequestForPayment(cache_folder="../ppm-llm/data/").dataframe
-timestamps = df.index.get_level_values("timestamp").to_series(
-    index=df.index, name="timestamp"
-)
-
-timestamps.groupby("case_id").agg(["min", "max"])
-timestamps.index.get_level_values("timestamp").to_period("M")
