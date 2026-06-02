@@ -47,17 +47,11 @@ class Bucketing(BaseProcessTransformer):
 
     def _transform(self, X, y=None):
         """Transform input data by bucketing traces."""
-        X = self._validate_log(X, copy=False)
-
         if self.method == "single":
             return np.array(["b1"] * len(X))
         if self.method == "prefix":
-            return (
-                X.groupby(level="case_id", sort=False, observed=True)
-                .cumcount()
-                .map(lambda x: f"b{x + 1}")
-                .values
-            )
+            # Bucket label = 1-based trace position (b1, b2, ...).
+            return self._trace_positions(X).map(lambda p: f"b{p + 1}").values
         if self.method == "clustering":
             raise NotImplementedError("Clustering method is not implemented yet")
         raise ValueError(f"Unknown bucketing method: {self.method}")

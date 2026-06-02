@@ -71,16 +71,11 @@ class Aggregation(OneToOneFeatureMixin, BaseProcessTransformer):
 
     def _transform(self, X, y=None):
         check_is_fitted(self, "prefix_len")
-
+        # X is already a canonical, validated pandas event log (base.transform).
         if self.engine == "polars":
-            if isinstance(X, pd.DataFrame):
-                X = pl.from_pandas(X.reset_index() if isinstance(X.index, pd.MultiIndex) else X)
-            return self._transform_polars(X).to_pandas()
-
-        if isinstance(X, pl.DataFrame):
-            X = X.to_pandas()
-
-        X = self._validate_log(X, copy=False)
+            # polars path kept for future re-enablement (currently unreachable:
+            # _validate_log rejects polars input at fit).
+            return self._transform_polars(pl.from_pandas(X.reset_index())).to_pandas()
         return self._transform_pandas(X)
 
     def _transform_pandas(self, X: pd.DataFrame) -> pd.DataFrame:

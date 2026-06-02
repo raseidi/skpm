@@ -41,7 +41,6 @@ class ResourcePoolExtractor(BaseProcessTransformer):
         return ["resource_roles"]
 
     def _fit(self, X: DataFrame, y=None):
-        X = self._validate_log(X, copy=True)
         self._check_feature_columns(X)
 
         self.atoi_, self.itoa_ = self._define_vocabs(X[self.activity].unique())
@@ -80,7 +79,6 @@ class ResourcePoolExtractor(BaseProcessTransformer):
 
     def _transform(self, X: DataFrame, y=None):
         check_is_fitted(self, "resource_to_roles_")
-        X = self._validate_log(X, copy=False)
         self._check_feature_columns(X)
 
         resource = self._check_unknown(

@@ -34,8 +34,6 @@ class Indexing(BaseProcessTransformer):
         self.fill_num_value = fill_num_value
 
     def _transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
-        X = self._validate_log(X, copy=False)
-
         if self.attributes is None:
             self.attributes = X.columns.tolist()
         elif isinstance(self.attributes, str):

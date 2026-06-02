@@ -1,38 +1,41 @@
 from sklearn.preprocessing import LabelEncoder
 
-from skpm.base import BaseProcessTransformer
-from skpm.feature_extraction.case._helpers import ensure_not_pipeline
+from skpm.base import CaseLevelTransformer
 
 
-class VariantExtractor(BaseProcessTransformer):
-    """Extract trace variants from an event log."""
+class VariantExtractor(CaseLevelTransformer):
+    """Extract trace variants from an event log.
+
+    A trace variant is the ordered tuple of activities of a case. This is a
+    **case-level** transformer: it emits one row per case (see
+    :class:`~skpm.base.CaseLevelTransformer`), so it is a terminal step rather
+    than a Pipeline intermediate.
+    """
 
     _parameter_constraints: dict = {}
 
     def __init__(self, strategy: str = "default"):
         self.strategy = strategy
 
-    @ensure_not_pipeline
-    def fit(self, X, y=None):
+    def _fit(self, X, y=None):
         if self.strategy != "default":
             raise NotImplementedError("Only the default strategy is supported.")
 
-        X = self._validate_log(X, copy=False)
-        self.variants = (
+        variants = (
             X.groupby(level="case_id", sort=False, observed=True)[self.activity]
             .apply(tuple)
             .rename("variant")
             .to_frame()
             .reset_index()
         )
-
         self._le = LabelEncoder()
-        self.variants["variant"] = self._le.fit_transform(self.variants["variant"])
+        variants["variant"] = self._le.fit_transform(variants["variant"])
+        self.variants_ = variants
         return self
 
-    def transform(self, X):
-        """Get trace variants."""
-        return self.variants
+    def _transform(self, X, y=None):
+        # Case-level artifact computed at fit; one row per case.
+        return self.variants_
 
     def inverse_transform(self, X):
         return self._le.inverse_transform(X)

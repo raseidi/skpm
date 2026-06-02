@@ -80,7 +80,6 @@ class TimestampExtractor(ClassNamePrefixFeaturesOutMixin, BaseProcessTransformer
 
     def _transform(self, X: pd.DataFrame, y=None):
         check_is_fitted(self, "_n_features_out")
-        X = self._validate_log(X, copy=False)
 
         timestamps = self._timestamps(X)
         out = pd.DataFrame(index=X.index)

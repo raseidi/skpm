@@ -34,7 +34,6 @@ class WorkInProgress(BaseProcessTransformer):
         return self
 
     def _transform(self, X: pd.DataFrame, y=None):
-        X = self._validate_log(X, copy=False)
         timestamps = self._timestamps(X)
         case_ids = self._case_ids(X)
 
