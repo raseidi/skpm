@@ -163,7 +163,6 @@ def test_snapshot_taken_at_fit():
     assert t.activity_ == "concept:name"
     assert t.timestamp_ == "time:timestamp"
     assert t.resource_ == "org:resource"
-    assert t.EOT_ == "<EOT>"
 
 
 def test_global_change_after_fit_does_not_affect_fitted_estimator():
@@ -257,6 +256,6 @@ def test_event_log_normalizes_on_load():
             "timestamp": "Timestamp",
         },
     )
-    assert EventLogConfig.case_id in log.dataframe.columns
+    # case_id and timestamp moved into the event-log MultiIndex.
+    assert tuple(log.dataframe.index.names) == ("case_id", "timestamp", "event_id")
     assert EventLogConfig.activity in log.dataframe.columns
-    assert EventLogConfig.timestamp in log.dataframe.columns

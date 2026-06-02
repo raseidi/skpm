@@ -9,15 +9,19 @@ from skpm.config import EventLogConfig as elc
 def test_resource():
     dummy_data = pd.DataFrame(
         {
+            elc.case_id: np.repeat(np.arange(10), 100),
             elc.activity: np.random.randint(0, 10, 1000),
             elc.resource: np.random.randint(0, 3, 1000),
+            elc.timestamp: pd.date_range("2024-01-01", periods=1000, freq="h"),
         }
     )
 
     dummy_data_test = pd.DataFrame(
         {
+            elc.case_id: np.repeat(np.arange(10), 10),
             elc.activity: np.random.randint(0, 10, 100),
             elc.resource: np.random.randint(0, 3, 100),
+            elc.timestamp: pd.date_range("2024-02-01", periods=100, freq="h"),
         }
     )
 

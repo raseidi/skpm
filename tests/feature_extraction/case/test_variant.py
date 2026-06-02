@@ -13,6 +13,7 @@ def test_variants():
         {
             elc.case_id: np.random.randint(0, n_cases, 1000),
             elc.activity: np.random.randint(0, 10, 1000),
+            elc.timestamp: pd.date_range("2024-01-01", periods=1000, freq="h"),
         }
     )
 

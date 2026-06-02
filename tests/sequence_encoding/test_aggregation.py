@@ -4,17 +4,29 @@ import numpy as np
 import pandas as pd
 from skpm.sequence_encoding import Aggregation
 from skpm.config import EventLogConfig as elc
+from skpm.event_logs.base import to_event_log
 
 
 @pytest.fixture(name="pd_df")
 def fixture_dummy_pd():
-    return pd.DataFrame(
+    rng = np.random.default_rng(0)
+    flat = pd.DataFrame(
         {
             elc.case_id: np.repeat(np.arange(0, 10), 100),
-            elc.activity: np.random.randint(0, 10, 1000),
-            elc.resource: np.random.randint(0, 3, 1000),
+            elc.activity: rng.integers(0, 10, 1000),
+            elc.resource: rng.integers(0, 3, 1000),
+            elc.timestamp: pd.date_range(
+                "2024-01-01", periods=1000, freq="h"
+            ),
         }
     )
+    return to_event_log(flat)
+
+
+@pytest.fixture(name="pd_df_flat")
+def fixture_dummy_pd_flat(pd_df):
+    """Flat form (no MultiIndex) sharing data with ``pd_df``."""
+    return pd_df.reset_index()[["case_id", elc.activity, elc.resource]]
 
 def test_aggregation(pd_df):
     # Test default aggregation
@@ -31,9 +43,9 @@ def test_aggregation(pd_df):
     assert isinstance(out, pd.DataFrame)
     assert out.shape[0] == pd_df.shape[0]
 
-    # Test aggregation with invalid input data
+    # Test aggregation with invalid input data — flat DataFrame missing case_id
     with pytest.raises(Exception):
-        rp.transform(pd_df[[elc.activity, elc.resource]])
+        rp.transform(pd_df.reset_index()[[elc.activity, elc.resource]])
 
 
 def test_aggregation_with_window(pd_df):
@@ -58,8 +70,8 @@ def test_aggregation_with_window(pd_df):
         out = rp.transform(pd_df)
 
 
-def test_aggregation_with_polars(pd_df):
-    pl_df = pl.DataFrame(pd_df)
+def test_aggregation_with_polars(pd_df_flat):
+    pl_df = pl.DataFrame(pd_df_flat)
 
     rp = Aggregation(engine="polars")
     rp.fit(pl_df)
@@ -69,26 +81,24 @@ def test_aggregation_with_polars(pd_df):
     assert out.height == pl_df.height
 
 
-def test_aggregation_output(pd_df):
-    pl_df = pl.DataFrame(pd_df)
+def test_aggregation_output(pd_df, pd_df_flat):
+    pl_df = pl.DataFrame(pd_df_flat)
 
-    pd_agg = Aggregation(method="sum")
-    pl_agg = Aggregation(method="sum", engine="polars")
+    pd_agg = Aggregation(method="sum").fit_transform(pd_df)
+    pl_agg = Aggregation(method="sum", engine="polars").fit_transform(pl_df)
 
-    pd_agg = pd_agg.fit_transform(pd_df)
-    pl_agg = pl_agg.fit_transform(pl_df)
-
-    pd_agg = pd_agg.astype(pl_agg.dtypes)
+    # The pandas engine preserves the event-log MultiIndex; flatten before
+    # comparing values against the polars engine's flat output.
+    pd_agg_flat = pd_agg.reset_index(drop=True)
+    pd_agg_flat = pd_agg_flat.astype(pl_agg.dtypes)
     assert isinstance(pl_agg, pd.DataFrame)
-    assert pd_agg.equals(pl_agg)
+    assert pd_agg_flat[pl_agg.columns].equals(pl_agg[pl_agg.columns])
 
-    pd_agg = Aggregation(prefix_len=3)
-    pd_agg = pd_agg.fit_transform(pd_df)
-    pl_agg = Aggregation(prefix_len=3, engine="polars")
-    pl_agg = pl_agg.fit_transform(pl_df)
+    pd_agg = Aggregation(prefix_len=3).fit_transform(pd_df).reset_index(drop=True)
+    pl_agg = Aggregation(prefix_len=3, engine="polars").fit_transform(pl_df)
     pl_agg = pl_agg.astype(pd_agg.dtypes)
     assert isinstance(pl_agg, pd.DataFrame)
-    assert pd_agg.equals(pl_agg)
+    assert pd_agg[pl_agg.columns].equals(pl_agg[pl_agg.columns])
 
 
 def test_invalid_input(pd_df):
@@ -104,26 +114,34 @@ def test_invalid_input(pd_df):
         agg = Aggregation(engine="abc")
         agg.fit_transform(pd_df)
 
-    # invalid input data
-    with pytest.raises(AssertionError):
-        agg = Aggregation()
-        agg.fit(pd_df.values)
+    # invalid input data — numpy array
+    with pytest.raises(TypeError):
+        Aggregation().fit(pd_df.values)
 
-    # invalid input data
-    with pytest.raises(AssertionError):
-        agg = Aggregation().fit(pd_df)
-        agg.transform(pd_df.values)
+    with pytest.raises(TypeError):
+        Aggregation().fit(pd_df).transform(pd_df.values)
 
-def test_methods(pd_df):
+
+def test_methods(pd_df, pd_df_flat):
+    pl_df = pl.DataFrame(pd_df_flat)
     methods = Aggregation._parameter_constraints["method"][0].options
     for method in methods:
         out_pd = Aggregation(method=method).fit_transform(pd_df)
-        out_pl = Aggregation(method=method, engine="polars").fit_transform(pd_df)
-        pd.testing.assert_frame_equal(out_pd, out_pl, check_dtype=False)
-        
+        out_pl = Aggregation(method=method, engine="polars").fit_transform(pl_df)
+
         # pandas engine
         assert isinstance(out_pd, pd.DataFrame)
         assert out_pd.shape[0] == pd_df.shape[0]
+
+        # polars engine
+        assert isinstance(out_pl, pd.DataFrame)
+        assert out_pl.shape[0] == pd_df_flat.shape[0]
+
+        pd.testing.assert_frame_equal(
+            out_pd.reset_index(drop=True)[out_pl.columns],
+            out_pl[out_pl.columns],
+            check_dtype=False,
+        )
         
         # polars engine
         assert isinstance(out_pl, pd.DataFrame)
