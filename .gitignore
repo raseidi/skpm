@@ -33,4 +33,3 @@ __pypackages__/
 *.parquet
 
 .claude/
-CLAUDE.md
