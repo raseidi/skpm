@@ -105,6 +105,20 @@ class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
         elif hasattr(self, "feature_names_in_"):
             del self.feature_names_in_
 
+    def __sklearn_tags__(self):
+        """Declare process-estimator behaviour for scikit-learn (>=1.6).
+
+        skpm estimators consume an event-log DataFrame carrying the canonical
+        ``MultiIndex(case_id, timestamp, event_id)`` — not a plain 2D array, so
+        ``two_d_array`` is cleared. Defining this on the shared base lets the
+        flag reach transformers (via ``TransformerMixin``) and the regressor
+        baselines (via ``RegressorMixin``) while each mixin still contributes
+        its own transformer/regressor tags through ``super()``.
+        """
+        tags = super().__sklearn_tags__()
+        tags.input_tags.two_d_array = False
+        return tags
+
 
 class BaseProcessTransformer(TransformerMixin, BaseProcessEstimator):
     """Base class for **event-level** process transformers (row-preserving).
