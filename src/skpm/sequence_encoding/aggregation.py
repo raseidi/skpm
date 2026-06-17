@@ -14,6 +14,7 @@ from skpm.base import BaseProcessTransformer
 def handle_aggregation_method(method):
     if method == "norm":
         from numpy import linalg
+
         return linalg.norm
     return method
 
@@ -69,7 +70,9 @@ class Aggregation(OneToOneFeatureMixin, BaseProcessTransformer):
         # resolved at fit. Keep them distinct so the param survives
         # clone/get_params and check_is_fitted actually detects an unfitted
         # estimator (the param always exists, the fitted attr does not).
-        self.prefix_len_ = self.prefix_len if self.prefix_len is not None else len(X)
+        self.prefix_len_ = (
+            self.prefix_len if self.prefix_len is not None else len(X)
+        )
         return self
 
     def _transform(self, X, y=None):
@@ -78,7 +81,9 @@ class Aggregation(OneToOneFeatureMixin, BaseProcessTransformer):
         if self.engine == "polars":
             # polars path kept for future re-enablement (currently unreachable:
             # _validate_log rejects polars input at fit).
-            return self._transform_polars(pl.from_pandas(X.reset_index())).to_pandas()
+            return self._transform_polars(
+                pl.from_pandas(X.reset_index())
+            ).to_pandas()
         return self._transform_pandas(X)
 
     def _transform_pandas(self, X: pd.DataFrame) -> pd.DataFrame:

@@ -11,7 +11,9 @@ from skpm.feature_extraction.event.time import TimestampEventLevel
 from skpm.utils import validate_methods_from_class
 
 
-class TimestampExtractor(ClassNamePrefixFeaturesOutMixin, BaseProcessTransformer):
+class TimestampExtractor(
+    ClassNamePrefixFeaturesOutMixin, BaseProcessTransformer
+):
     """Extract timestamp-derived features and targets from an event log.
 
     Input is an event-log DataFrame carrying the canonical
@@ -59,7 +61,9 @@ class TimestampExtractor(ClassNamePrefixFeaturesOutMixin, BaseProcessTransformer
             class_obj=TimestampCaseLevel, methods=self.targets
         )
 
-        self._n_features_out = len(self.event_features_) + len(self.case_features_)
+        self._n_features_out = len(self.event_features_) + len(
+            self.case_features_
+        )
         self._n_targets_out = len(self.targets_)
 
         if self._n_features_out + self._n_targets_out == 0:

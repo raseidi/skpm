@@ -107,9 +107,15 @@ def _contract_cases() -> list:
             "transform",
             id="TimestampExtractor",
         ),
-        pytest.param(WorkInProgress(), log, None, "transform", id="WorkInProgress"),
         pytest.param(
-            ResourcePoolExtractor(), log, None, "transform", id="ResourcePoolExtractor"
+            WorkInProgress(), log, None, "transform", id="WorkInProgress"
+        ),
+        pytest.param(
+            ResourcePoolExtractor(),
+            log,
+            None,
+            "transform",
+            id="ResourcePoolExtractor",
         ),
         pytest.param(
             Aggregation(method="mean"),
@@ -120,9 +126,15 @@ def _contract_cases() -> list:
         ),
         pytest.param(Indexing(n=2), log, None, "transform", id="Indexing"),
         pytest.param(Bucketing(), log, None, "transform", id="Bucketing"),
-        pytest.param(VariantExtractor(), log, None, "transform", id="VariantExtractor"),
         pytest.param(
-            ActivityMeanRegressor(), log, y, "predict", id="ActivityMeanRegressor"
+            VariantExtractor(), log, None, "transform", id="VariantExtractor"
+        ),
+        pytest.param(
+            ActivityMeanRegressor(),
+            log,
+            y,
+            "predict",
+            id="ActivityMeanRegressor",
         ),
     ]
 
@@ -158,5 +170,7 @@ def test_estimator_contract(estimator, X, y, method):
         np.testing.assert_array_equal(np.asarray(out1), np.asarray(out2))
 
     # 7. declared feature names match the produced DataFrame columns.
-    if hasattr(estimator, "get_feature_names_out") and isinstance(out1, pd.DataFrame):
+    if hasattr(estimator, "get_feature_names_out") and isinstance(
+        out1, pd.DataFrame
+    ):
         assert list(out1.columns) == list(estimator.get_feature_names_out())

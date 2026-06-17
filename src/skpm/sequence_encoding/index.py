@@ -51,7 +51,9 @@ class Indexing(BaseProcessTransformer):
             self.lags_ = list(range(1, self.n + 1))
         else:
             max_case_len = (
-                X.groupby(level="case_id", sort=False, observed=True).size().max()
+                X.groupby(level="case_id", sort=False, observed=True)
+                .size()
+                .max()
             )
             self.lags_ = list(range(1, max_case_len))
 

@@ -32,8 +32,11 @@ class Bucketing(BaseProcessTransformer):
     get_feature_names_out()
         Get the names of the output features.
     """
-    _parameter_constraints = {"method": [StrOptions({"single", "prefix", "clustering"})]}
-    
+
+    _parameter_constraints = {
+        "method": [StrOptions({"single", "prefix", "clustering"})]
+    }
+
     def __init__(self, method="single"):
         """
         Initialize Bucketing Transformer.
@@ -55,7 +58,9 @@ class Bucketing(BaseProcessTransformer):
             # Bucket label = 1-based trace position (b1, b2, ...).
             return self._trace_positions(X).map(lambda p: f"b{p + 1}").values
         if self.method == "clustering":
-            raise NotImplementedError("Clustering method is not implemented yet")
+            raise NotImplementedError(
+                "Clustering method is not implemented yet"
+            )
         raise ValueError(f"Unknown bucketing method: {self.method}")
 
     def get_feature_names_out(self):
