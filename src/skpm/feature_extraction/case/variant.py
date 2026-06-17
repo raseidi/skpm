@@ -1,4 +1,5 @@
 from sklearn.preprocessing import LabelEncoder
+from sklearn.utils.validation import check_is_fitted
 
 from skpm.base import CaseLevelTransformer
 
@@ -34,8 +35,14 @@ class VariantExtractor(CaseLevelTransformer):
         return self
 
     def _transform(self, X, y=None):
+        check_is_fitted(self, "variants_")
         # Case-level artifact computed at fit; one row per case.
         return self.variants_
 
+    def get_feature_names_out(self, input_features=None):
+        check_is_fitted(self, "variants_")
+        return list(self.variants_.columns)
+
     def inverse_transform(self, X):
+        check_is_fitted(self, "_le")
         return self._le.inverse_transform(X)
