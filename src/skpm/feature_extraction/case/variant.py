@@ -1,4 +1,5 @@
-from sklearn.preprocessing import LabelEncoder
+import numpy as np
+import pandas as pd
 from sklearn.utils.validation import check_is_fitted
 
 from skpm.base import CaseLevelTransformer
@@ -22,16 +23,18 @@ class VariantExtractor(CaseLevelTransformer):
         if self.strategy != "default":
             raise NotImplementedError("Only the default strategy is supported.")
 
-        variants = (
+        variant_per_case = (
             X.groupby(level="case_id", sort=False, observed=True)[self.activity]
             .apply(tuple)
             .rename("variant")
-            .to_frame()
-            .reset_index()
         )
-        self._le = LabelEncoder()
-        variants["variant"] = self._le.fit_transform(variants["variant"])
-        self.variants_ = variants
+        # Encode each distinct trace variant as an integer. pd.factorize keeps
+        # the variant tuples hashable; LabelEncoder/np.unique would coerce
+        # equal-length tuples into a 2-D array and raise (unhashable ndarray).
+        codes, self.variant_labels_ = pd.factorize(variant_per_case)
+        variants = variant_per_case.to_frame()
+        variants["variant"] = codes
+        self.variants_ = variants.reset_index()
         return self
 
     def _transform(self, X, y=None):
@@ -44,5 +47,5 @@ class VariantExtractor(CaseLevelTransformer):
         return list(self.variants_.columns)
 
     def inverse_transform(self, X):
-        check_is_fitted(self, "_le")
-        return self._le.inverse_transform(X)
+        check_is_fitted(self, "variant_labels_")
+        return self.variant_labels_[np.asarray(X)]
