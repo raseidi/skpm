@@ -65,12 +65,15 @@ class Aggregation(OneToOneFeatureMixin, BaseProcessTransformer):
         self.engine = engine
 
     def _fit(self, X, y=None):
-        if self.prefix_len is None:
-            self.prefix_len = len(X)
+        # prefix_len is the (possibly None) param; prefix_len_ is the window
+        # resolved at fit. Keep them distinct so the param survives
+        # clone/get_params and check_is_fitted actually detects an unfitted
+        # estimator (the param always exists, the fitted attr does not).
+        self.prefix_len_ = self.prefix_len if self.prefix_len is not None else len(X)
         return self
 
     def _transform(self, X, y=None):
-        check_is_fitted(self, "prefix_len")
+        check_is_fitted(self, "prefix_len_")
         # X is already a canonical, validated pandas event log (base.transform).
         if self.engine == "polars":
             # polars path kept for future re-enablement (currently unreachable:
@@ -82,7 +85,7 @@ class Aggregation(OneToOneFeatureMixin, BaseProcessTransformer):
         method_fn = handle_aggregation_method(self.method)
         rolled = (
             X.groupby(level="case_id", sort=False, observed=True)
-            .rolling(window=self.prefix_len, min_periods=1)
+            .rolling(window=self.prefix_len_, min_periods=1)
             .agg(method_fn)
         )
         rolled.index = X.index
@@ -97,11 +100,11 @@ class Aggregation(OneToOneFeatureMixin, BaseProcessTransformer):
             if isinstance(fn, str):
                 builtin = f"rolling_{fn}"
                 return getattr(expr, builtin)(
-                    window_size=self.prefix_len, min_samples=1
+                    window_size=self.prefix_len_, min_samples=1
                 )
             expr = pl.col(col_name).cast(pl.Float32)
             return expr.rolling_map(
-                function=fn, window_size=self.prefix_len, min_samples=1
+                function=fn, window_size=self.prefix_len_, min_samples=1
             )
 
         X = X.with_columns(
