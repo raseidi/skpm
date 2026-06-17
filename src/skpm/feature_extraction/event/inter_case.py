@@ -1,5 +1,6 @@
 import pandas as pd
 from sklearn.utils._param_validation import StrOptions
+from sklearn.utils.validation import check_is_fitted
 
 from skpm.base import BaseProcessTransformer
 
@@ -34,6 +35,7 @@ class WorkInProgress(BaseProcessTransformer):
         return self
 
     def _transform(self, X: pd.DataFrame, y=None):
+        check_is_fitted(self)
         timestamps = self._timestamps(X)
         case_ids = self._case_ids(X)
 
