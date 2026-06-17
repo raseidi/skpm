@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.calibration import StrOptions
+from sklearn.utils._param_validation import StrOptions
 
 from skpm.base import BaseProcessTransformer
 
