@@ -2,6 +2,7 @@ from numbers import Integral, Real
 
 import pandas as pd
 from sklearn.utils._param_validation import Interval
+from sklearn.utils.validation import check_is_fitted
 
 from skpm.base import BaseProcessTransformer
 
@@ -33,14 +34,36 @@ class Indexing(BaseProcessTransformer):
         self.fill_cat_value = fill_cat_value
         self.fill_num_value = fill_num_value
 
-    def _transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
+    def _fit(self, X: pd.DataFrame, y=None):
+        # Resolve which attributes to lag without touching the param, so the
+        # estimator survives clone/get_params and a second transform is stable.
         if self.attributes is None:
-            self.attributes = X.columns.tolist()
+            self.attributes_ = X.columns.tolist()
         elif isinstance(self.attributes, str):
-            self.attributes = [self.attributes]
+            self.attributes_ = [self.attributes]
+        else:
+            self.attributes_ = list(self.attributes)
+
+        # Fix the lag set at fit so the output feature space is stable. With
+        # n=None the lag count is data-dependent (longest case minus one), so
+        # it must be pinned here rather than recomputed per transform.
+        if self.n is not None:
+            self.lags_ = list(range(1, self.n + 1))
+        else:
+            max_case_len = (
+                X.groupby(level="case_id", sort=False, observed=True).size().max()
+            )
+            self.lags_ = list(range(1, max_case_len))
+
+        self.feature_names_out_ = [
+            f"{col}_pos_{lag}" for col in self.attributes_ for lag in self.lags_
+        ]
+        return self
+
+    def _transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
+        check_is_fitted(self, "attributes_")
 
         group = X.groupby(level="case_id", sort=False, observed=True)
-        lags = range(1, self.n + 1) if self.n is not None else range(1, group.size().max())
 
         num_attributes = X.select_dtypes(include=float).columns
         time_attributes = X.select_dtypes(
@@ -48,7 +71,7 @@ class Indexing(BaseProcessTransformer):
         ).columns
 
         out = pd.DataFrame(index=X.index)
-        for col in self.attributes:
+        for col in self.attributes_:
             if col in num_attributes:
                 fill_value = self.fill_num_value
             elif col in time_attributes:
@@ -56,10 +79,14 @@ class Indexing(BaseProcessTransformer):
             else:
                 fill_value = self.fill_cat_value
 
-            lagged_cols = [f"{col}_pos_{lag}" for lag in lags]
-            shifted = group[col].shift(lags, fill_value=fill_value)
+            lagged_cols = [f"{col}_pos_{lag}" for lag in self.lags_]
+            shifted = group[col].shift(self.lags_, fill_value=fill_value)
             shifted.columns = lagged_cols
             for c in lagged_cols:
                 out[c] = shifted[c]
 
         return out
+
+    def get_feature_names_out(self, input_features=None):
+        check_is_fitted(self, "feature_names_out_")
+        return list(self.feature_names_out_)
