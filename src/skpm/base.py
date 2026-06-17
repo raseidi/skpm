@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import polars as pl
 from pandas import DataFrame
@@ -89,6 +90,21 @@ class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
             .rename("trace_position")
         )
 
+    def _record_feature_names_in(self, X: DataFrame) -> None:
+        """Record fit-time feature bookkeeping (scikit-learn convention).
+
+        The "features" of an event log are its non-index columns (``activity``,
+        ``resource``, case attributes, ...); ``case_id`` / ``timestamp`` live in
+        the index. ``n_features_in_`` is always set; ``feature_names_in_`` is set
+        only when every column name is a string, matching scikit-learn.
+        """
+        self.n_features_in_ = X.shape[1]
+        columns = list(X.columns)
+        if columns and all(isinstance(c, str) for c in columns):
+            self.feature_names_in_ = np.asarray(columns, dtype=object)
+        elif hasattr(self, "feature_names_in_"):
+            del self.feature_names_in_
+
 
 class BaseProcessTransformer(TransformerMixin, BaseProcessEstimator):
     """Base class for **event-level** process transformers (row-preserving).
@@ -108,6 +124,7 @@ class BaseProcessTransformer(TransformerMixin, BaseProcessEstimator):
 
     def fit(self, X, y=None):
         X = self._validate_log(X)
+        self._record_feature_names_in(X)
         self._fit(X, y)
         self.fitted_ = True
         return self

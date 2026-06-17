@@ -36,6 +36,7 @@ class ActivityMeanRegressor(RegressorMixin, BaseProcessEstimator):
 
     def fit(self, X, y):
         X = self._validate_log(X)
+        self._record_feature_names_in(X)
         y = pd.Series(np.asarray(y, dtype=float), index=X.index)
         self.activity_means_ = y.groupby(X[self.activity], observed=True).mean()
         self.global_mean_ = float(y.mean())
