@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.utils._param_validation import StrOptions
+from sklearn.utils.validation import check_is_fitted
 
 from skpm.base import BaseProcessTransformer
 
@@ -47,6 +48,7 @@ class Bucketing(BaseProcessTransformer):
 
     def _transform(self, X, y=None):
         """Transform input data by bucketing traces."""
+        check_is_fitted(self)
         if self.method == "single":
             return np.array(["b1"] * len(X))
         if self.method == "prefix":
