@@ -89,7 +89,7 @@ class Aggregation(OneToOneFeatureMixin, BaseProcessTransformer):
     def _transform_pandas(self, X: pd.DataFrame) -> pd.DataFrame:
         method_fn = handle_aggregation_method(self.method)
         rolled = (
-            X.groupby(level="case_id", sort=False, observed=True)
+            X.groupby(level=self.case_id, sort=False, observed=True)
             .rolling(window=self.prefix_len_, min_periods=1)
             .agg(method_fn)
         )
@@ -98,7 +98,7 @@ class Aggregation(OneToOneFeatureMixin, BaseProcessTransformer):
 
     def _transform_polars(self, X: pl.DataFrame) -> pl.DataFrame:
         method_fn = handle_aggregation_method(self.method)
-        case_id = "case_id"
+        case_id = self.case_id
 
         def _make_rolling_expr(col_name: str, fn) -> pl.Expr:
             expr = pl.col(col_name)

@@ -40,7 +40,7 @@ class WorkInProgress(BaseProcessTransformer):
         case_ids = self._case_ids(X)
 
         wip_by_window = case_ids.groupby(
-            pd.Grouper(freq=self.window_size, level="timestamp")
+            pd.Grouper(freq=self.window_size, level=self.timestamp)
         ).nunique()
         bins = pd.cut(
             timestamps,

@@ -24,7 +24,7 @@ class VariantExtractor(CaseLevelTransformer):
             raise NotImplementedError("Only the default strategy is supported.")
 
         variant_per_case = (
-            X.groupby(level="case_id", sort=False, observed=True)[self.activity]
+            X.groupby(level=self.case_id, sort=False, observed=True)[self.activity]
             .apply(tuple)
             .rename("variant")
         )

@@ -50,34 +50,32 @@ class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
         # to_event_log returns a fresh frame, so no extra copy is needed.
         return to_event_log(X)
 
-    @staticmethod
-    def _case_ids(X: DataFrame) -> pd.Series:
+    def _case_ids(self, X: DataFrame) -> pd.Series:
         """Return the ``case_id`` index level as a Series aligned to ``X.index``."""
-        return X.index.get_level_values("case_id").to_series(
-            index=X.index, name="case_id"
+        return X.index.get_level_values(self.case_id).to_series(
+            index=X.index, name=self.case_id
         )
 
-    @staticmethod
-    def _timestamps(X: DataFrame) -> pd.Series:
+    def _timestamps(self, X: DataFrame) -> pd.Series:
         """Return the ``timestamp`` index level as a Series aligned to ``X.index``."""
-        return X.index.get_level_values("timestamp").to_series(
-            index=X.index, name="timestamp"
+        return X.index.get_level_values(self.timestamp).to_series(
+            index=X.index, name=self.timestamp
         )
 
-    @staticmethod
-    def _event_ids(X: DataFrame) -> pd.Series:
+    def _event_ids(self, X: DataFrame) -> pd.Series:
         """Return the ``event_id`` index level as a Series aligned to ``X.index``.
 
         ``event_id`` is the globally-unique, per-event row counter assigned
         at load. For an event's position *within its trace*, use
         :meth:`_trace_positions` instead.
         """
+        # event_id is a synthetic, structural index level (not a configurable
+        # column), so it has no EventLogConfigMixin attribute -> literal name.
         return X.index.get_level_values("event_id").to_series(
             index=X.index, name="event_id"
         )
 
-    @staticmethod
-    def _trace_positions(X: DataFrame) -> pd.Series:
+    def _trace_positions(self, X: DataFrame) -> pd.Series:
         """Return each event's 0-based position within its case (trace position).
 
         Distinct from ``event_id`` (a globally-unique row counter): this
@@ -85,7 +83,7 @@ class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
         trace (i.e. prefix length minus one). Computed on demand, not stored.
         """
         return (
-            X.groupby(level="case_id", sort=False, observed=True)
+            X.groupby(level=self.case_id, sort=False, observed=True)
             .cumcount()
             .rename("trace_position")
         )

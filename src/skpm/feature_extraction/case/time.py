@@ -24,7 +24,7 @@ class TimestampCaseLevel(EventLogConfigMixin):
     @classmethod
     def accumulated_time(cls, timestamps: pd.Series, time_unit: str = "s") -> pd.Series:
         """Seconds elapsed since the first event of each case."""
-        first = timestamps.groupby(level="case_id", sort=False, observed=True).transform("min")
+        first = timestamps.groupby(level=cls().case_id, sort=False, observed=True).transform("min")
         return (timestamps - first).dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(
             time_unit, 1
         )
@@ -33,7 +33,7 @@ class TimestampCaseLevel(EventLogConfigMixin):
     def execution_time(cls, timestamps: pd.Series, time_unit: str = "s") -> pd.Series:
         """Seconds until the next event in the case (0 for the last event)."""
         diffs = (
-            timestamps.groupby(level="case_id", sort=False, observed=True)
+            timestamps.groupby(level=cls().case_id, sort=False, observed=True)
             .diff(-1)
             .abs()
             .fillna(pd.Timedelta(0))
@@ -43,7 +43,7 @@ class TimestampCaseLevel(EventLogConfigMixin):
     @classmethod
     def remaining_time(cls, timestamps: pd.Series, time_unit: str = "s") -> pd.Series:
         """Seconds remaining until the last event of each case."""
-        last = timestamps.groupby(level="case_id", sort=False, observed=True).transform("max")
+        last = timestamps.groupby(level=cls().case_id, sort=False, observed=True).transform("max")
         return (last - timestamps).dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(
             time_unit, 1
         )

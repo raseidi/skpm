@@ -50,8 +50,8 @@ class ResourcePoolExtractor(BaseProcessTransformer):
         resource = X[self.resource].map(self.rtoi_)
 
         freq_matrix = (
-            DataFrame({"activity": activity, "resource": resource})
-            .groupby(["activity", "resource"])
+            DataFrame({self.activity: activity, self.resource: resource})
+            .groupby([self.activity, self.resource])
             .value_counts()
             .to_dict()
         )

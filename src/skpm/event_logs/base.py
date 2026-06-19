@@ -122,7 +122,7 @@ class EventLog(EventLogConfigMixin):
         df = self.dataframe
 
         return {
-            "n_cases": df.index.get_level_values("case_id").nunique(),
+            "n_cases": df.index.get_level_values(self.case_id).nunique(),
             "n_events": len(df),
             "n_activities": (
                 df[self.activity].nunique()

@@ -51,7 +51,7 @@ class Indexing(BaseProcessTransformer):
             self.lags_ = list(range(1, self.n + 1))
         else:
             max_case_len = (
-                X.groupby(level="case_id", sort=False, observed=True)
+                X.groupby(level=self.case_id, sort=False, observed=True)
                 .size()
                 .max()
             )
@@ -65,7 +65,7 @@ class Indexing(BaseProcessTransformer):
     def _transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
         check_is_fitted(self, "attributes_")
 
-        group = X.groupby(level="case_id", sort=False, observed=True)
+        group = X.groupby(level=self.case_id, sort=False, observed=True)
 
         num_attributes = X.select_dtypes(include=float).columns
         time_attributes = X.select_dtypes(
