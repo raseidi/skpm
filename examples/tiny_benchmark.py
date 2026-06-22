@@ -35,7 +35,10 @@ Quick smoke run on a subsample:
 
 from __future__ import annotations
 
+import atexit
 import os
+import shutil
+import tempfile
 
 import numpy as np
 import pandas as pd
@@ -185,8 +188,27 @@ def case_holdout(log: pd.DataFrame, test_size: float = 0.25):
 
 
 def _cache_location() -> str:
-    root = os.environ.get("CLAUDE_JOB_DIR")
-    return os.path.join(root, "tmp", "bench_cache") if root else ".bench_cache"
+    """Return a *fresh* per-run cache dir, removed when the process exits.
+
+    The pipeline's ``memory`` cache memoises each (feature, encoder, fold)
+    transform so it is computed once and reused across the model sweep within a
+    single ``search.fit``. It must NOT persist across runs: joblib keys the
+    cache on the *unfitted* transformer's params + input data, never on skpm's
+    source code. A cache written by an older skpm therefore hashes identically
+    and is served as a stale hit, then deserialised into the current classes —
+    yielding fitted transformers that lack attributes the current code expects
+    (e.g. ``TimestampExtractor.case_features_``), which surfaces as a baffling
+    ``AttributeError`` mid-fit. A unique temp dir per run sidesteps that while
+    keeping the within-run reuse that makes the sweep affordable.
+    """
+    base = (
+        os.path.join(os.environ["CLAUDE_JOB_DIR"], "tmp")
+        if "CLAUDE_JOB_DIR" in os.environ
+        else None
+    )
+    cache_dir = tempfile.mkdtemp(prefix="skpm_bench_cache_", dir=base)
+    atexit.register(shutil.rmtree, cache_dir, ignore_errors=True)
+    return cache_dir
 
 
 def build_search() -> GridSearchCV:
