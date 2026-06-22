@@ -6,11 +6,16 @@ A single ``GridSearchCV`` over a 3-stage pipeline compares:
 
 * **feature extraction** — temporal features, progressively unioned with
   one-hot ``activity``, resource-role, and work-in-progress features;
-* **encoding** — rolling aggregation (mean / sum / median), position indexing,
-  and aggregation augmented with a one-hot prefix **bucket**;
+* **encoding** — rolling aggregation (mean / sum / median) over a swept
+  ``prefix_len`` window (``None`` = cumulative over the whole prefix per case),
+  positional indexing over several lag counts ``n``, and aggregation augmented
+  with a one-hot prefix **bucket** (whose inner ``prefix_len`` is swept too);
 * **model** — LinearRegression, RandomForest, and HistGradientBoosting
   (sklearn's scalable gradient boosting, used so the full log fits the compute
   budget), with a small hyper-parameter sweep each.
+
+Each encoder's own hyperparameters are tuned in-grid via the nested
+``encoder__<param>`` syntax, crossed with every feature set and model.
 
 The pipeline uses ``memory`` caching so feature/encoder transforms are computed
 once per (feature, encoder, fold) and reused across the model sweep.
@@ -21,7 +26,7 @@ log keeps its canonical ``(case_id, timestamp, event_id)`` MultiIndex through
 the whole pipeline, and cross-validation uses ``GroupKFold`` keyed on
 ``case_id`` so whole cases stay on one side of every split (no prefix leakage).
 
-Run (full log, ~15 min):
+Run (full log, ~45 min — the prefix_len/n sweep widens the grid):
     uv run python examples/tiny_benchmark.py
 
 Quick smoke run on a subsample:
@@ -106,20 +111,57 @@ FEATURE_TECHNIQUES = {
 }
 
 # --- encoding techniques (consume event-level features) ---------------------
+#
+# Each entry is a GridSearchCV sub-grid: it pins the encoder *object* on the
+# pipeline's "encoder" step and sweeps that encoder's own hyperparameters via
+# the nested ``encoder__<param>`` syntax. BPI20-RFP cases are short (median 5,
+# p95 8 events), so the windows/lags stay small — a window of 10 would equal
+# ``None`` (cumulative) for ~95% of cases.
+#
+# * Aggregation — sweep ``method`` and the rolling-window ``prefix_len``
+#   (``None`` = cumulative aggregation over the whole prefix).
+# * Indexing    — sweep the number of positional lags ``n``.
+# * agg+bucket  — aggregation-mean unioned with a one-hot prefix bucket; its
+#   inner aggregation's ``prefix_len`` is swept via ``encoder__agg__prefix_len``.
 
-ENCODING_TECHNIQUES = {
-    "agg-mean": Aggregation(method="mean"),
-    "agg-sum": Aggregation(method="sum"),
-    "agg-median": Aggregation(method="median"),
-    # resource_roles is an integer (categorical) column, so fill both gaps.
-    "index-3": Indexing(n=3, fill_num_value=0.0, fill_cat_value=-1),
-    "agg-mean+bucket": FeatureUnion(
-        [("agg", Aggregation(method="mean")), ("bucket", _bucket_ohe())]
-    ),
-}
+ENCODER_GRIDS = [
+    {
+        "encoder": [Aggregation()],
+        "encoder__method": ["mean", "sum", "median"],
+        "encoder__prefix_len": [None, 2, 3, 5],
+    },
+    {
+        # resource_roles is an integer (categorical) column, so fill both gaps.
+        "encoder": [Indexing(fill_num_value=0.0, fill_cat_value=-1)],
+        "encoder__n": [2, 3, 5, 8],
+    },
+    {
+        "encoder": [
+            FeatureUnion([("agg", Aggregation(method="mean")), ("bucket", _bucket_ohe())])
+        ],
+        "encoder__agg__prefix_len": [None, 3],
+    },
+]
+
+# --- models (consume the encoded feature vectors) ---------------------------
+
+MODEL_GRIDS = [
+    {"model": [LinearRegression()]},
+    {
+        "model": [RandomForestRegressor(random_state=RANDOM_STATE, n_jobs=1)],
+        "model__n_estimators": [100],
+        "model__max_depth": [None, 16],
+    },
+    {
+        # HistGradientBoosting: sklearn's scalable gradient boosting (the classic
+        # GradientBoostingRegressor does not scale to the full log in budget).
+        # Handles NaNs natively too.
+        "model": [HistGradientBoostingRegressor(random_state=RANDOM_STATE)],
+        "model__learning_rate": [0.05, 0.1],
+    },
+]
 
 _FEATURE_LABEL = {id(v): k for k, v in FEATURE_TECHNIQUES.items()}
-_ENCODER_LABEL = {id(v): k for k, v in ENCODING_TECHNIQUES.items()}
 
 
 def load_log() -> pd.DataFrame:
@@ -148,8 +190,8 @@ def _cache_location() -> str:
 
 
 def build_search() -> GridSearchCV:
-    # memory caching => the feature/encoder transforms are computed once per
-    # (feature, encoder, fold) and reused across the model sweep.
+    # memory caching => each (feature, encoder-config, fold) transform is
+    # computed once and reused across every model in MODEL_GRIDS.
     pipe = Pipeline(
         [
             ("features", _timestamp()),
@@ -159,9 +201,7 @@ def build_search() -> GridSearchCV:
         memory=_cache_location(),
     )
     features = list(FEATURE_TECHNIQUES.values())
-    encoders = list(ENCODING_TECHNIQUES.values())
 
-    common = {"features": features, "encoder": encoders}
     param_grid = [
         # Per-activity mean baseline: passthrough feature/encoder steps let the
         # regressor read the raw activity label; compared under the same CV.
@@ -170,21 +210,14 @@ def build_search() -> GridSearchCV:
             "encoder": ["passthrough"],
             "model": [ActivityMeanRegressor()],
         },
-        {**common, "model": [LinearRegression()]},
-        {
-            **common,
-            "model": [RandomForestRegressor(random_state=RANDOM_STATE, n_jobs=1)],
-            "model__n_estimators": [100],
-            "model__max_depth": [None, 16],
-        },
-        {
-            # HistGradientBoosting: sklearn's scalable gradient boosting (the
-            # classic GradientBoostingRegressor does not scale to the full log
-            # in budget). Handles NaNs natively too.
-            **common,
-            "model": [HistGradientBoostingRegressor(random_state=RANDOM_STATE)],
-            "model__learning_rate": [0.05, 0.1],
-        },
+    ]
+    # Cross every encoder hyperparameter sub-grid with every model sub-grid,
+    # over all feature techniques. Within each merged dict GridSearchCV takes
+    # the full product of features x encoder-params x model-params.
+    param_grid += [
+        {"features": features, **enc, **mdl}
+        for enc in ENCODER_GRIDS
+        for mdl in MODEL_GRIDS
     ]
     return GridSearchCV(
         pipe,
@@ -198,8 +231,25 @@ def build_search() -> GridSearchCV:
 
 
 def _label(mapping: dict, obj) -> str:
-    """Readable label for a feature/encoder param value (handles 'passthrough')."""
+    """Readable label for a feature param value (handles 'passthrough')."""
     return mapping.get(id(obj), obj if isinstance(obj, str) else type(obj).__name__)
+
+
+def _encoder_label(params: dict) -> str:
+    """Readable encoder label for a candidate, including its swept hyperparams."""
+    enc = params["encoder"]
+    if isinstance(enc, str):  # "passthrough" (baseline)
+        return enc
+    if isinstance(enc, Aggregation):
+        method = params.get("encoder__method", enc.method)
+        prefix_len = params.get("encoder__prefix_len", enc.prefix_len)
+        return f"agg-{method}(pl={prefix_len})"
+    if isinstance(enc, Indexing):
+        return f"index(n={params.get('encoder__n', enc.n)})"
+    if isinstance(enc, FeatureUnion):  # agg-mean + prefix bucket
+        prefix_len = params.get("encoder__agg__prefix_len")
+        return f"agg-mean(pl={prefix_len})+bucket"
+    return type(enc).__name__
 
 
 def _model_params(params: dict) -> str:
@@ -212,7 +262,7 @@ def leaderboard(search: GridSearchCV, top: int = 12) -> pd.DataFrame:
     rows = [
         {
             "features": _label(_FEATURE_LABEL, p["features"]),
-            "encoder": _label(_ENCODER_LABEL, p["encoder"]),
+            "encoder": _encoder_label(p),
             "model": type(p["model"]).__name__,
             "model_params": _model_params(p),
             "cv_mae_h": -m,
@@ -259,7 +309,7 @@ def main() -> None:
 
     print("\n=== best pipeline ===")
     print(f"  features : {_label(_FEATURE_LABEL, best['features'])}")
-    print(f"  encoder  : {_label(_ENCODER_LABEL, best['encoder'])}")
+    print(f"  encoder  : {_encoder_label(best)}")
     print(f"  model    : {type(best['model']).__name__} ({_model_params(best)})")
     print(f"  cv   MAE (h): {-search.best_score_:.2f}")
     print(f"  test MAE (h): {test_mae:.2f}")
