@@ -13,6 +13,15 @@ class Indexing(BaseProcessTransformer):
     For each event, build columns ``<attr>_pos_1, <attr>_pos_2, ...,
     <attr>_pos_n`` holding the value of ``attr`` at the i-th lag within
     the case. Lags use ``groupby(level="case_id").shift(i, fill_value=...)``.
+
+    The first ``i`` events of every case have no value at lag ``i`` (the lag
+    reaches before the case starts). These structurally-missing cells are
+    padded with ``fill_num_value`` / ``fill_cat_value`` rather than left as
+    ``NaN``, so the output is directly usable by estimators that reject NaN
+    (e.g. ``GradientBoostingRegressor``). The defaults zero-pad numeric
+    columns (``0.0``) and use ``0`` as the categorical padding token; pass
+    other values to customize, or ``None`` to keep ``NaN`` (e.g. to handle
+    missingness downstream with an imputer or a NaN-tolerant model).
     """
 
     _parameter_constraints = {
@@ -26,8 +35,8 @@ class Indexing(BaseProcessTransformer):
         self,
         n: int | None = 2,
         attributes: str | list[str] | None = None,
-        fill_cat_value: int | str | None = None,
-        fill_num_value: float | None = None,
+        fill_cat_value: int | str | None = 0,
+        fill_num_value: float | None = 0.0,
     ):
         self.n = n
         self.attributes = attributes
