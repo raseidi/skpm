@@ -22,9 +22,9 @@ class Windowing(_PositionalEncoder):
     order. Use :class:`Indexing` instead for absolute, position-from-start
     encoding.
 
-    Padding follows the shared contract (see :class:`_PositionalEncoder`):
-    numeric columns are zero-padded, categoricals use ``fill_cat_value`` (``0``
-    by default), datetimes use ``NaT``; pass ``None`` to keep ``NaN``.
+    Structurally-missing cells are padded with ``fill_value`` (``0`` by
+    default → a NaN-free matrix); pass ``None`` to keep ``NaN``. See
+    :class:`_PositionalEncoder`.
     """
 
     _parameter_constraints = {
@@ -34,18 +34,8 @@ class Windowing(_PositionalEncoder):
 
     _position_label = "w"
 
-    def __init__(
-        self,
-        n: int = 2,
-        attributes: str | list[str] | None = None,
-        fill_cat_value: int | str | None = 0,
-        fill_num_value: float | None = 0.0,
-    ):
-        super().__init__(
-            attributes=attributes,
-            fill_cat_value=fill_cat_value,
-            fill_num_value=fill_num_value,
-        )
+    def __init__(self, n: int = 2, fill_value: float | int | str | None = 0):
+        super().__init__(fill_value=fill_value)
         self.n = n
 
     def _positions(self, X: pd.DataFrame) -> list[int]:
@@ -55,20 +45,17 @@ class Windowing(_PositionalEncoder):
         check_is_fitted(self, "attributes_")
 
         group = X.groupby(level=self.case_id, sort=False, observed=True)
-        num_attributes = X.select_dtypes(include=float).columns
-        time_attributes = X.select_dtypes(
-            include=["datetime", "timedelta", "datetimetz"]
-        ).columns
 
         # Build each attribute's window block, then assemble once to avoid
         # fragmenting the frame with per-column inserts.
         frames = []
         for col in self.attributes_:
-            fill_value = self._fill_value(col, num_attributes, time_attributes)
             window_cols = [
                 f"{col}_{self._position_label}_{pos}" for pos in self.positions_
             ]
-            shifted = group[col].shift(self.positions_, fill_value=fill_value)
+            shifted = group[col].shift(
+                self.positions_, fill_value=self.fill_value
+            )
             shifted.columns = window_cols
             frames.append(shifted)
 

@@ -21,9 +21,9 @@ class Indexing(_PositionalEncoder):
     destroying the signal. For a fixed-width sliding window over the most
     recent events, use :class:`Windowing`.
 
-    Padding follows the shared contract (see :class:`_PositionalEncoder`):
-    numeric columns are zero-padded, categoricals use ``fill_cat_value`` (``0``
-    by default), datetimes use ``NaT``; pass ``None`` to keep ``NaN``.
+    Structurally-missing cells are padded with ``fill_value`` (``0`` by
+    default → a NaN-free matrix); pass ``None`` to keep ``NaN``. See
+    :class:`_PositionalEncoder`.
     """
 
     _position_label = "pos"
@@ -40,11 +40,6 @@ class Indexing(_PositionalEncoder):
         check_is_fitted(self, "attributes_")
 
         group = X.groupby(level=self.case_id, sort=False, observed=True)
-        num_attributes = X.select_dtypes(include=float).columns
-        time_attributes = X.select_dtypes(
-            include=["datetime", "timedelta", "datetimetz"]
-        ).columns
-
         # 0-based position of each event within its case.
         position = group.cumcount()
 
@@ -52,7 +47,6 @@ class Indexing(_PositionalEncoder):
         # per-column insert would fragment the frame (PerformanceWarning).
         columns = {}
         for col in self.attributes_:
-            fill_value = self._fill_value(col, num_attributes, time_attributes)
             values = X[col]
             for pos in self.positions_:
                 # Freeze the case's pos-th event value and carry it forward to
@@ -64,7 +58,7 @@ class Indexing(_PositionalEncoder):
                     .ffill()
                 )
                 columns[f"{col}_{self._position_label}_{pos}"] = frozen.where(
-                    position >= pos, other=fill_value
+                    position >= pos, other=self.fill_value
                 )
 
         return pd.DataFrame(columns, index=X.index)
