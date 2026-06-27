@@ -159,8 +159,8 @@ ENCODER_GRIDS = [
         "encoder__prefix_len": [None, 2, 3, 5],
     },
     {
-        # resource_roles is an integer (categorical) column, so fill both gaps.
-        "encoder": [Windowing(fill_num_value=0.0, fill_cat_value=-1)],
+        # pad case-start gaps with 0 (all features here are numeric).
+        "encoder": [Windowing(fill_value=0)],
         "encoder__n": [2, 3, 5, 8],
     },
     {
