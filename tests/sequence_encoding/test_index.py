@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -27,41 +25,6 @@ def fixture_dummy_pd():
     )
 
 
-def test_indexing(pd_df):
-    rp = Indexing()
-    rp.fit(pd_df)
-    out = rp.transform(pd_df)
-    assert isinstance(out, pd.DataFrame)
-    assert out.shape[0] == pd_df.shape[0]
-
-    with pytest.raises(Exception):
-        rp = Indexing(n=0)
-        rp.fit(pd_df)
-
-    rp = Indexing(n=2, fill_cat_value="TEST", fill_num_value=-1)
-    rp.fit_transform(pd_df)
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", pd.errors.PerformanceWarning)
-        rp = Indexing(n=None)
-        rp.fit_transform(pd_df)
-
-    rp = Indexing(n=None, attributes=elc.activity)
-    rp.fit_transform(pd_df)
-
-
-def test_indexing_default_is_nan_free(pd_df):
-    """Default Indexing zero-pads case-start lags so the output is model-ready.
-
-    The first ``n`` events of every case have no value at deeper positions
-    (the lag reaches before the case start). With the default fills these
-    cells must be padded, not left as NaN, so estimators that reject NaN
-    (e.g. GradientBoostingRegressor) work out of the box.
-    """
-    out = Indexing(n=3).fit_transform(pd_df)
-    assert out.isna().to_numpy().sum() == 0
-
-
 @pytest.fixture(name="abc_log")
 def fixture_abc_log():
     """A single case with the deterministic sequence a -> b -> c."""
@@ -80,15 +43,42 @@ def fixture_abc_log():
     )
 
 
-def test_indexing_absolute_is_default_and_has_no_future_leakage(abc_log):
-    """mode='absolute' (the default) indexes by position in the case.
+def test_indexing(pd_df):
+    rp = Indexing()
+    rp.fit(pd_df)
+    out = rp.transform(pd_df)
+    assert isinstance(out, pd.DataFrame)
+    assert out.shape[0] == pd_df.shape[0]
 
-    pos_j holds the case's j-th event, revealed only once the prefix has
-    reached it: a prefix never sees events beyond its own length.
+    rp = Indexing(fill_cat_value="TEST", fill_num_value=-1)
+    rp.fit_transform(pd_df)
+
+    rp = Indexing(attributes=elc.activity)
+    rp.fit_transform(pd_df)
+
+
+def test_indexing_has_no_n_or_mode_param():
+    """Indexing is absolute and full-width: it takes neither n nor mode."""
+    with pytest.raises(TypeError):
+        Indexing(n=2)
+    with pytest.raises(TypeError):
+        Indexing(mode="relative")
+
+
+def test_indexing_default_is_nan_free(pd_df):
+    """Default Indexing zero-pads case-start positions (model-ready)."""
+    out = Indexing().fit_transform(pd_df)
+    assert out.isna().to_numpy().sum() == 0
+
+
+def test_indexing_has_no_future_leakage(abc_log):
+    """pos_j is the case's j-th event, revealed only once the prefix reaches it.
+
+    Width is the longest case (here 3), so every prefix is fully represented.
     """
-    out = Indexing(
-        n=3, attributes=elc.activity, fill_cat_value="PAD"
-    ).fit_transform(abc_log)
+    out = Indexing(attributes=elc.activity, fill_cat_value="PAD").fit_transform(
+        abc_log
+    )
     cols = ["activity_pos_0", "activity_pos_1", "activity_pos_2"]
     assert list(out.columns) == cols
     assert out[cols].to_numpy().tolist() == [
@@ -98,20 +88,7 @@ def test_indexing_absolute_is_default_and_has_no_future_leakage(abc_log):
     ]
 
 
-def test_indexing_relative_is_a_sliding_window(abc_log):
-    """mode='relative' lags by offset: pos_0 current, pos_1 previous, ..."""
-    out = Indexing(
-        n=3, attributes=elc.activity, fill_cat_value="PAD", mode="relative"
-    ).fit_transform(abc_log)
-    cols = ["activity_pos_0", "activity_pos_1", "activity_pos_2"]
-    assert out[cols].to_numpy().tolist() == [
-        ["a", "PAD", "PAD"],  # at a: current a, nothing before
-        ["b", "a", "PAD"],  # at b: current b, prev a
-        ["c", "b", "a"],  # at c: current c, prev b, prev2 a
-    ]
-
-
-def test_indexing_absolute_multicase_numeric_no_leakage():
+def test_indexing_multicase_numeric_no_leakage():
     """Absolute mode keeps cases isolated and pads short prefixes (no leakage).
 
     Two cases of unequal length with a numeric attribute: ``pos_j`` is the
@@ -126,7 +103,7 @@ def test_indexing_absolute_multicase_numeric_no_leakage():
             elc.timestamp: pd.date_range("2020-01-01", periods=5, freq="h"),
         }
     )
-    out = Indexing(n=3, attributes="num", mode="absolute").fit_transform(df)
+    out = Indexing(attributes="num").fit_transform(df)
     assert out.to_numpy().tolist() == [
         [10.0, 0.0, 0.0],  # p prefix 1
         [10.0, 20.0, 0.0],  # p prefix 2
@@ -134,8 +111,3 @@ def test_indexing_absolute_multicase_numeric_no_leakage():
         [40.0, 0.0, 0.0],  # q prefix 1 (no spill-over from case p)
         [40.0, 50.0, 0.0],  # q prefix 2 (q has no 3rd event -> padded)
     ]
-
-
-def test_indexing_invalid_mode_raises(pd_df):
-    with pytest.raises(Exception):
-        Indexing(mode="bogus").fit(pd_df)

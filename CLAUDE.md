@@ -64,7 +64,7 @@ The canonical field names — `case_id`, `timestamp`, `activity`, `resource` —
 | Module | Purpose |
 |---|---|
 | `feature_extraction/` | Event-level feature transformers: `TimestampExtractor` (temporal features), `ResourcePoolExtractor` (resource roles), `WorkInProgress` (inter-case concurrency). `targets.py` holds `remaining_time` / `next_activity` — **functions** (not transformers; targets are label generation, which sklearn keeps outside the X-pipeline) returning a 1-D Series aligned to the event-log index, to pass as `y` to `pipe.fit(X, y)` |
-| `sequence_encoding/` | Trace-level encoders: `Aggregation`, `Indexing`, `Bucketing` — convert event sequences into fixed-length feature vectors for ML |
+| `sequence_encoding/` | Prefix encoders that turn each event's prefix into a fixed-length feature vector: `Aggregation` (order-agnostic summary stats), `Indexing` (absolute index-based encoding — full prefix width, no future leakage), `Windowing` (relative sliding window over the most recent `n` events), `Bucketing`. `Indexing`/`Windowing` share the private `_PositionalEncoder` base (`index.py`/`windowing.py`/`_positional.py`) and zero-pad structurally-missing cells by default so output is NaN-free. |
 | `event_logs/` | Download BPI Challenge logs from the 4TU repository (`bpi.py`), parse XES/CSV event logs (`parser.py`), `split.py` train/test splits (`temporal`, `unbiased`) which raise on an empty train/test side |
 | `utils/` | Validation helpers (`validation.py`), time utilities, graph helpers |
 

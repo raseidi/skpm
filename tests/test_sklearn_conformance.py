@@ -40,7 +40,7 @@ from skpm.feature_extraction import (
 )
 from skpm.feature_extraction.case import VariantExtractor
 from skpm.feature_extraction.targets import remaining_time
-from skpm.sequence_encoding import Aggregation, Bucketing, Indexing
+from skpm.sequence_encoding import Aggregation, Bucketing, Indexing, Windowing
 
 
 def _event_log(n: int = 300, n_cases: int = 30, seed: int = 0) -> pd.DataFrame:
@@ -70,6 +70,7 @@ def _all_estimators() -> list:
         ResourcePoolExtractor(),
         Aggregation(),
         Indexing(),
+        Windowing(),
         Bucketing(),
         VariantExtractor(),
         ActivityMeanRegressor(),
@@ -124,7 +125,8 @@ def _contract_cases() -> list:
             "transform",
             id="Aggregation",
         ),
-        pytest.param(Indexing(n=2), log, None, "transform", id="Indexing"),
+        pytest.param(Indexing(), log, None, "transform", id="Indexing"),
+        pytest.param(Windowing(n=2), log, None, "transform", id="Windowing"),
         pytest.param(Bucketing(), log, None, "transform", id="Bucketing"),
         pytest.param(
             VariantExtractor(), log, None, "transform", id="VariantExtractor"

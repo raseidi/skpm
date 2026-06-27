@@ -15,9 +15,7 @@ def fixture_dummy_pd():
             elc.case_id: np.repeat(np.arange(0, 10), 100),
             elc.activity: rng.integers(0, 10, 1000),
             elc.resource: rng.integers(0, 3, 1000),
-            elc.timestamp: pd.date_range(
-                "2024-01-01", periods=1000, freq="h"
-            ),
+            elc.timestamp: pd.date_range("2024-01-01", periods=1000, freq="h"),
         }
     )
     return to_event_log(flat)
@@ -27,6 +25,7 @@ def fixture_dummy_pd():
 def fixture_dummy_pd_flat(pd_df):
     """Flat form (no MultiIndex) sharing data with ``pd_df``."""
     return pd_df.reset_index()[["case_id", elc.activity, elc.resource]]
+
 
 def test_aggregation(pd_df):
     # Test default aggregation
@@ -100,7 +99,9 @@ def test_aggregation_output(pd_df, pd_df_flat):
     assert isinstance(pl_agg, pd.DataFrame)
     assert pd_agg_flat[pl_agg.columns].equals(pl_agg[pl_agg.columns])
 
-    pd_agg = Aggregation(prefix_len=3).fit_transform(pd_df).reset_index(drop=True)
+    pd_agg = (
+        Aggregation(prefix_len=3).fit_transform(pd_df).reset_index(drop=True)
+    )
     pl_agg = Aggregation(prefix_len=3, engine="polars").fit_transform(pl_df)
     pl_agg = pl_agg.astype(pd_agg.dtypes)
     assert isinstance(pl_agg, pd.DataFrame)

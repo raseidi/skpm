@@ -8,7 +8,7 @@ A single ``GridSearchCV`` over a 3-stage pipeline compares:
   one-hot ``activity``, resource-role, and work-in-progress features;
 * **encoding** — rolling aggregation (mean / sum / median) over a swept
   ``prefix_len`` window (``None`` = cumulative over the whole prefix per case),
-  positional indexing over several lag counts ``n``, and aggregation augmented
+  a sliding window over several window sizes ``n``, and aggregation augmented
   with a one-hot prefix **bucket** (whose inner ``prefix_len`` is swept too);
 * **model** — LinearRegression, RandomForest, and HistGradientBoosting
   (sklearn's scalable gradient boosting, used so the full log fits the compute
@@ -43,7 +43,10 @@ import tempfile
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
+from sklearn.ensemble import (
+    HistGradientBoostingRegressor,
+    RandomForestRegressor,
+)
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import GridSearchCV, GroupKFold, train_test_split
@@ -59,12 +62,16 @@ from skpm.feature_extraction import (
     WorkInProgress,
 )
 from skpm.feature_extraction.targets import remaining_time
-from skpm.sequence_encoding import Aggregation, Bucketing, Indexing
+from skpm.sequence_encoding import Aggregation, Bucketing, Windowing
 
 RANDOM_STATE = 0
 TIME_UNIT = "h"
 # Full log by default; set SKPM_BENCH_NCASES for a quick subsampled run.
-N_CASES = int(os.environ["SKPM_BENCH_NCASES"]) if "SKPM_BENCH_NCASES" in os.environ else None
+N_CASES = (
+    int(os.environ["SKPM_BENCH_NCASES"])
+    if "SKPM_BENCH_NCASES" in os.environ
+    else None
+)
 
 
 # --- building blocks --------------------------------------------------------
@@ -72,14 +79,23 @@ N_CASES = int(os.environ["SKPM_BENCH_NCASES"]) if "SKPM_BENCH_NCASES" in os.envi
 
 def _timestamp() -> TimestampExtractor:
     return TimestampExtractor(
-        case_features=None, event_features="all", targets=None, time_unit=TIME_UNIT
+        case_features=None,
+        event_features="all",
+        targets=None,
+        time_unit=TIME_UNIT,
     )
 
 
 def _activity_ohe() -> ColumnTransformer:
     """One-hot the canonical ``activity`` column (drop the rest)."""
     return ColumnTransformer(
-        [("activity", OneHotEncoder(handle_unknown="ignore", sparse_output=False), ["activity"])],
+        [
+            (
+                "activity",
+                OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+                ["activity"],
+            )
+        ],
         remainder="drop",
         verbose_feature_names_out=False,
     )
@@ -90,7 +106,10 @@ def _bucket_ohe() -> Pipeline:
     return Pipeline(
         [
             ("bucket", Bucketing(method="prefix")),
-            ("ohe", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
+            (
+                "ohe",
+                OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+            ),
         ]
     )
 
@@ -99,9 +118,15 @@ def _bucket_ohe() -> Pipeline:
 
 FEATURE_TECHNIQUES = {
     "time": _timestamp(),
-    "time+act": FeatureUnion([("time", _timestamp()), ("act", _activity_ohe())]),
+    "time+act": FeatureUnion(
+        [("time", _timestamp()), ("act", _activity_ohe())]
+    ),
     "time+act+res": FeatureUnion(
-        [("time", _timestamp()), ("act", _activity_ohe()), ("res", ResourcePoolExtractor())]
+        [
+            ("time", _timestamp()),
+            ("act", _activity_ohe()),
+            ("res", ResourcePoolExtractor()),
+        ]
     ),
     "time+act+res+wip": FeatureUnion(
         [
@@ -118,12 +143,12 @@ FEATURE_TECHNIQUES = {
 # Each entry is a GridSearchCV sub-grid: it pins the encoder *object* on the
 # pipeline's "encoder" step and sweeps that encoder's own hyperparameters via
 # the nested ``encoder__<param>`` syntax. BPI20-RFP cases are short (median 5,
-# p95 8 events), so the windows/lags stay small — a window of 10 would equal
+# p95 8 events), so the windows stay small — a window of 10 would equal
 # ``None`` (cumulative) for ~95% of cases.
 #
 # * Aggregation — sweep ``method`` and the rolling-window ``prefix_len``
 #   (``None`` = cumulative aggregation over the whole prefix).
-# * Indexing    — sweep the number of positional lags ``n``.
+# * Windowing   — sweep the sliding-window size ``n`` (recent events).
 # * agg+bucket  — aggregation-mean unioned with a one-hot prefix bucket; its
 #   inner aggregation's ``prefix_len`` is swept via ``encoder__agg__prefix_len``.
 
@@ -135,12 +160,14 @@ ENCODER_GRIDS = [
     },
     {
         # resource_roles is an integer (categorical) column, so fill both gaps.
-        "encoder": [Indexing(fill_num_value=0.0, fill_cat_value=-1)],
+        "encoder": [Windowing(fill_num_value=0.0, fill_cat_value=-1)],
         "encoder__n": [2, 3, 5, 8],
     },
     {
         "encoder": [
-            FeatureUnion([("agg", Aggregation(method="mean")), ("bucket", _bucket_ohe())])
+            FeatureUnion(
+                [("agg", Aggregation(method="mean")), ("bucket", _bucket_ohe())]
+            )
         ],
         "encoder__agg__prefix_len": [None, 3],
     },
@@ -254,7 +281,9 @@ def build_search() -> GridSearchCV:
 
 def _label(mapping: dict, obj) -> str:
     """Readable label for a feature param value (handles 'passthrough')."""
-    return mapping.get(id(obj), obj if isinstance(obj, str) else type(obj).__name__)
+    return mapping.get(
+        id(obj), obj if isinstance(obj, str) else type(obj).__name__
+    )
 
 
 def _encoder_label(params: dict) -> str:
@@ -266,8 +295,8 @@ def _encoder_label(params: dict) -> str:
         method = params.get("encoder__method", enc.method)
         prefix_len = params.get("encoder__prefix_len", enc.prefix_len)
         return f"agg-{method}(pl={prefix_len})"
-    if isinstance(enc, Indexing):
-        return f"index(n={params.get('encoder__n', enc.n)})"
+    if isinstance(enc, Windowing):
+        return f"window(n={params.get('encoder__n', enc.n)})"
     if isinstance(enc, FeatureUnion):  # agg-mean + prefix bucket
         prefix_len = params.get("encoder__agg__prefix_len")
         return f"agg-mean(pl={prefix_len})+bucket"
@@ -275,7 +304,11 @@ def _encoder_label(params: dict) -> str:
 
 
 def _model_params(params: dict) -> str:
-    extra = {k.split("__", 1)[1]: v for k, v in params.items() if k.startswith("model__")}
+    extra = {
+        k.split("__", 1)[1]: v
+        for k, v in params.items()
+        if k.startswith("model__")
+    }
     return ", ".join(f"{k}={v}" for k, v in sorted(extra.items())) or "-"
 
 
@@ -290,7 +323,9 @@ def leaderboard(search: GridSearchCV, top: int = 12) -> pd.DataFrame:
             "cv_mae_h": -m,
             "std": s,
         }
-        for p, m, s in zip(res["params"], res["mean_test_score"], res["std_test_score"])
+        for p, m, s in zip(
+            res["params"], res["mean_test_score"], res["std_test_score"]
+        )
     ]
     df = pd.DataFrame(rows).sort_values("cv_mae_h", na_position="last")
     return df.head(top).reset_index(drop=True)
@@ -322,17 +357,23 @@ def main() -> None:
     test_mae = mean_absolute_error(y_test, search.predict(test))
 
     # --- baselines ---------------------------------------------------------
-    global_mean = mean_absolute_error(y_test, np.full(len(y_test), y_train.mean()))
+    global_mean = mean_absolute_error(
+        y_test, np.full(len(y_test), y_train.mean())
+    )
     # Per-activity mean: predict each event as the train mean remaining time of
     # its activity label (activities unseen in train fall back to global mean).
     activity_mean = y_train.groupby(train["activity"]).mean()
-    pred_by_activity = test["activity"].map(activity_mean).fillna(y_train.mean())
+    pred_by_activity = (
+        test["activity"].map(activity_mean).fillna(y_train.mean())
+    )
     activity_baseline = mean_absolute_error(y_test, pred_by_activity)
 
     print("\n=== best pipeline ===")
     print(f"  features : {_label(_FEATURE_LABEL, best['features'])}")
     print(f"  encoder  : {_encoder_label(best)}")
-    print(f"  model    : {type(best['model']).__name__} ({_model_params(best)})")
+    print(
+        f"  model    : {type(best['model']).__name__} ({_model_params(best)})"
+    )
     print(f"  cv   MAE (h): {-search.best_score_:.2f}")
     print(f"  test MAE (h): {test_mae:.2f}")
 
