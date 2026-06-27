@@ -44,9 +44,7 @@ def fixture_dummy_pd():
 
 def test_windowing_is_a_sliding_window(abc_log):
     """w_0 is the current event, w_1 the previous one, etc."""
-    out = Windowing(
-        n=3, attributes=elc.activity, fill_cat_value="PAD"
-    ).fit_transform(abc_log)
+    out = Windowing(n=3, fill_value="PAD").fit_transform(abc_log)
     cols = ["activity_w_0", "activity_w_1", "activity_w_2"]
     assert list(out.columns) == cols
     assert out[cols].to_numpy().tolist() == [
@@ -72,6 +70,12 @@ def test_windowing_default_is_nan_free(pd_df):
     """Default fills zero-pad the case-start positions (model-ready)."""
     out = Windowing(n=3).fit_transform(pd_df)
     assert out.isna().to_numpy().sum() == 0
+
+
+def test_windowing_rejects_removed_params():
+    for kwargs in ({"attributes": "activity"}, {"fill_cat_value": 0}):
+        with pytest.raises(TypeError):
+            Windowing(**kwargs)
 
 
 def test_windowing_invalid_n_raises(pd_df):

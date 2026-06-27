@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 
 from skpm.config import EventLogConfig as elc
+from skpm.event_logs.base import to_event_log
 from skpm.sequence_encoding import Indexing
 
 
@@ -50,19 +51,24 @@ def test_indexing(pd_df):
     assert isinstance(out, pd.DataFrame)
     assert out.shape[0] == pd_df.shape[0]
 
-    rp = Indexing(fill_cat_value="TEST", fill_num_value=-1)
-    rp.fit_transform(pd_df)
+    Indexing(fill_value=-1).fit_transform(pd_df)
 
-    rp = Indexing(attributes=elc.activity)
-    rp.fit_transform(pd_df)
+    # fill_value=None keeps the structurally-missing cells as NaN.
+    out_nan = Indexing(fill_value=None).fit_transform(pd_df)
+    assert out_nan.isna().to_numpy().sum() > 0
 
 
-def test_indexing_has_no_n_or_mode_param():
-    """Indexing is absolute and full-width: it takes neither n nor mode."""
-    with pytest.raises(TypeError):
-        Indexing(n=2)
-    with pytest.raises(TypeError):
-        Indexing(mode="relative")
+def test_indexing_rejects_removed_params():
+    """Indexing is absolute, full-width, and encodes all input columns."""
+    for kwargs in (
+        {"n": 2},
+        {"mode": "relative"},
+        {"attributes": "activity"},
+        {"fill_cat_value": 0},
+        {"fill_num_value": 0.0},
+    ):
+        with pytest.raises(TypeError):
+            Indexing(**kwargs)
 
 
 def test_indexing_default_is_nan_free(pd_df):
@@ -75,10 +81,10 @@ def test_indexing_has_no_future_leakage(abc_log):
     """pos_j is the case's j-th event, revealed only once the prefix reaches it.
 
     Width is the longest case (here 3), so every prefix is fully represented.
+    The promoted log has ``activity`` as its only column, so all columns are
+    encoded.
     """
-    out = Indexing(attributes=elc.activity, fill_cat_value="PAD").fit_transform(
-        abc_log
-    )
+    out = Indexing(fill_value="PAD").fit_transform(abc_log)
     cols = ["activity_pos_0", "activity_pos_1", "activity_pos_2"]
     assert list(out.columns) == cols
     assert out[cols].to_numpy().tolist() == [
@@ -93,7 +99,8 @@ def test_indexing_multicase_numeric_no_leakage():
 
     Two cases of unequal length with a numeric attribute: ``pos_j`` is the
     j-th event of *that* case, padded (``0.0``) until the prefix reaches it,
-    and never carried across the case boundary.
+    and never carried across the case boundary. Select the ``num`` column on
+    the canonical log so only it is encoded.
     """
     df = pd.DataFrame(
         {
@@ -103,7 +110,7 @@ def test_indexing_multicase_numeric_no_leakage():
             elc.timestamp: pd.date_range("2020-01-01", periods=5, freq="h"),
         }
     )
-    out = Indexing(attributes="num").fit_transform(df)
+    out = Indexing(fill_value=0.0).fit_transform(to_event_log(df)[["num"]])
     assert out.to_numpy().tolist() == [
         [10.0, 0.0, 0.0],  # p prefix 1
         [10.0, 20.0, 0.0],  # p prefix 2
