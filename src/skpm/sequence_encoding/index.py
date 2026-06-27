@@ -1,93 +1,40 @@
-from numbers import Integral, Real
-
 import pandas as pd
-from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.validation import check_is_fitted
 
-from skpm.base import BaseProcessTransformer
+from skpm.sequence_encoding._positional import _PositionalEncoder
 
 
-class Indexing(BaseProcessTransformer):
-    """Position-based encoding per case.
+class Indexing(_PositionalEncoder):
+    """Absolute index-based encoding per case (Leontjeva et al., 2015).
 
-    For each event, build columns ``<attr>_pos_0, <attr>_pos_1, ...,
-    <attr>_pos_{n-1}`` holding the value of ``attr`` at a per-case position.
-    Both modes emit the same columns; ``mode`` only changes what each
-    position means:
+    For each event, build columns ``<attr>_pos_0, <attr>_pos_1, ...`` where
+    ``pos_j`` holds the value of ``attr`` at the case's ``j``-th event
+    (0-based). The value is revealed only once the prefix has reached that
+    position: for the event at trace step ``k``, ``pos_j`` is event ``j`` when
+    ``j <= k`` and padded otherwise, so a prefix never sees an event beyond
+    its own length (no future leakage).
 
-    - ``mode="absolute"`` (default): ``pos_j`` is the value of the case's
-      ``j``-th event (0-based), revealed only once the prefix has reached it.
-      For the event at trace step ``k``, ``pos_j`` is event ``j`` when
-      ``j <= k`` and padded otherwise, so a prefix never sees an event beyond
-      its own length (no future leakage). This is the classical index-based
-      encoding (see Leontjeva et al., 2015, Teinemaa et al., 2019).
-    - ``mode="relative"``: ``pos_j`` is the value ``j`` steps back from the
-      current event (``groupby(level="case_id").shift(j)``). ``pos_0`` is the
-      current event, ``pos_1`` the previous one, etc. — a sliding window over
-      the most recent ``n`` events.
+    The number of positions is the length of the longest case observed at
+    fit, so every prefix is fully represented. There is deliberately no ``n``:
+    a fixed width shorter than a case would freeze every longer prefix onto
+    its first ``n`` events, collapsing them all to a single vector and
+    destroying the signal. For a fixed-width sliding window over the most
+    recent events, use :class:`Windowing`.
 
-    Positions that fall outside the case (before its start in ``relative``,
-    or beyond the prefix length in ``absolute``) are structurally missing.
-    They are padded with ``fill_num_value`` / ``fill_cat_value`` rather than
-    left as ``NaN``, so the output is directly usable by estimators that
-    reject NaN (e.g. ``GradientBoostingRegressor``). The defaults zero-pad
-    numeric columns (``0.0``) and use ``0`` as the categorical padding token;
-    pass other values to customize, or ``None`` to keep ``NaN`` (e.g. to
-    handle missingness downstream with an imputer or a NaN-tolerant model).
-    Datetime columns are always padded with ``NaT``.
+    Padding follows the shared contract (see :class:`_PositionalEncoder`):
+    numeric columns are zero-padded, categoricals use ``fill_cat_value`` (``0``
+    by default), datetimes use ``NaT``; pass ``None`` to keep ``NaN``.
     """
 
-    _parameter_constraints = {
-        "n": [Interval(type=Integral, left=1, right=None, closed="left"), None],
-        "attributes": [str, list, None],
-        "fill_cat_value": [int, str, None],
-        "fill_num_value": [Real, None],
-        "mode": [StrOptions({"absolute", "relative"})],
-    }
+    _position_label = "pos"
 
-    def __init__(
-        self,
-        n: int | None = 2,
-        attributes: str | list[str] | None = None,
-        fill_cat_value: int | str | None = 0,
-        fill_num_value: float | None = 0.0,
-        mode: str = "absolute",
-    ):
-        self.n = n
-        self.attributes = attributes
-        self.fill_cat_value = fill_cat_value
-        self.fill_num_value = fill_num_value
-        self.mode = mode
-
-    def _fit(self, X: pd.DataFrame, y=None):
-        # Resolve which attributes to lag without touching the param, so the
-        # estimator survives clone/get_params and a second transform is stable.
-        if self.attributes is None:
-            self.attributes_ = X.columns.tolist()
-        elif isinstance(self.attributes, str):
-            self.attributes_ = [self.attributes]
-        else:
-            self.attributes_ = list(self.attributes)
-
-        # Fix the position set at fit so the output feature space is stable.
-        # With n=None the count is data-dependent (the longest case), so it
-        # must be pinned here rather than recomputed per transform.
-        if self.n is not None:
-            self.positions_ = list(range(self.n))
-        else:
-            max_case_len = (
-                X.groupby(level=self.case_id, sort=False, observed=True)
-                .size()
-                .max()
-            )
-            self.positions_ = list(range(max_case_len))
-
-        self.feature_names_out_ = [
-            f"{col}_pos_{pos}"
-            for col in self.attributes_
-            for pos in self.positions_
-        ]
-        return self
+    def _positions(self, X: pd.DataFrame) -> list[int]:
+        max_case_len = (
+            X.groupby(level=self.case_id, sort=False, observed=True)
+            .size()
+            .max()
+        )
+        return list(range(max_case_len))
 
     def _transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
         check_is_fitted(self, "attributes_")
@@ -98,44 +45,26 @@ class Indexing(BaseProcessTransformer):
             include=["datetime", "timedelta", "datetimetz"]
         ).columns
 
-        out = pd.DataFrame(index=X.index)
-        if self.mode == "absolute":
-            # 0-based position of each event within its case.
-            position = group.cumcount()
+        # 0-based position of each event within its case.
+        position = group.cumcount()
 
+        # Build all columns first and assemble once: with full-width output a
+        # per-column insert would fragment the frame (PerformanceWarning).
+        columns = {}
         for col in self.attributes_:
-            if col in num_attributes:
-                fill_value = self.fill_num_value
-            elif col in time_attributes:
-                fill_value = None
-            else:
-                fill_value = self.fill_cat_value
-
-            if self.mode == "relative":
-                pos_cols = [f"{col}_pos_{pos}" for pos in self.positions_]
-                shifted = group[col].shift(
-                    self.positions_, fill_value=fill_value
+            fill_value = self._fill_value(col, num_attributes, time_attributes)
+            values = X[col]
+            for pos in self.positions_:
+                # Freeze the case's pos-th event value and carry it forward to
+                # every later event; events before that position are padded, so
+                # a prefix never sees an event beyond its own length.
+                frozen = (
+                    values.where(position == pos)
+                    .groupby(level=self.case_id, sort=False, observed=True)
+                    .ffill()
                 )
-                shifted.columns = pos_cols
-                for c in pos_cols:
-                    out[c] = shifted[c]
-            else:  # absolute
-                values = X[col]
-                for pos in self.positions_:
-                    # Freeze the case's pos-th event value and carry it forward
-                    # to every later event; events before that position are
-                    # padded, so a prefix never sees an event beyond its length.
-                    frozen = (
-                        values.where(position == pos)
-                        .groupby(level=self.case_id, sort=False, observed=True)
-                        .ffill()
-                    )
-                    out[f"{col}_pos_{pos}"] = frozen.where(
-                        position >= pos, other=fill_value
-                    )
+                columns[f"{col}_{self._position_label}_{pos}"] = frozen.where(
+                    position >= pos, other=fill_value
+                )
 
-        return out
-
-    def get_feature_names_out(self, input_features=None):
-        check_is_fitted(self, "feature_names_out_")
-        return list(self.feature_names_out_)
+        return pd.DataFrame(columns, index=X.index)
