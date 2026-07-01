@@ -33,3 +33,4 @@ __pypackages__/
 *.parquet
 
 .claude/
+.env
