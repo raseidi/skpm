@@ -93,8 +93,4 @@ class TimestampEventLevel:
     @classmethod
     def numerical_timestamp(cls, X, time_unit="s"):
         """Unix epoch timestamp expressed in ``time_unit`` units (not scaled to [-0.5, 0.5])."""
-        return (
-            X.astype("int64")
-            // 10**9
-            / cls.TIME_UNIT_MULTIPLIER.get(time_unit, 1)
-        )
+        return X.astype("int64") // 10**9 / cls.TIME_UNIT_MULTIPLIER[time_unit]

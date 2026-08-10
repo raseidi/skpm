@@ -66,3 +66,20 @@ def test_time_since_last_event_time_unit_scaling(known_gaps_log):
 def test_accumulated_time_values(known_gaps_log):
     out = TimestampCaseLevel.accumulated_time(_timestamps(known_gaps_log))
     assert out.tolist() == [0.0, 30.0, 90.0, 0.0, 3600.0]
+
+
+def test_weekly_time_unit_accepted(known_gaps_log):
+    t = TimestampExtractor(
+        case_features="accumulated_time", event_features=None, time_unit="w"
+    )
+    out = t.fit_transform(known_gaps_log)
+    assert out["accumulated_time"].tolist() == pytest.approx(
+        [0.0, 30 / 604800, 90 / 604800, 0.0, 3600 / 604800]
+    )
+
+
+def test_unknown_time_unit_raises(known_gaps_log):
+    with pytest.raises(KeyError):
+        TimestampCaseLevel.remaining_time(
+            _timestamps(known_gaps_log), time_unit="hours"
+        )

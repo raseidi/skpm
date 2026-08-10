@@ -46,7 +46,7 @@ class TimestampCaseLevel(EventLogConfigMixin):
         ).transform("min")
         return (
             timestamps - first
-        ).dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(time_unit, 1)
+        ).dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER[time_unit]
 
     @classmethod
     def time_since_last_event(
@@ -58,9 +58,7 @@ class TimestampCaseLevel(EventLogConfigMixin):
             .diff()
             .fillna(pd.Timedelta(0))
         )
-        return diffs.dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(
-            time_unit, 1
-        )
+        return diffs.dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER[time_unit]
 
     @classmethod
     def execution_time(
@@ -73,9 +71,7 @@ class TimestampCaseLevel(EventLogConfigMixin):
             .abs()
             .fillna(pd.Timedelta(0))
         )
-        return diffs.dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(
-            time_unit, 1
-        )
+        return diffs.dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER[time_unit]
 
     @classmethod
     def remaining_time(
@@ -87,4 +83,4 @@ class TimestampCaseLevel(EventLogConfigMixin):
         ).transform("max")
         return (
             last - timestamps
-        ).dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(time_unit, 1)
+        ).dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER[time_unit]

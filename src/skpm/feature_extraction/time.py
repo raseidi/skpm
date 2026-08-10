@@ -36,7 +36,7 @@ class TimestampExtractor(
     _parameter_constraints = {
         "case_features": [str, list, None],
         "event_features": [str, list, None],
-        "time_unit": [StrOptions({"s", "m", "h", "d"})],
+        "time_unit": [StrOptions({"s", "m", "h", "d", "w"})],
     }
 
     def __init__(
