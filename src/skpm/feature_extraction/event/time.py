@@ -2,7 +2,7 @@ class TimestampEventLevel:
     """
     Provides methods to extract time-related features from the event level.
 
-    Implementing event-level and case-level seperately makes code faster since here we do not need to group by case_id.
+    Implementing event-level and case-level separately makes code faster since here we do not need to group by case_id.
 
     """
 
@@ -33,7 +33,7 @@ class TimestampEventLevel:
 
     @classmethod
     def day_of_week(cls, X):
-        """Hour of day encoded as value between [-0.5, 0.5]"""
+        """Day of week encoded as value between [-0.5, 0.5]"""
 
         return X.dt.dayofweek / 6.0 - 0.5
 
@@ -76,7 +76,7 @@ class TimestampEventLevel:
 
     @classmethod
     def numerical_timestamp(cls, X, time_unit="s"):
-        """Numerical representation of the timestamp."""
+        """Unix epoch timestamp expressed in ``time_unit`` units (not scaled to [-0.5, 0.5])."""
         return (
             X.astype("int64")
             // 10**9

@@ -25,7 +25,7 @@ class TimestampCaseLevel(EventLogConfigMixin):
     def accumulated_time(
         cls, timestamps: pd.Series, time_unit: str = "s"
     ) -> pd.Series:
-        """Seconds elapsed since the first event of each case."""
+        """Time elapsed since the first event of each case, in ``time_unit`` units."""
         first = timestamps.groupby(
             level=cls().case_id, sort=False, observed=True
         ).transform("min")
@@ -37,7 +37,7 @@ class TimestampCaseLevel(EventLogConfigMixin):
     def execution_time(
         cls, timestamps: pd.Series, time_unit: str = "s"
     ) -> pd.Series:
-        """Seconds until the next event in the case (0 for the last event)."""
+        """Time until the next event in the case (0 for the last event), in ``time_unit`` units."""
         diffs = (
             timestamps.groupby(level=cls().case_id, sort=False, observed=True)
             .diff(-1)
@@ -52,7 +52,7 @@ class TimestampCaseLevel(EventLogConfigMixin):
     def remaining_time(
         cls, timestamps: pd.Series, time_unit: str = "s"
     ) -> pd.Series:
-        """Seconds remaining until the last event of each case."""
+        """Time remaining until the last event of each case, in ``time_unit`` units."""
         last = timestamps.groupby(
             level=cls().case_id, sort=False, observed=True
         ).transform("max")
