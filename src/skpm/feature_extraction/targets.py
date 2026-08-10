@@ -58,3 +58,38 @@ def remaining_time(
     return TimestampCaseLevel.remaining_time(
         timestamps, time_unit=time_unit
     ).rename("remaining_time")
+
+
+def execution_time(
+    log: pd.DataFrame | EventLog, time_unit: str = "s"
+) -> pd.Series:
+    """Time until the next event of each case, as an index-aligned Series.
+
+    The last event of each case gets ``0``. Because the value of event ``i``
+    is derived from the timestamp of event ``i + 1``, this is future
+    information at prediction time — a target for next-event-time prediction,
+    not an input feature.
+
+    Parameters
+    ----------
+    log : pandas.DataFrame or EventLog
+        Event log (flat or canonical).
+    time_unit : {"s", "m", "h", "d", "w"}, default="s"
+        Unit for the returned durations.
+
+    Returns
+    -------
+    pandas.Series
+        Time until the next event per event (float), named
+        ``"execution_time"``, indexed by the canonical MultiIndex so it
+        aligns with the event log.
+    """
+    from skpm.feature_extraction.case.time import TimestampCaseLevel
+
+    log = _as_canonical(log)
+    timestamps = log.index.get_level_values("timestamp").to_series(
+        index=log.index, name="timestamp"
+    )
+    return TimestampCaseLevel.execution_time(
+        timestamps, time_unit=time_unit
+    ).rename("execution_time")
