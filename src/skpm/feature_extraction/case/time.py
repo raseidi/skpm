@@ -21,6 +21,21 @@ class TimestampCaseLevel(EventLogConfigMixin):
         "w": 60 * 60 * 24 * 7,
     }
 
+    # Registry of the classmethods selectable as input features; "all"
+    # resolves to exactly this tuple, which is also the output column order.
+    FEATURES: tuple[str, ...] = (
+        "accumulated_time",
+        "time_since_last_event",
+    )
+
+    # Computations reserved for label generation: they read future events,
+    # so exposing them as input features would leak the prediction target.
+    # Reachable through skpm.feature_extraction.targets only.
+    TARGET_ONLY: tuple[str, ...] = (
+        "execution_time",
+        "remaining_time",
+    )
+
     @classmethod
     def accumulated_time(
         cls, timestamps: pd.Series, time_unit: str = "s"

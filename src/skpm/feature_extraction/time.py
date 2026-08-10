@@ -8,7 +8,7 @@ from sklearn.calibration import StrOptions
 from skpm.base import BaseProcessTransformer
 from skpm.feature_extraction.case.time import TimestampCaseLevel
 from skpm.feature_extraction.event.time import TimestampEventLevel
-from skpm.utils import validate_methods_from_class
+from skpm.utils import resolve_features
 
 
 class TimestampExtractor(
@@ -31,7 +31,8 @@ class TimestampExtractor(
 
     # A bare string selects a single feature (e.g. ``"accumulated_time"``) or
     # the ``"all"`` shortcut; a list selects several; ``None`` selects none.
-    # Names are validated against the available methods in ``_fit``.
+    # Names are validated against each level's ``FEATURES`` registry in
+    # ``_fit``.
     _parameter_constraints = {
         "case_features": [str, list, None],
         "event_features": [str, list, None],
@@ -49,11 +50,11 @@ class TimestampExtractor(
         self.time_unit = time_unit
 
     def _fit(self, X: pd.DataFrame, y=None):
-        self.event_features_ = validate_methods_from_class(
-            class_obj=TimestampEventLevel, methods=self.event_features
+        self.event_features_ = resolve_features(
+            class_obj=TimestampEventLevel, selection=self.event_features
         )
-        self.case_features_ = validate_methods_from_class(
-            class_obj=TimestampCaseLevel, methods=self.case_features
+        self.case_features_ = resolve_features(
+            class_obj=TimestampCaseLevel, selection=self.case_features
         )
 
         self._n_features_out = len(self.event_features_) + len(

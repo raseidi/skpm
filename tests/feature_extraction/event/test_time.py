@@ -4,6 +4,7 @@ import datetime as dt
 
 import pytest
 from skpm.feature_extraction import TimestampExtractor
+from skpm.feature_extraction.case.time import TimestampCaseLevel
 from skpm.feature_extraction.event.time import TimestampEventLevel
 from skpm.config import EventLogConfig as elc
 
@@ -32,14 +33,16 @@ def test_time(dummy_data):
     assert isinstance(out, pd.DataFrame)
     assert tuple(out.index.names) == ("case_id", "timestamp", "event_id")
 
-    t = TimestampExtractor(case_features="execution_time", event_features=None)
+    t = TimestampExtractor(
+        case_features="accumulated_time", event_features=None
+    )
     t.fit(dummy_data)
     out = t.transform(dummy_data)
     assert out.shape[1] == 1
     assert isinstance(out, pd.DataFrame)
 
     t = TimestampExtractor(
-        case_features="execution_time",
+        case_features="accumulated_time",
         event_features=["month_of_year", "day_of_week"],
     )
     t.fit(dummy_data)
@@ -61,6 +64,35 @@ def test_time(dummy_data):
     t = TimestampExtractor()
     with pytest.raises(Exception):
         t.fit(dummy_data[[elc.case_id, elc.timestamp]])
+
+
+def test_default_features_exclude_leaky_columns(dummy_data):
+    out = TimestampExtractor().fit_transform(dummy_data)
+    assert "execution_time" not in out.columns
+    assert "remaining_time" not in out.columns
+    assert set(out.columns) == set(TimestampCaseLevel.FEATURES) | set(
+        TimestampEventLevel.FEATURES
+    )
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"event_features": "not_a_feature"},
+        {"case_features": ["accumulated_time", "typo"]},
+    ],
+)
+def test_unknown_feature_raises(dummy_data, kwargs):
+    t = TimestampExtractor(**kwargs)
+    with pytest.raises(ValueError, match="Unknown feature"):
+        t.fit(dummy_data)
+
+
+@pytest.mark.parametrize("target", ["execution_time", "remaining_time"])
+def test_target_as_feature_raises(dummy_data, target):
+    t = TimestampExtractor(case_features=target, event_features=None)
+    with pytest.raises(ValueError, match="feature_extraction.targets"):
+        t.fit(dummy_data)
 
 
 # 2024-01-07 is a Sunday.

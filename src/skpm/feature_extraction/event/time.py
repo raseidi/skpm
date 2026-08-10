@@ -14,6 +14,22 @@ class TimestampEventLevel:
         "w": 60 * 60 * 24 * 7,
     }
 
+    # Registry of the classmethods selectable as input features; "all"
+    # resolves to exactly this tuple, which is also the output column order.
+    FEATURES: tuple[str, ...] = (
+        "day_of_month",
+        "day_of_week",
+        "day_of_year",
+        "hour_of_day",
+        "min_of_hour",
+        "month_of_year",
+        "numerical_timestamp",
+        "sec_of_min",
+        "secs_since_sunday",
+        "secs_within_day",
+        "week_of_year",
+    )
+
     @classmethod
     def sec_of_min(cls, X):
         """Second of minute encoded as value between [-0.5, 0.5]"""
