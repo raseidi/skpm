@@ -34,6 +34,20 @@ class TimestampCaseLevel(EventLogConfigMixin):
         ).dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(time_unit, 1)
 
     @classmethod
+    def time_since_last_event(
+        cls, timestamps: pd.Series, time_unit: str = "s"
+    ) -> pd.Series:
+        """Time since the previous event of the same case (0 for the first event), in ``time_unit`` units."""
+        diffs = (
+            timestamps.groupby(level=cls().case_id, sort=False, observed=True)
+            .diff()
+            .fillna(pd.Timedelta(0))
+        )
+        return diffs.dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(
+            time_unit, 1
+        )
+
+    @classmethod
     def execution_time(
         cls, timestamps: pd.Series, time_unit: str = "s"
     ) -> pd.Series:
