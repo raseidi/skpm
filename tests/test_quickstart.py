@@ -45,7 +45,6 @@ def test_quickstart_remaining_time_pipeline():
                 TimestampExtractor(
                     case_features=None,
                     event_features="all",
-                    targets=None,
                     time_unit="h",
                 ),
             ),

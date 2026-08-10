@@ -23,6 +23,7 @@ from skpm.sequence_encoding import Aggregation, Indexing, Windowing, Bucketing
 from skpm.baselines import ActivityMeanRegressor
 from xgboost import XGBRegressor
 
+
 def main() -> None:
     # 1. Load the log (auto-downloads on first run). The dataframe carries
     #    the canonical event-log MultiIndex (case_id, timestamp, event_id).
@@ -66,7 +67,6 @@ def main() -> None:
                 TimestampExtractor(
                     case_features=None,
                     event_features="all",
-                    targets=None,
                     time_unit="h",
                 ),
             ),
@@ -75,24 +75,24 @@ def main() -> None:
     pipe = Pipeline(
         [
             ("preprocessing", features),
-
-
             # ("encode", Indexing()),
             # ("encode", Aggregation(method="mean", prefix_len=2)),
             # ("encode", Bucketing(method="prefix")),
             ("encode", Windowing(n=3)),
             ("standardize", StandardScaler()),
-            
             # ("model", LinearRegression(n_jobs=-1)),
             # ("model", RandomForestRegressor(n_jobs=-1, random_state=1)),
             # ("model", GradientBoostingRegressor(random_state=1)),
             # ("model", GradientBoostingRegressor(loss="absolute_error", random_state=1)),
-            ("model", XGBRegressor(
-                objective="reg:absoluteerror",
-                random_state=1, 
-                n_jobs=-1, 
-                device="cuda"
-            )), # loss=.88, save this config to use later in our tutorial
+            (
+                "model",
+                XGBRegressor(
+                    objective="reg:absoluteerror",
+                    random_state=1,
+                    n_jobs=-1,
+                    device="cuda",
+                ),
+            ),  # loss=.88, save this config to use later in our tutorial
         ]
     )
 

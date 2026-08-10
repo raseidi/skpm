@@ -141,7 +141,6 @@ def test_pipeline_preserves_multiindex(flat_log):
                 TimestampExtractor(
                     case_features=None,
                     event_features=["day_of_week", "hour_of_day"],
-                    targets=None,
                 ),
             ),
             ("agg", Aggregation(method="mean")),

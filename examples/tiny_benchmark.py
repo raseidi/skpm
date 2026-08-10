@@ -81,7 +81,6 @@ def _timestamp() -> TimestampExtractor:
     return TimestampExtractor(
         case_features=None,
         event_features="all",
-        targets=None,
         time_unit=TIME_UNIT,
     )
 
