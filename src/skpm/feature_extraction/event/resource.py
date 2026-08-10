@@ -84,13 +84,18 @@ class ResourcePoolExtractor(BaseProcessTransformer):
         resource = self._check_unknown(
             X[self.resource].values, self.rtoi_.keys(), self.resource
         )
-        return DataFrame({self.resource: resource}, index=X.index)[self.resource].map(
-            self.rtoi_
-        ).map(self.resource_to_roles_).values
+        return (
+            DataFrame({self.resource: resource}, index=X.index)[self.resource]
+            .map(self.rtoi_)
+            .map(self.resource_to_roles_)
+            .values
+        )
 
     def _check_feature_columns(self, X: DataFrame) -> None:
         missing = [
-            col for col in (self.activity, self.resource) if col not in X.columns
+            col
+            for col in (self.activity, self.resource)
+            if col not in X.columns
         ]
         if missing:
             raise ValueError(

@@ -21,7 +21,9 @@ def fixture_log() -> pd.DataFrame:
 
 
 def test_fit_computes_per_activity_means(log):
-    y = np.array([10.0, 20.0, 30.0, 12.0, 22.0, 14.0])  # a:{10,12,14}, b:{20,22}, c:{30}
+    y = np.array(
+        [10.0, 20.0, 30.0, 12.0, 22.0, 14.0]
+    )  # a:{10,12,14}, b:{20,22}, c:{30}
     reg = ActivityMeanRegressor().fit(log, y)
     check_is_fitted(reg)
     assert reg.activity_means_["a"] == pytest.approx(12.0)
@@ -44,7 +46,9 @@ def test_unseen_activity_falls_back_to_global_mean():
             {
                 "case:concept:name": [1, 1, 2],
                 "concept:name": ["a", "b", "a"],
-                "time:timestamp": pd.date_range("2024-01-01", periods=3, freq="h"),
+                "time:timestamp": pd.date_range(
+                    "2024-01-01", periods=3, freq="h"
+                ),
             }
         )
     )
@@ -54,7 +58,9 @@ def test_unseen_activity_falls_back_to_global_mean():
             {
                 "case:concept:name": [9, 9],
                 "concept:name": ["a", "zzz"],  # "zzz" unseen at fit
-                "time:timestamp": pd.date_range("2024-02-01", periods=2, freq="h"),
+                "time:timestamp": pd.date_range(
+                    "2024-02-01", periods=2, freq="h"
+                ),
             }
         )
     )
@@ -67,7 +73,11 @@ def test_works_as_pipeline_final_estimator(log):
     # passthrough feature/encoder steps -> the regressor reads the raw log.
     y = np.array([10.0, 20.0, 30.0, 12.0, 22.0, 14.0])
     pipe = Pipeline(
-        [("features", "passthrough"), ("encoder", "passthrough"), ("model", ActivityMeanRegressor())]
+        [
+            ("features", "passthrough"),
+            ("encoder", "passthrough"),
+            ("model", ActivityMeanRegressor()),
+        ]
     )
     pipe.fit(log, y)
     assert len(pipe.predict(log)) == len(log)

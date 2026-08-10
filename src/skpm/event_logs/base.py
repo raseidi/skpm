@@ -101,6 +101,7 @@ class EventLog(EventLogConfigMixin):
         ``dataframe``. Only used when the standard name is not already
         present in the DataFrame.
     """
+
     _dataframe: Optional[pd.DataFrame] = None
 
     def __init__(
@@ -261,9 +262,11 @@ class TUEventLog(EventLog):
         for ix, file_path in enumerate(self.file_path):
             if file_path.suffix == ".xes":
                 log = read_xes(str(file_path))
-                
+
                 if len(self.file_path) > 1:
-                    log['log_version'] = file_path.stem  # Add log version from file name
+                    log["log_version"] = (
+                        file_path.stem
+                    )  # Add log version from file name
                 df = pd.concat([df, log], ignore_index=True)
 
                 # delete xes and save as pandas

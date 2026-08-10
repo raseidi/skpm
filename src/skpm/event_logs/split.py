@@ -24,7 +24,9 @@ def _select_cases(dataset: pd.DataFrame, case_ids) -> pd.DataFrame:
     return dataset[mask]
 
 
-def _check_nonempty_split(df_train: pd.DataFrame, df_test: pd.DataFrame) -> None:
+def _check_nonempty_split(
+    df_train: pd.DataFrame, df_test: pd.DataFrame
+) -> None:
     """Guard against the silent empty-side footgun."""
     if len(df_train) == 0 or len(df_test) == 0:
         raise ValueError(
@@ -54,22 +56,22 @@ def _bounded_dataset(
         else timestamps.max().tz_localize(None).to_period("M")
     )
 
-    keep = (
-        (bounds["min"].dt.tz_localize(None).dt.to_period("M") >= start)
-        & (bounds["max"].dt.tz_localize(None).dt.to_period("M") <= end)
+    keep = (bounds["min"].dt.tz_localize(None).dt.to_period("M") >= start) & (
+        bounds["max"].dt.tz_localize(None).dt.to_period("M") <= end
     )
     return _select_cases(dataset, bounds.index[keep])
 
 
 def _unbiased(dataset: pd.DataFrame, max_days: int) -> pd.DataFrame:
     bounds = _case_bounds(dataset).assign(
-        duration=lambda x: (x["max"] - x["min"]).dt.total_seconds() / (24 * 60 * 60)
+        duration=lambda x: (x["max"] - x["min"]).dt.total_seconds()
+        / (24 * 60 * 60)
     )
 
     condition_1 = bounds["duration"] <= max_days * 1.00000000001
-    latest_start = dataset.index.get_level_values("timestamp").max() - pd.Timedelta(
-        max_days, unit="D"
-    )
+    latest_start = dataset.index.get_level_values(
+        "timestamp"
+    ).max() - pd.Timedelta(max_days, unit="D")
     condition_2 = bounds["min"] <= latest_start
 
     keep = condition_1 & condition_2
@@ -114,7 +116,9 @@ def unbiased(
     bounds = _case_bounds(dataset)
 
     first_test_case_nr = int(len(bounds) * (1 - test_len))
-    first_test_start_time = bounds["min"].sort_values().values[first_test_case_nr]
+    first_test_start_time = (
+        bounds["min"].sort_values().values[first_test_case_nr]
+    )
     test_cases = bounds.index[bounds["max"].values >= first_test_start_time]
 
     df_test = _select_cases(dataset, test_cases)
@@ -133,11 +137,15 @@ def temporal(
     start, end = timestamps.min(), timestamps.max()
     split_point = start + (end - start) * (1 - test_len)
 
-    train_mask_per_event = dataset.index.get_level_values("timestamp") <= split_point
+    train_mask_per_event = (
+        dataset.index.get_level_values("timestamp") <= split_point
+    )
     case_ids = dataset.index.get_level_values("case_id")
     train_cases = case_ids[train_mask_per_event].unique()
 
     df_train = _select_cases(dataset, train_cases)
-    df_test = dataset[~dataset.index.get_level_values("case_id").isin(train_cases)]
+    df_test = dataset[
+        ~dataset.index.get_level_values("case_id").isin(train_cases)
+    ]
     _check_nonempty_split(df_train, df_test)
     return df_train, df_test

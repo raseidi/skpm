@@ -127,9 +127,7 @@ def lazy_serialize(
         yield etree.tostring(element)
 
 
-def read_xes(
-    filepath: str, n_jobs: int = None
-) -> pd.DataFrame:
+def read_xes(filepath: str, n_jobs: int = None) -> pd.DataFrame:
     """Reads an event log from a XES file.
 
     Rough overview:

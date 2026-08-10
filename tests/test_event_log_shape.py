@@ -17,7 +17,11 @@ import pytest
 from sklearn.pipeline import Pipeline
 
 from skpm.config import EventLogConfig as elc
-from skpm.event_logs.base import EVENT_LOG_INDEX, has_event_log_index, to_event_log
+from skpm.event_logs.base import (
+    EVENT_LOG_INDEX,
+    has_event_log_index,
+    to_event_log,
+)
 from skpm.feature_extraction import TimestampExtractor
 from skpm.sequence_encoding import Aggregation
 
@@ -91,10 +95,18 @@ def test_naming_styles_resolve_to_same_canonical_shape():
         }
     )
     canonical = pd.DataFrame(
-        {"case_id": rows["case"], "activity": rows["act"], "timestamp": rows["ts"]}
+        {
+            "case_id": rows["case"],
+            "activity": rows["act"],
+            "timestamp": rows["ts"],
+        }
     )
     title = pd.DataFrame(
-        {"CaseID": rows["case"], "Activity": rows["act"], "Timestamp": rows["ts"]}
+        {
+            "CaseID": rows["case"],
+            "Activity": rows["act"],
+            "Timestamp": rows["ts"],
+        }
     )
 
     outs = [

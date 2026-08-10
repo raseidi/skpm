@@ -66,7 +66,13 @@ def test_normalize_columns_canonicalizes_xes_names():
         }
     )
     out = EventLogConfig.normalize_columns(df)
-    assert set(out.columns) == {"case_id", "timestamp", "activity", "resource", "extra"}
+    assert set(out.columns) == {
+        "case_id",
+        "timestamp",
+        "activity",
+        "resource",
+        "extra",
+    }
     assert "extra" in out.columns  # untouched columns preserved
     assert "case:concept:name" in df.columns  # input not mutated
 
@@ -213,5 +219,9 @@ def test_event_log_normalizes_on_load():
     )
     # case_id and timestamp moved into the event-log MultiIndex; activity stays
     # as a canonical-named column.
-    assert tuple(log.dataframe.index.names) == ("case_id", "timestamp", "event_id")
+    assert tuple(log.dataframe.index.names) == (
+        "case_id",
+        "timestamp",
+        "event_id",
+    )
     assert "activity" in log.dataframe.columns

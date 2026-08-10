@@ -5,6 +5,7 @@ class TimestampEventLevel:
     Implementing event-level and case-level seperately makes code faster since here we do not need to group by case_id.
 
     """
+
     TIME_UNIT_MULTIPLIER = {
         "s": 1,
         "m": 60,
@@ -40,7 +41,7 @@ class TimestampEventLevel:
     def day_of_month(cls, X):
         """Day of month encoded as value between [-0.5, 0.5]"""
         return (X.dt.day - 1) / 30.0 - 0.5
-    
+
     @classmethod
     def day_of_year(cls, X):
         """Day of year encoded as value between [-0.5, 0.5]"""
@@ -63,15 +64,21 @@ class TimestampEventLevel:
         return (
             (X.dt.hour * 3600 + X.dt.minute * 60 + X.dt.second) / 86400
         ) - 0.5
-        
+
     @classmethod
     def secs_since_sunday(cls, X):
-        """Extract the number of seconds elapsed since the last Sunday from the timestamps encoded as value between [-0.5, 0.5]."""
-        return (
-            (X.dt.hour * 3600 + X.dt.minute * 60 + X.dt.second) / 604800
-        ) - 0.5
-        
+        """Seconds elapsed since last Sunday 00:00 encoded as value between [-0.5, 0.5]."""
+        days_since_sunday = (
+            X.dt.dayofweek + 1
+        ) % 7  # pandas: Mon=0..Sun=6 -> Sun=0..Sat=6
+        secs_within_day = X.dt.hour * 3600 + X.dt.minute * 60 + X.dt.second
+        return (days_since_sunday * 86400 + secs_within_day) / 604800 - 0.5
+
     @classmethod
     def numerical_timestamp(cls, X, time_unit="s"):
         """Numerical representation of the timestamp."""
-        return X.astype("int64") // 10**9 / cls.TIME_UNIT_MULTIPLIER.get(time_unit, 1)
+        return (
+            X.astype("int64")
+            // 10**9
+            / cls.TIME_UNIT_MULTIPLIER.get(time_unit, 1)
+        )

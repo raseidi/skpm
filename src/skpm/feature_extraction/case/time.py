@@ -22,15 +22,21 @@ class TimestampCaseLevel(EventLogConfigMixin):
     }
 
     @classmethod
-    def accumulated_time(cls, timestamps: pd.Series, time_unit: str = "s") -> pd.Series:
+    def accumulated_time(
+        cls, timestamps: pd.Series, time_unit: str = "s"
+    ) -> pd.Series:
         """Seconds elapsed since the first event of each case."""
-        first = timestamps.groupby(level=cls().case_id, sort=False, observed=True).transform("min")
-        return (timestamps - first).dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(
-            time_unit, 1
-        )
+        first = timestamps.groupby(
+            level=cls().case_id, sort=False, observed=True
+        ).transform("min")
+        return (
+            timestamps - first
+        ).dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(time_unit, 1)
 
     @classmethod
-    def execution_time(cls, timestamps: pd.Series, time_unit: str = "s") -> pd.Series:
+    def execution_time(
+        cls, timestamps: pd.Series, time_unit: str = "s"
+    ) -> pd.Series:
         """Seconds until the next event in the case (0 for the last event)."""
         diffs = (
             timestamps.groupby(level=cls().case_id, sort=False, observed=True)
@@ -38,12 +44,18 @@ class TimestampCaseLevel(EventLogConfigMixin):
             .abs()
             .fillna(pd.Timedelta(0))
         )
-        return diffs.dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(time_unit, 1)
-
-    @classmethod
-    def remaining_time(cls, timestamps: pd.Series, time_unit: str = "s") -> pd.Series:
-        """Seconds remaining until the last event of each case."""
-        last = timestamps.groupby(level=cls().case_id, sort=False, observed=True).transform("max")
-        return (last - timestamps).dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(
+        return diffs.dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(
             time_unit, 1
         )
+
+    @classmethod
+    def remaining_time(
+        cls, timestamps: pd.Series, time_unit: str = "s"
+    ) -> pd.Series:
+        """Seconds remaining until the last event of each case."""
+        last = timestamps.groupby(
+            level=cls().case_id, sort=False, observed=True
+        ).transform("max")
+        return (
+            last - timestamps
+        ).dt.total_seconds() / cls.TIME_UNIT_MULTIPLIER.get(time_unit, 1)

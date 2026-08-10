@@ -25,13 +25,15 @@ def next_activity(log: pd.DataFrame | EventLog) -> pd.Series:
         Next-activity label per event, named ``"next_activity"``.
     """
     log = _as_canonical(log)
-    out = log.groupby(level="case_id", sort=False, observed=True)[elc.activity].shift(
-        -1, fill_value=EOT_TOKEN
-    )
+    out = log.groupby(level="case_id", sort=False, observed=True)[
+        elc.activity
+    ].shift(-1, fill_value=EOT_TOKEN)
     return out.rename("next_activity")
 
 
-def remaining_time(log: pd.DataFrame | EventLog, time_unit: str = "s") -> pd.Series:
+def remaining_time(
+    log: pd.DataFrame | EventLog, time_unit: str = "s"
+) -> pd.Series:
     """Remaining time until each case ends, as an index-aligned Series.
 
     Parameters
@@ -53,6 +55,6 @@ def remaining_time(log: pd.DataFrame | EventLog, time_unit: str = "s") -> pd.Ser
     timestamps = log.index.get_level_values("timestamp").to_series(
         index=log.index, name="timestamp"
     )
-    return TimestampCaseLevel.remaining_time(timestamps, time_unit=time_unit).rename(
-        "remaining_time"
-    )
+    return TimestampCaseLevel.remaining_time(
+        timestamps, time_unit=time_unit
+    ).rename("remaining_time")

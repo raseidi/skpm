@@ -1,10 +1,12 @@
 from skpm.event_logs.base import TUEventLog
 
+
 class BPI11(TUEventLog):
     url: tuple[str] = (
         "https://data.4tu.nl/file/5ea5bb88-feaa-4e6f-a743-6460a755e05b/6f9640f9-0f1e-44d2-9495-ef9d1bd82218",
     )
     file_name: tuple[str] = ("Hospital_log.xes.gz",)
+
 
 class BPI12(TUEventLog):
     """:doi:`BPI Challenge 2012 event log
@@ -156,45 +158,45 @@ class BPI15(TUEventLog):
     The BPI 2015 event log is composed of five sub-logs (municipality 1-5).
     This class concatenates these sub-logs into a single event log.
 
-    This data is provided by five Dutch municipalities. 
-    The data contains all building permit applications over a period of 
-    approximately four years. There are many different activities present, 
-    denoted by both codes (attribute concept:name) and labels, both in Dutch 
-    (attribute taskNameNL) and in English (attribute taskNameEN). The cases 
-    in the log contain information on the main application as well as objection 
-    procedures in various stages. Furthermore, information is available about 
-    the resource that carried out the task and on the cost of the application 
-    (attribute SUMleges). The processes in the five municipalities should be 
-    identical, but may differ slightly. Especially when changes are made to 
-    procedures, rules or regulations the time at which these changes are 
-    pushed into the five municipalities may differ. Of course, over the four 
-    year period, the underlying processes have changed. The municipalities 
-    have a number of questions, namely: What are the roles of the people 
-    involved in the various stages of the process and how do these roles 
-    differ across municipalities? What are the possible points for improvement 
-    on the organizational structure for each of the municipalities? The 
-    employees of two of the five municipalities have physically moved into 
-    the same location recently. Did this lead to a change in the processes 
-    and if so, what is different? Some of the procedures will be outsourced 
-    from 2018, i.e. they will be removed from the process and the applicant 
-    needs to have these activities performed by an external party before 
-    submitting the application. What will be the effect of this on the 
-    organizational structures in the five municipalities? Where are differences 
-    in throughput times between the municipalities and how can these be 
-    explained? What are the differences in control flow between the 
-    municipalities? There are five different log files available in this 
-    collection. Events are labeled with both a code and a Dutch and English 
-    label. Each activity code consists of three parts: two digits, a variable 
-    number of characters, and then three digits. The first two digits as well 
-    as the characters indicate the subprocess the activity belongs to. For 
-    instance '01_HOOFD_xxx' indicates the main process and '01_BB_xxx' 
-    indicates the 'objections and complaints' ('Beroep en Bezwaar' in Dutch) 
-    subprocess. The last three digits hint on the order in which activities 
-    are executed, where the first digit often indicates a phase within a 
-    process. Each trace and each event, contain several data attributes that 
-    can be used for various checks and predictions. Furthermore, some employees 
-    may have performed tasks for different municipalities, i.e. if the employee 
-    number is the same, it is safe to assume the same person is being 
+    This data is provided by five Dutch municipalities.
+    The data contains all building permit applications over a period of
+    approximately four years. There are many different activities present,
+    denoted by both codes (attribute concept:name) and labels, both in Dutch
+    (attribute taskNameNL) and in English (attribute taskNameEN). The cases
+    in the log contain information on the main application as well as objection
+    procedures in various stages. Furthermore, information is available about
+    the resource that carried out the task and on the cost of the application
+    (attribute SUMleges). The processes in the five municipalities should be
+    identical, but may differ slightly. Especially when changes are made to
+    procedures, rules or regulations the time at which these changes are
+    pushed into the five municipalities may differ. Of course, over the four
+    year period, the underlying processes have changed. The municipalities
+    have a number of questions, namely: What are the roles of the people
+    involved in the various stages of the process and how do these roles
+    differ across municipalities? What are the possible points for improvement
+    on the organizational structure for each of the municipalities? The
+    employees of two of the five municipalities have physically moved into
+    the same location recently. Did this lead to a change in the processes
+    and if so, what is different? Some of the procedures will be outsourced
+    from 2018, i.e. they will be removed from the process and the applicant
+    needs to have these activities performed by an external party before
+    submitting the application. What will be the effect of this on the
+    organizational structures in the five municipalities? Where are differences
+    in throughput times between the municipalities and how can these be
+    explained? What are the differences in control flow between the
+    municipalities? There are five different log files available in this
+    collection. Events are labeled with both a code and a Dutch and English
+    label. Each activity code consists of three parts: two digits, a variable
+    number of characters, and then three digits. The first two digits as well
+    as the characters indicate the subprocess the activity belongs to. For
+    instance '01_HOOFD_xxx' indicates the main process and '01_BB_xxx'
+    indicates the 'objections and complaints' ('Beroep en Bezwaar' in Dutch)
+    subprocess. The last three digits hint on the order in which activities
+    are executed, where the first digit often indicates a phase within a
+    process. Each trace and each event, contain several data attributes that
+    can be used for various checks and predictions. Furthermore, some employees
+    may have performed tasks for different municipalities, i.e. if the employee
+    number is the same, it is safe to assume the same person is being
     identified.
 
 
@@ -228,14 +230,23 @@ class BPI15(TUEventLog):
         "BPIC15_2.xes",
         "BPIC15_1.xes",
     )
-    
+
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        
-        cols_to_drop = ["activityNameNL", "concept:name",]
-        self._dataframe = self._dataframe.drop(columns=cols_to_drop, errors="ignore")
-        self._dataframe = self._dataframe.rename(columns={"activityNameEN": "concept:name",})
-        
+
+        cols_to_drop = [
+            "activityNameNL",
+            "concept:name",
+        ]
+        self._dataframe = self._dataframe.drop(
+            columns=cols_to_drop, errors="ignore"
+        )
+        self._dataframe = self._dataframe.rename(
+            columns={
+                "activityNameEN": "concept:name",
+            }
+        )
+
 
 class BPI17(TUEventLog):
     """:doi:`BPI Challenge 2017
