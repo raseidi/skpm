@@ -19,6 +19,7 @@ from sklearn.pipeline import Pipeline
 from skpm.config import EventLogConfig as elc
 from skpm.event_logs.base import (
     EVENT_LOG_INDEX,
+    EventLog,
     has_event_log_index,
     to_event_log,
 )
@@ -77,6 +78,31 @@ def test_to_event_log_is_idempotent(flat_log):
     once = to_event_log(flat_log)
     twice = to_event_log(once)
     assert once is twice  # already-canonical input is returned unchanged
+
+
+# --- to_event_log as the single coercion entry point ------------------------
+# It accepts all three log-like inputs, so every API routed through it does too.
+
+
+def test_to_event_log_unwraps_event_log(flat_log):
+    log = EventLog(dataframe=flat_log)
+    out = to_event_log(log)
+    assert has_event_log_index(out)
+    # The EventLog normalized on construction, so no re-promotion happens:
+    # the very same frame comes back.
+    assert out is log.dataframe
+    assert to_event_log(out) is out  # and it stays idempotent
+
+
+def test_to_event_log_rejects_column_mapping_with_event_log(flat_log):
+    log = EventLog(dataframe=flat_log)
+    with pytest.raises(ValueError, match="column_mapping cannot be applied"):
+        to_event_log(log, column_mapping={"case_id": "whatever"})
+
+
+def test_to_event_log_rejects_empty_event_log():
+    with pytest.raises(ValueError, match="holds no event log"):
+        to_event_log(EventLog())
 
 
 def test_naming_styles_resolve_to_same_canonical_shape():

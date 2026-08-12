@@ -1,12 +1,6 @@
 import pandas as pd
 
-from skpm.event_logs.base import EventLog, to_event_log
-
-
-def _as_event_log(dataset: pd.DataFrame | EventLog) -> pd.DataFrame:
-    if isinstance(dataset, EventLog):
-        return dataset.dataframe
-    return to_event_log(dataset)
+from skpm.event_logs.base import LogLike, to_event_log
 
 
 def _case_bounds(dataset: pd.DataFrame) -> pd.DataFrame:
@@ -79,7 +73,7 @@ def _unbiased(dataset: pd.DataFrame, max_days: int) -> pd.DataFrame:
 
 
 def unbiased(
-    dataset: pd.DataFrame | EventLog,
+    dataset: LogLike,
     start_date: str | pd.Period | None,
     end_date: str | pd.Period | None,
     max_days: int,
@@ -107,7 +101,7 @@ def unbiased(
        Benchmark Datasets with Data Leakage Prevention for Predictive
        Process Monitoring, 2021. doi:10.1007/978-3-030-94343-1_2
     """
-    dataset = _as_event_log(dataset).copy()
+    dataset = to_event_log(dataset).copy()
 
     if start_date or end_date:
         dataset = _bounded_dataset(dataset, start_date, end_date)
@@ -128,11 +122,11 @@ def unbiased(
 
 
 def temporal(
-    dataset: pd.DataFrame | EventLog, test_len: float = 0.2
+    dataset: LogLike, test_len: float = 0.2
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Temporal split: any case whose first event is at or before the
     cutoff goes to train, the rest to test."""
-    dataset = _as_event_log(dataset)
+    dataset = to_event_log(dataset)
     timestamps = dataset.index.get_level_values("timestamp")
     start, end = timestamps.min(), timestamps.max()
     split_point = start + (end - start) * (1 - test_len)

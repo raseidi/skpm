@@ -1,4 +1,4 @@
-import numpy as np
+import pandas as pd
 from sklearn.utils._param_validation import StrOptions
 from sklearn.utils.validation import check_is_fitted
 
@@ -50,13 +50,21 @@ class Bucketing(BaseProcessTransformer):
         self.method = method
 
     def _transform(self, X, y=None):
-        """Transform input data by bucketing traces."""
+        """Transform input data by bucketing traces.
+
+        Returns a DataFrame carrying ``X``'s event-log index, like every other
+        transformer here. Returning a bare ndarray instead would leave the
+        output index up to scikit-learn's ``set_output`` wrapper, which can
+        only recover one when the object handed to ``transform`` is itself a
+        DataFrame — so an ``EventLog`` caller would silently get a flat index.
+        """
         check_is_fitted(self)
         if self.method == "single":
-            return np.array(["b1"] * len(X))
+            return pd.DataFrame({"bucket": ["b1"] * len(X)}, index=X.index)
         if self.method == "prefix":
             # Bucket label = 1-based trace position (b1, b2, ...).
-            return self._trace_positions(X).map(lambda p: f"b{p + 1}").values
+            labels = self._trace_positions(X).map(lambda p: f"b{p + 1}")
+            return pd.DataFrame({"bucket": labels}, index=X.index)
         if self.method == "clustering":
             raise NotImplementedError(
                 "Clustering method is not implemented yet"

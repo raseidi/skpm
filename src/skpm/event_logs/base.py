@@ -20,12 +20,23 @@ def has_event_log_index(df: pd.DataFrame) -> bool:
     return tuple(df.index.names) == EVENT_LOG_INDEX
 
 
+#: Anything skpm accepts where an event log is expected: an :class:`EventLog`,
+#: a flat DataFrame, or an already-canonical DataFrame. :func:`to_event_log`
+#: turns any of them into the canonical frame.
+LogLike = Union["EventLog", pd.DataFrame]
+
+
 def to_event_log(
-    df: pd.DataFrame,
+    log: LogLike,
     *,
     column_mapping: Optional[Mapping[str, str]] = None,
 ) -> pd.DataFrame:
-    """Promote a flat event-log DataFrame into the canonical MultiIndex shape.
+    """Coerce an event log into the canonical MultiIndex shape.
+
+    This is the **single coercion entry point** in skpm. Every public API
+    that takes an event log routes through it, which is what lets all of
+    them accept an :class:`EventLog`, a flat DataFrame, or an
+    already-canonical DataFrame interchangeably.
 
     The result has a ``MultiIndex`` with levels ``(case_id, timestamp,
     event_id)`` and contains the remaining columns (activity, resource,
@@ -33,7 +44,10 @@ def to_event_log(
     ``timestamp`` are *moved* into the index — they no longer appear as
     columns.
 
-    Steps:
+    An :class:`EventLog` was already normalized on construction, so its
+    frame is returned as-is; an already-canonical DataFrame is likewise
+    returned unchanged (same object, not a copy). A flat DataFrame is
+    promoted:
 
     1. Normalize column names via :meth:`EventLogConfig.normalize_columns`.
     2. Parse timestamps to UTC datetime.
@@ -44,27 +58,53 @@ def to_event_log(
 
     Parameters
     ----------
-    df : pandas.DataFrame
-        Flat event log. Must contain at least the columns named by
+    log : EventLog or pandas.DataFrame
+        An :class:`EventLog` (e.g. any ``skpm.event_logs`` loader), an
+        already-canonical DataFrame, or a flat event log. A flat frame must
+        contain at least the columns named by
         :data:`EventLogConfig.case_id`, :data:`EventLogConfig.timestamp`,
         and :data:`EventLogConfig.activity` (either under those names,
         or via ``column_mapping``).
     column_mapping : Mapping[str, str], optional
         Source-name → semantic-key mapping forwarded to
-        :meth:`EventLogConfig.normalize_columns`.
+        :meth:`EventLogConfig.normalize_columns`. Only meaningful for a flat
+        DataFrame; passing it with an :class:`EventLog` raises.
 
     Returns
     -------
     pandas.DataFrame
         DataFrame whose index is ``MultiIndex`` with names
         ``("case_id", "timestamp", "event_id")``.
+
+    Raises
+    ------
+    ValueError
+        If ``column_mapping`` is combined with an :class:`EventLog`, or if
+        the given :class:`EventLog` holds no data.
     """
-    if has_event_log_index(df):
-        return df
+    if isinstance(log, EventLog):
+        if column_mapping is not None:
+            raise ValueError(
+                "column_mapping cannot be applied to an EventLog: its "
+                "columns were normalized when it was constructed. Pass the "
+                "mapping at construction instead, e.g. "
+                "EventLog(dataframe=..., column_mapping=...)."
+            )
+        if log.dataframe is None:
+            raise ValueError(
+                f"{type(log).__name__} holds no event log: it was "
+                "constructed without a dataframe. Build it as "
+                "EventLog(dataframe=<flat DataFrame>), or use one of the "
+                "loaders in skpm.event_logs."
+            )
+        return log.dataframe
+
+    if has_event_log_index(log):
+        return log
 
     # Resolve source columns to the fixed canonical names (case_id, timestamp,
     # activity, resource). After this, columns are addressed by literal name.
-    df = EventLogConfig.normalize_columns(df, mapping=column_mapping).copy()
+    df = EventLogConfig.normalize_columns(log, mapping=column_mapping).copy()
 
     df["timestamp"] = pd.to_datetime(
         df["timestamp"], utc=True, format="mixed", errors="coerce"
@@ -326,43 +366,38 @@ class TUEventLog(EventLog):
 
 # --- public index accessors -------------------------------------------------
 # Convenience for pulling the canonical index levels out of an event log,
-# accepting either an EventLog or a (flat or canonical) DataFrame. Each returns
-# a Series aligned to the event-log index.
+# accepting either an EventLog or a (flat or canonical) DataFrame — coercion is
+# delegated to to_event_log. Each returns a Series aligned to the event-log
+# index.
 
 
-def _coerce(log) -> pd.DataFrame:
-    if isinstance(log, EventLog):
-        log = log.dataframe
-    return log if has_event_log_index(log) else to_event_log(log)
-
-
-def case_ids(log) -> pd.Series:
+def case_ids(log: LogLike) -> pd.Series:
     """Case id of each event, as a Series aligned to the event-log index."""
-    df = _coerce(log)
+    df = to_event_log(log)
     return df.index.get_level_values("case_id").to_series(
         index=df.index, name="case_id"
     )
 
 
-def timestamps(log) -> pd.Series:
+def timestamps(log: LogLike) -> pd.Series:
     """Timestamp of each event, as a Series aligned to the event-log index."""
-    df = _coerce(log)
+    df = to_event_log(log)
     return df.index.get_level_values("timestamp").to_series(
         index=df.index, name="timestamp"
     )
 
 
-def event_ids(log) -> pd.Series:
+def event_ids(log: LogLike) -> pd.Series:
     """Global per-event id of each event, aligned to the event-log index."""
-    df = _coerce(log)
+    df = to_event_log(log)
     return df.index.get_level_values("event_id").to_series(
         index=df.index, name="event_id"
     )
 
 
-def trace_positions(log) -> pd.Series:
+def trace_positions(log: LogLike) -> pd.Series:
     """0-based position of each event within its case (trace position)."""
-    df = _coerce(log)
+    df = to_event_log(log)
     return (
         df.groupby(level="case_id", sort=False, observed=True)
         .cumcount()

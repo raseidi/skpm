@@ -5,7 +5,7 @@ from pandas import DataFrame
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from skpm.config import EventLogConfigMixin
-from skpm.event_logs.base import has_event_log_index, to_event_log
+from skpm.event_logs.base import EventLog, has_event_log_index, to_event_log
 
 __all__ = [
     "BaseProcessEstimator",
@@ -20,8 +20,17 @@ class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
     Estimators operate on the canonical event-log shape: a DataFrame whose
     index is the ``MultiIndex(case_id, timestamp, event_id)`` (see
     :func:`skpm.event_logs.base.to_event_log`). :meth:`_validate_log` enforces
-    that shape, promoting a flat DataFrame on the fly so ad-hoc callers can
-    hand in unprocessed input.
+    that shape, unwrapping an :class:`~skpm.event_logs.base.EventLog` and
+    promoting a flat DataFrame on the fly, so ad-hoc callers can hand in
+    unprocessed input::
+
+        TimestampExtractor().fit(BPI17())        # EventLog
+        TimestampExtractor().fit(BPI17().dataframe)   # equivalent
+
+    Note this covers skpm estimators only. A plain scikit-learn estimator
+    still needs a feature matrix, so put a skpm transformer in front of it
+    (which is what a :class:`~sklearn.pipeline.Pipeline` does) rather than
+    handing it a raw log.
 
     Polars input is currently rejected (``NotImplementedError``) — temporarily
     unsupported pending a polars path.
@@ -30,10 +39,18 @@ class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
     def _validate_log(self, X, copy: bool = True) -> DataFrame:
         """Validate ``X`` and return it in canonical event-log form.
 
-        Promotes a flat DataFrame via :func:`to_event_log`. An
-        already-canonical frame is returned as-is (copied when ``copy``).
+        Accepts an :class:`~skpm.event_logs.base.EventLog` (any loader in
+        ``skpm.event_logs``), a flat DataFrame, or an already-canonical
+        DataFrame — the same three inputs every other skpm API takes.
+        Coercion is delegated to :func:`to_event_log`; an already-canonical
+        frame is returned as-is (copied when ``copy``).
         """
         self._validate_params()
+
+        # Unwrap first, so an EventLog reaches the shape checks below as its
+        # frame. to_event_log (not X.dataframe) so the empty-log guard applies.
+        if isinstance(X, EventLog):
+            X = to_event_log(X)
 
         if isinstance(X, pl.DataFrame):
             raise NotImplementedError(
@@ -42,7 +59,11 @@ class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
             )
         if not isinstance(X, DataFrame):
             raise TypeError(
-                f"Input must be a pandas DataFrame, got {type(X).__name__}."
+                f"Input must be an EventLog or a pandas DataFrame, got "
+                f"{type(X).__name__}. Event-log estimators take the whole log "
+                f"(a DataFrame), not a single column — to restrict which "
+                f"columns are used, slice with a list (log[['activity']]) or "
+                f"use a ColumnTransformer."
             )
 
         if has_event_log_index(X):

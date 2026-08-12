@@ -3,12 +3,14 @@
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.base import clone
 from sklearn.utils.validation import check_is_fitted
 
 from skpm.base import BaseProcessTransformer, CaseLevelTransformer
-from skpm.event_logs.base import to_event_log
+from skpm.event_logs.base import EVENT_LOG_INDEX, EventLog, to_event_log
+from skpm.feature_extraction import TimestampExtractor
 from skpm.feature_extraction.case import VariantExtractor
-from skpm.sequence_encoding import Bucketing, Indexing
+from skpm.sequence_encoding import Bucketing, Indexing, Windowing
 
 
 @pytest.fixture(name="log")
@@ -36,8 +38,6 @@ def test_fit_sets_fitted_marker(log):
 
 
 def test_clone_is_unfitted(log):
-    from sklearn.base import clone
-
     fitted = Bucketing().fit(log)
     assert hasattr(fitted, "fitted_")
     fresh = clone(fitted)
@@ -47,6 +47,62 @@ def test_clone_is_unfitted(log):
 
 
 # --- centralized validation (#1) --------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "est",
+    [
+        Bucketing(method="single"),
+        Bucketing(method="prefix"),
+        Indexing(),
+        Windowing(n=2),
+        TimestampExtractor(event_features="all"),
+    ],
+    ids=lambda e: f"{type(e).__name__}-{sorted(e.get_params().items())}",
+)
+def test_event_log_input_matches_dataframe_input(log, est):
+    """An EventLog is accepted wherever a DataFrame is and gives an identical
+    result — *including the index*.
+
+    The index half is the subtle one: scikit-learn's ``set_output`` wrapper
+    recovers an output index from the object passed to ``transform`` only when
+    that object is itself a DataFrame (it deliberately avoids
+    ``getattr(x, "index")``). So a transformer whose ``_transform`` returns a
+    bare ndarray silently emits a flat index for EventLog callers. Every
+    event-level transformer must therefore index its own output.
+    """
+    event_log = EventLog(dataframe=log.reset_index())
+
+    via_frame = clone(est).fit(log).transform(log)
+    via_object = clone(est).fit(event_log).transform(event_log)
+
+    pd.testing.assert_frame_equal(
+        pd.DataFrame(via_object), pd.DataFrame(via_frame)
+    )
+    assert tuple(via_object.index.names) == EVENT_LOG_INDEX
+
+
+def test_event_log_fit_bookkeeping(log):
+    event_log = EventLog(dataframe=log.reset_index())
+    t = Indexing().fit(event_log)
+    assert t.n_features_in_ == log.shape[1]
+    assert list(t.feature_names_in_) == list(log.columns)
+    assert len(Indexing().fit_transform(event_log)) == len(log)
+
+
+def test_event_log_without_data_raises(log):
+    with pytest.raises(ValueError, match="holds no event log"):
+        Bucketing().fit(EventLog())
+
+
+def test_non_log_input_still_raises_typeerror(log):
+    # The message must name what *is* accepted, and point a single-column
+    # (Series) caller at list slicing / ColumnTransformer.
+    for bad in (log.values, log[log.columns[0]]):
+        with pytest.raises(TypeError, match="EventLog or a pandas DataFrame"):
+            Bucketing().fit(bad)
+    with pytest.raises(TypeError, match="ColumnTransformer"):
+        Bucketing().fit(log.values)
 
 
 def test_transform_promotes_flat_input(log):
