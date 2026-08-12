@@ -216,14 +216,14 @@ class BPI15(TUEventLog):
     >>> event_log = bpi_15.dataframe  # Access the event log DataFrame
     """
 
-    url: tuple[str] = (
+    url: tuple[str, ...] = (
         "https://data.4tu.nl/file/32b70553-0765-4808-b155-aa5319802c8a/d39e1365-e4b8-4cb8-83d3-0b01cbf6f8c2",
         "https://data.4tu.nl/file/34216d8a-f054-46d4-bf03-d9352f90967e/68923819-b085-43be-abe2-e084a0f1381f",
         "https://data.4tu.nl/file/d6741425-5f62-4a59-92c5-08bae64b4611/21b574ab-02ba-4dfb-badc-bb46ce0edc44",
         "https://data.4tu.nl/file/372d0cad-3fb1-4627-8ea9-51a09923d331/d653a8ec-4cd1-4029-8b61-6cfde4f4a666",
         "https://data.4tu.nl/file/6f35269e-4ce7-4bc4-9abb-b3cea04cad00/2c8d5827-3e08-471d-98e2-6ffdec92f958",
     )
-    file_name: tuple[str] = (
+    file_name: tuple[str, ...] = (
         "BPIC15_5.xes",
         "BPIC15_4.xes",
         "BPIC15_3.xes",
