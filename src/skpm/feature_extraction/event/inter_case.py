@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.utils._param_validation import StrOptions
+from pandas.tseries.frequencies import to_offset
 from sklearn.utils.validation import check_is_fitted
 
 from skpm.base import BaseProcessTransformer
@@ -8,22 +8,25 @@ from skpm.base import BaseProcessTransformer
 class WorkInProgress(BaseProcessTransformer):
     """Work in Progress (WIP) feature extractor.
 
-    Counts how many cases are active within each time window. Input is
-    an event-log DataFrame with the canonical event-log MultiIndex
+    Partitions time into consecutive fixed windows of ``window_size`` and
+    labels each event with the number of distinct cases active (i.e. having
+    at least one event) in the event's window. Input is an event-log
+    DataFrame with the canonical event-log MultiIndex
     (``case_id``, ``timestamp``, ``event_id``).
 
     Parameters
     ----------
     window_size : str, default='1D'
-        Pandas offset alias describing the rolling time window
+        Pandas offset alias describing the window width
         (https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases).
+        Invalid aliases raise a ``ValueError`` at fit time.
 
     Returns
     -------
     ndarray of shape (n_samples,)
     """
 
-    _parameter_constraints = {"window_size": [StrOptions({"1D", "2D"})]}
+    _parameter_constraints = {"window_size": [str]}
 
     def __init__(self, window_size: str = "1D") -> None:
         self.window_size = window_size
@@ -32,20 +35,21 @@ class WorkInProgress(BaseProcessTransformer):
         return ["wip"]
 
     def _fit(self, X: pd.DataFrame, y=None):
+        try:
+            to_offset(self.window_size)
+        except ValueError as err:
+            raise ValueError(
+                f"window_size={self.window_size!r} is not a valid pandas "
+                "offset alias."
+            ) from err
         return self
 
     def _transform(self, X: pd.DataFrame, y=None):
         check_is_fitted(self)
-        timestamps = self._timestamps(X)
+        if X.empty:
+            raise ValueError("Cannot compute WIP on an empty event log.")
         case_ids = self._case_ids(X)
-
-        wip_by_window = case_ids.groupby(
+        wip = case_ids.groupby(
             pd.Grouper(freq=self.window_size, level=self.timestamp)
-        ).nunique()
-        bins = pd.cut(
-            timestamps,
-            bins=wip_by_window.index,
-            labels=wip_by_window.index[:-1],
-        )
-        wip = bins.map(wip_by_window).fillna(bins.isna().sum()).values
-        return wip
+        ).transform("nunique")
+        return wip.values
