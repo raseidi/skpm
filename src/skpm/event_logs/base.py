@@ -158,7 +158,11 @@ class TUEventLog(EventLog):
     Parameters
     ----------
     cache_folder : Union[str, Path], optional
-        Folder to cache downloaded files (default is Path.home() / "skpm" / "event_logs")4
+        Folder to cache downloaded files (default is
+        Path.home() / "skpm" / "event_logs"). Must be an existing directory
+        when given; the per-log subfolder underneath it is created
+        automatically. The default cache is created on demand, parents
+        included, so a machine that has never run skpm works out of the box.
     default_file_format : str, optional
         Default file format for the event log (options: "parquet", "csv"; default is "parquet")
     Attributes
@@ -224,7 +228,9 @@ class TUEventLog(EventLog):
         )
         cached_file = self.cache_folder / self.cached_file_name
         if not cached_file.exists():
-            self.cache_folder.mkdir(exist_ok=True)
+            # parents=True: on a fresh machine none of ~/skpm/event_logs
+            # exists yet, and a user-supplied cache_folder may be nested.
+            self.cache_folder.mkdir(parents=True, exist_ok=True)
             self.file_path = []
             for file in self.file_name:
                 self.file_path.append(self.cache_folder / file)  # xes file
