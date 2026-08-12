@@ -108,8 +108,6 @@ def test_non_log_input_still_raises_typeerror(log):
 def test_transform_promotes_flat_input(log):
     # base.transform promotes a flat DataFrame so _transform always receives a
     # canonical event log: flat and canonical input yield identical results.
-    # (Note: MultiIndex preservation on the *output* requires the input to
-    # transform to already carry it — see test_pipeline_preserves_multiindex.)
     flat = log.reset_index()  # back to flat, canonical column names
     out_canonical = Bucketing(method="prefix").fit(log).transform(log)
     out_flat = Bucketing(method="prefix").fit(flat).transform(flat)
@@ -117,6 +115,9 @@ def test_transform_promotes_flat_input(log):
         np.asarray(out_canonical).ravel().tolist()
         == np.asarray(out_flat).ravel().tolist()
     )
+    # Now that every event-level _transform indexes its own output, the
+    # canonical index survives even when the caller handed in a flat frame.
+    assert tuple(out_flat.index.names) == EVENT_LOG_INDEX
 
 
 # --- output / feature-name check (#3) ---------------------------------------

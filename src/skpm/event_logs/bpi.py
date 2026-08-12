@@ -2,6 +2,24 @@ from skpm.event_logs.base import TUEventLog
 
 
 class BPI11(TUEventLog):
+    """:doi:`BPI Challenge 2011 Hospital log
+    <https://doi.org/10.4121/uuid:d9769f3d-0ab0-4fb8-803b-0d1120ffcf54>`.
+
+    Anonymized treatment data from the Gynaecology department of a Dutch
+    academic hospital. Each case is a patient; events record the diagnostic
+    and treatment activities performed.
+
+    Constructor parameters come from :class:`TUEventLog`
+    (``cache_folder``, ``default_file_format``).
+
+    Examples
+    --------
+    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> log = BPI11()  # downloads and loads on construction
+    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
+    >>> log.dataframe  # the underlying DataFrame, if you need it
+    """
+
     url: tuple[str] = (
         "https://data.4tu.nl/file/5ea5bb88-feaa-4e6f-a743-6460a755e05b/6f9640f9-0f1e-44d2-9495-ef9d1bd82218",
     )
@@ -19,24 +37,15 @@ class BPI12(TUEventLog):
     loan request, with relevant information about the case, timestamp, and
     resource involved.
 
-
-    Parameters
-    ----------
-        root_folder (str, optional): Path where the event log will be stored.
-            Defaults to "data/".
-        save_as_pandas (bool, optional): Whether to save the event log as a
-        pandas parquet file.
-            Defaults to True.
-        train_set (bool, optional): Whether to use the train set or the test
-        set.
-            If True, use the train set. If False, use the test set. Defaults
-            to True.
+    Constructor parameters come from :class:`TUEventLog`
+    (``cache_folder``, ``default_file_format``).
 
     Examples
     --------
-    >>> bpi_12 = BPI12()
-    >>> bpi_12.download()  # Manually download the event log
-    >>> event_log = bpi_12.dataframe  # Access the event log DataFrame
+    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> log = BPI12()  # downloads and loads on construction
+    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
+    >>> log.dataframe  # the underlying DataFrame, if you need it
     """
 
     url: tuple[str] = (
@@ -59,24 +68,15 @@ class BPI13ClosedProblems(TUEventLog):
     focusing on cases where problems were diagnosed and resolved to enhance IT
     service quality.
 
-
-
-    Parameters
-    ----------
-    root_folder : str, optional
-        Path where the event log will be stored. Defaults to "data/".
-    save_as_pandas : bool, optional
-        Whether to save the event log as a pandas parquet file. Defaults to
-        True.
-    train_set : bool, optional
-        Whether to use the train set or the test set. If True, use the train
-        set. If False, use the test set. Defaults to True.
+    Constructor parameters come from :class:`TUEventLog`
+    (``cache_folder``, ``default_file_format``).
 
     Examples
     --------
-    >>> bpi_13_incidents = BPI13Incidents()
-    >>> bpi_13_incidents.download()  # Manually download the event log
-    >>> event_log = bpi_13_incidents.dataframe  # Access the event log DataFrame
+    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> log = BPI13ClosedProblems()  # downloads and loads on construction
+    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
+    >>> log.dataframe  # the underlying DataFrame, if you need it
     """
 
     url: tuple[str] = (
@@ -95,20 +95,15 @@ class BPI13Incidents(TUEventLog):
     possible, while maintaining high levels of service quality and
     availability.
 
-    Parameters
-    ----------
-    root_folder : str, optional
-        Path where the event log will be stored. Defaults to "data/".
-    save_as_pandas : bool, optional
-        Whether to save the event log as a pandas parquet file. Defaults to True.
-    train_set : bool, optional
-        Whether to use the train set or the test set. If True, use the train set. If False, use the test set. Defaults to True.
+    Constructor parameters come from :class:`TUEventLog`
+    (``cache_folder``, ``default_file_format``).
 
     Examples
     --------
-    >>> bpi_13_open_problems = BPI13OpenProblems()
-    >>> bpi_13_open_problems.download()  # Manually download the event log
-    >>> event_log = bpi_13_open_problems.dataframe  # Access the event log DataFrame
+    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> log = BPI13Incidents()  # downloads and loads on construction
+    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
+    >>> log.dataframe  # the underlying DataFrame, if you need it
     """
 
     url: tuple[str] = (
@@ -126,23 +121,15 @@ class BPI13OpenProblems(TUEventLog):
     focusing on unresolved problems that are still open and require further
     diagnosis and action to improve IT service quality.
 
-
-    Parameters
-    ----------
-    root_folder : str, optional
-        Path where the event log will be stored. Defaults to "data/".
-    save_as_pandas : bool, optional
-        Whether to save the event log as a pandas parquet file. Defaults to
-        True.
-    train_set : bool, optional
-        Whether to use the train set or the test set. If True, use the train
-        set. If False, use the test set. Defaults to True.
+    Constructor parameters come from :class:`TUEventLog`
+    (``cache_folder``, ``default_file_format``).
 
     Examples
     --------
-    >>> bpi_13_open_problems = BPI13OpenProblems()
-    >>> bpi_13_open_problems.download()  # Manually download the event log
-    >>> event_log = bpi_13_open_problems.dataframe  # Access the event log DataFrame
+    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> log = BPI13OpenProblems()  # downloads and loads on construction
+    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
+    >>> log.dataframe  # the underlying DataFrame, if you need it
     """
 
     url: tuple[str] = (
@@ -199,21 +186,15 @@ class BPI15(TUEventLog):
     number is the same, it is safe to assume the same person is being
     identified.
 
-
-    Parameters
-    ----------
-    root_folder : str, optional
-        Path where the event log will be stored. Defaults to "data/".
-    save_as_pandas : bool, optional
-        Whether to save the event log as a pandas parquet file. Defaults to True.
-    train_set : bool, optional
-        Whether to use the train set or the test set. If True, use the train set. If False, use the test set. Defaults to True.
+    Constructor parameters come from :class:`TUEventLog`
+    (``cache_folder``, ``default_file_format``).
 
     Examples
     --------
-    >>> bpi_15 = BPI15()
-    >>> bpi_15.download()  # Manually download the event log
-    >>> event_log = bpi_15.dataframe  # Access the event log DataFrame
+    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> log = BPI15()  # downloads and loads on construction
+    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
+    >>> log.dataframe  # the underlying DataFrame, if you need it
     """
 
     url: tuple[str, ...] = (
@@ -260,26 +241,15 @@ class BPI17(TUEventLog):
     application, and these offers are tracked by their IDs within the event
     log.
 
-
-    Parameters
-    ----------
-    root_folder : str, optional
-        Path where the event log will be stored. Defaults to "./data".
-    save_as_pandas : bool, optional
-        Whether to save the event log as a pandas parquet file. Defaults to
-        True.
-    train_set : bool, optional
-        Whether to use the train set or the test set. If True, use the train
-        set. If False, use the test set. Defaults to True.
-    file_path : str, optional
-        Path to the file containing the event log. If provided, the event log
-        will be loaded from this file. Defaults to None.
+    Constructor parameters come from :class:`TUEventLog`
+    (``cache_folder``, ``default_file_format``).
 
     Examples
     --------
-    >>> bpi_17 = BPI17()
-    >>> bpi_17.download()  # Manually download the event log
-    >>> event_log = bpi_17.dataframe  # Access the event log DataFrame
+    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> log = BPI17()  # downloads and loads on construction
+    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
+    >>> log.dataframe  # the underlying DataFrame, if you need it
     """
 
     url: tuple[str] = (
@@ -309,21 +279,15 @@ class BPI19(TUEventLog):
     users. The data is fully anonymized and structured in an IEEE-XES
     compliant format.
 
-
-    Parameters
-    ----------
-    root_folder : str, optional
-        Path where the event log will be stored. Defaults to "data/".
-    save_as_pandas : bool, optional
-        Whether to save the event log as a pandas parquet file. Defaults to True.
-    train_set : bool, optional
-        Whether to use the train set or the test set. If True, use the train set. If False, use the test set. Defaults to True.
+    Constructor parameters come from :class:`TUEventLog`
+    (``cache_folder``, ``default_file_format``).
 
     Examples
     --------
-    >>> bpi_19 = BPI19()
-    >>> bpi_19.download()  # Manually download the event log
-    >>> event_log = bpi_19.dataframe  # Access the event log DataFrame
+    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> log = BPI19()  # downloads and loads on construction
+    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
+    >>> log.dataframe  # the underlying DataFrame, if you need it
     """
 
     url: tuple[str] = (
@@ -353,23 +317,15 @@ class BPI20PrepaidTravelCosts(TUEventLog):
     trips do not require prior approval. Reimbursement claims can be filed
     either upon payment of costs or within two months after the trip.
 
-
-    Parameters
-    ----------
-    root_folder : str, optional
-        Path where the event log will be stored. Defaults to "data/".
-    save_as_pandas : bool, optional
-        Whether to save the event log as a pandas parquet file. Defaults to
-        True.
-    train_set : bool, optional
-        Whether to use the train set or the test set. If True, use the train
-        set. If False, use the test set. Defaults to True.
+    Constructor parameters come from :class:`TUEventLog`
+    (``cache_folder``, ``default_file_format``).
 
     Examples
     --------
-    >>> bpi_20 = BPI20PrepaidTravelCosts()
-    >>> bpi_20.download()  # Manually download the event log
-    >>> event_log = bpi_20.dataframe  # Access the event log DataFrame
+    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> log = BPI20PrepaidTravelCosts()  # downloads and loads on construction
+    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
+    >>> log.dataframe  # the underlying DataFrame, if you need it
     """
 
     url: tuple[str] = (
@@ -399,23 +355,15 @@ class BPI20TravelPermitData(TUEventLog):
     prior approval. Reimbursement claims for costs can be submitted either
     upon payment or within two months after the trip.
 
-
-    Parameters
-    ----------
-    root_folder : str, optional
-        Path where the event log will be stored. Defaults to "data/".
-    save_as_pandas : bool, optional
-        Whether to save the event log as a pandas parquet file. Defaults to
-        True.
-    train_set : bool, optional
-        Whether to use the train set or the test set. If True, use the train
-        set. If False, use the test set. Defaults to True.
+    Constructor parameters come from :class:`TUEventLog`
+    (``cache_folder``, ``default_file_format``).
 
     Examples
     --------
-    >>> bpi_20 = BPI20TravelPermitData()
-    >>> bpi_20.download()  # Manually download the event log
-    >>> event_log = bpi_20.dataframe  # Access the event log DataFrame
+    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> log = BPI20TravelPermitData()  # downloads and loads on construction
+    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
+    >>> log.dataframe  # the underlying DataFrame, if you need it
     """
 
     url: tuple[str] = (
@@ -444,23 +392,15 @@ class BPI20RequestForPayment(TUEventLog):
     administration, and further approvals by the budget owner and supervisor
     if necessary.
 
-
-    Parameters
-    ----------
-    root_folder : str, optional
-        Path where the event log will be stored. Defaults to "data/".
-    save_as_pandas : bool, optional
-        Whether to save the event log as a pandas parquet file. Defaults to
-        True.
-    train_set : bool, optional
-        Whether to use the train set or the test set. If True, use the train
-        set. If False, use the test set. Defaults to True.
+    Constructor parameters come from :class:`TUEventLog`
+    (``cache_folder``, ``default_file_format``).
 
     Examples
     --------
-    >>> bpi_20 = BPI20RequestForPayment()
-    >>> bpi_20.download()  # Manually download the event log
-    >>> event_log = bpi_20.dataframe  # Access the event log DataFrame
+    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> log = BPI20RequestForPayment()  # downloads and loads on construction
+    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
+    >>> log.dataframe  # the underlying DataFrame, if you need it
     """
 
     url: tuple[str] = (
@@ -489,23 +429,15 @@ class BPI20DomesticDeclarations(TUEventLog):
     reviewed by the travel administration and further approved by the budget
     owner and supervisor, if necessary.
 
-
-    Parameters
-    ----------
-    root_folder : str, optional
-        Path where the event log will be stored. Defaults to "data/".
-    save_as_pandas : bool, optional
-        Whether to save the event log as a pandas parquet file. Defaults to
-        True.
-    train_set : bool, optional
-        Whether to use the train set or the test set. If True, use the train
-        set. If False, use the test set. Defaults to True.
+    Constructor parameters come from :class:`TUEventLog`
+    (``cache_folder``, ``default_file_format``).
 
     Examples
     --------
-    >>> bpi_20 = BPI20DomesticDeclarations()
-    >>> bpi_20.download()  # Manually download the event log
-    >>> event_log = bpi_20.dataframe  # Access the event log DataFrame
+    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> log = BPI20DomesticDeclarations()  # downloads and loads on construction
+    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
+    >>> log.dataframe  # the underlying DataFrame, if you need it
     """
 
     url: tuple[str] = (
@@ -529,24 +461,15 @@ class BPI20InternationalDeclarations(TUEventLog):
     filed, which can be submitted either upon payment or within two months
     after the trip.
 
-
-    Parameters
-    ----------
-    root_folder : str, optional
-        Path where the event log will be stored. Defaults to "data/".
-    save_as_pandas : bool, optional
-        Whether to save the event log as a pandas parquet file. Defaults to
-        True.
-    train_set : bool, optional
-        Whether to use the train set or the test set. If True, use the train
-        set. If False, use the test set. Defaults to True.
+    Constructor parameters come from :class:`TUEventLog`
+    (``cache_folder``, ``default_file_format``).
 
     Examples
     --------
-    >>> bpi_20 = BPI20InternationalDeclarations()
-    >>> bpi_20.download()  # Manually download the event log
-    >>> event_log = bpi_20.dataframe  # Access the event log DataFrame
-
+    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> log = BPI20InternationalDeclarations()  # downloads and loads on construction
+    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
+    >>> log.dataframe  # the underlying DataFrame, if you need it
     """
 
     url: tuple[str] = (
@@ -570,24 +493,15 @@ class Sepsis(TUEventLog):
     anonymized. While the timestamps of events have been randomized, the
     intervals between events within a trace remain unchanged.
 
-
-    Parameters
-    ----------
-    root_folder : str, optional
-        Path where the event log will be stored. Defaults to "data/".
-    save_as_pandas : bool, optional
-        Whether to save the event log as a pandas parquet file. Defaults to
-        True.
-    train_set : bool, optional
-        Whether to use the train set or the test set. If True, use the train
-        set. If False, use the test set. Defaults to True.
+    Constructor parameters come from :class:`TUEventLog`
+    (``cache_folder``, ``default_file_format``).
 
     Examples
     --------
-    >>> sepsis = Sepsis()
-    >>> sepsis.download()  # Manually download the event log
-    >>> event_log = sepsis.dataframe  # Access the event log DataFrame
-
+    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> log = Sepsis()  # downloads and loads on construction
+    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
+    >>> log.dataframe  # the underlying DataFrame, if you need it
     """
 
     url: tuple[str] = (

@@ -35,7 +35,7 @@ Every event-log DataFrame inside skpm carries the canonical **MultiIndex** with 
 
 The level names are **semantic constants** independent of how source columns are named. `EventLogConfig` governs the *source-column* names; the index level names are fixed.
 
-The canonical shape is set by `skpm.event_logs.base.to_event_log(df, column_mapping=...)`, which:
+The canonical shape is set by `skpm.event_logs.base.to_event_log(log, column_mapping=...)`, which:
 
 1. normalizes column names via `EventLogConfig.normalize_columns`,
 2. parses timestamps to UTC,
@@ -43,9 +43,21 @@ The canonical shape is set by `skpm.event_logs.base.to_event_log(df, column_mapp
 4. assigns `event_id` as a 0-based row counter (`df.index.values` after the stable sort),
 5. moves `case_id` and `timestamp` into the MultiIndex.
 
-`EventLog.__init__` calls `to_event_log` on construction. `BaseProcessEstimator._validate_log` checks for the canonical index and auto-promotes flat input on the fly, so ad-hoc callers (notebooks, tests) can still hand in a flat DataFrame.
+**One entry-point convention: `to_event_log` is the single coercion boundary, and every skpm API that takes a log accepts all three log-like inputs** — an `EventLog` (any `skpm.event_logs` loader), a flat DataFrame, or an already-canonical DataFrame. The alias `LogLike` in `event_logs/base.py` names that union. Estimators (`_validate_log`), targets, splits, and the index accessors all route through it, so `.dataframe` is available but never required:
 
-**Public index accessors** (top-level `skpm.case_ids`, `skpm.timestamps`, `skpm.event_ids`, `skpm.trace_positions`, plus `skpm.to_event_log`) pull an index level out as a Series aligned to the event log; they accept an `EventLog` or a flat/canonical DataFrame. Use these instead of reaching into `df.index.get_level_values(...)` directly.
+```python
+TimestampExtractor().fit(BPI17())            # EventLog
+remaining_time(BPI17())                      # same object, different API
+Pipeline([("time", TimestampExtractor()), ("m", RandomForestRegressor())]).fit(BPI17(), y)
+```
+
+Two guards live at that boundary: `column_mapping` combined with an `EventLog` raises (the loader already normalized, so it would be a silent no-op), and an `EventLog` holding no data raises a named error instead of `AttributeError`.
+
+This covers **skpm** estimators only. A plain sklearn estimator still needs a feature matrix — a raw log has string activities and nothing encoded — so `RandomForestRegressor().fit(BPI17())` fails by design. Put a skpm transformer in front of it, which is what a Pipeline does. Don't "fix" this by duck-typing `EventLog` as a DataFrame.
+
+`EventLog.__init__` calls `to_event_log` on construction.
+
+**Public index accessors** (top-level `skpm.case_ids`, `skpm.timestamps`, `skpm.event_ids`, `skpm.trace_positions`, plus `skpm.to_event_log`) pull an index level out as a Series aligned to the event log. Use these instead of reaching into `df.index.get_level_values(...)` directly.
 
 ### Column naming (`config.py`)
 
@@ -53,11 +65,11 @@ The canonical field names — `case_id`, `timestamp`, `activity`, `resource` —
 
 ### Base classes (`base.py`)
 
-- `BaseProcessEstimator` — extends `BaseEstimator + EventLogConfigMixin`. `_validate_log()` enforces the canonical event-log shape (auto-promotes flat pandas input via `to_event_log`; polars raises `NotImplementedError` — temporarily unsupported). Index helpers return a Series aligned to `X.index`: `_case_ids`, `_timestamps`, `_event_ids` (the global per-event counter), and `_trace_positions` (0-based position within each case).
+- `BaseProcessEstimator` — extends `BaseEstimator + EventLogConfigMixin`. `_validate_log()` enforces the canonical event-log shape, delegating coercion to `to_event_log` (so it unwraps an `EventLog` and promotes a flat frame; polars raises `NotImplementedError` — temporarily unsupported). Index helpers return a Series aligned to `X.index`: `_case_ids`, `_timestamps`, `_event_ids` (the global per-event counter), and `_trace_positions` (0-based position within each case).
 - `BaseProcessTransformer` — the **event-level** (row-preserving) base, extending `TransformerMixin + BaseProcessEstimator`. Subclasses implement `_fit(X, y)` and `_transform(X, y)` and **must not** override `fit`/`transform`: the base validates/promotes the log (so `_fit`/`_transform` always receive a canonical frame), sets the `fitted_` marker, and checks that DataFrame output columns match `get_feature_names_out()`.
 - `CaseLevelTransformer` — base for **trace-level** transformers that emit one row per case (e.g. `VariantExtractor`). Cardinality is declared via the `_cardinality` class attribute (`"event"` vs `"case"`). It is a terminal step, not a Pipeline intermediate — this explicit contract replaced the old `ensure_not_pipeline` stack-inspection guard.
 
-**Note on MultiIndex preservation:** the canonical MultiIndex propagates through a Pipeline only when the input *to each `transform`* already carries it (sklearn's `set_output` wrapper indexes ndarray outputs by the input's index). Feeding canonical data in — e.g. `EventLog(...).dataframe` or `to_event_log(df)` — preserves it end to end; feeding a flat frame keeps the computation correct but yields a flat output index.
+**Note on MultiIndex preservation:** every event-level `_transform` must index its own output by `X.index`. Do not return a bare ndarray and rely on sklearn's `set_output` wrapper to supply the index: it recovers one only when the object handed to `transform` is *itself* a DataFrame (it deliberately avoids `getattr(x, "index")`), so an `EventLog` caller would silently get a flat index. With every transformer indexing its own output, the canonical MultiIndex now propagates end to end for all three input forms — `EventLog`, canonical, and flat. `tests/test_base.py::test_event_log_input_matches_dataframe_input` pins this.
 
 ### Main modules
 
