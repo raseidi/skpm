@@ -110,11 +110,10 @@ class Aggregation(OneToOneFeatureMixin, BaseProcessTransformer):
         }
         if offenders:
             raise ValueError(
-                f"Aggregation requires numeric columns, but "
-                f"{list(offenders)} cannot be aggregated (dtypes: "
-                f"{offenders}). Encode them first (e.g. OneHotEncoder inside "
-                f"a ColumnTransformer), or select the numeric columns before "
-                f"this step (log[['duration']])."
+                f"Aggregation requires numeric columns, but these cannot be "
+                f"aggregated: {offenders}. Encode them first (e.g. "
+                f"OneHotEncoder inside a ColumnTransformer), or select the "
+                f"numeric columns before this step (log[['duration']])."
             )
 
     def _transform(self, X, y=None):
