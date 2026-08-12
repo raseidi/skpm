@@ -129,6 +129,88 @@ def test_invalid_input(pd_df):
         Aggregation().fit(pd_df).transform(pd_df.values)
 
 
+# --- non-numeric columns ----------------------------------------------------
+# The pd_df fixture is integer-coded, so nothing above exercises a realistic
+# log. A real BPI log has string activity/resource and used to fail inside
+# pandas with a bare `DataError: Cannot aggregate non-numeric type: object`.
+
+
+@pytest.fixture(name="string_log")
+def fixture_string_log():
+    """A realistic log: activity/resource are strings, as in any BPI log."""
+    rng = np.random.default_rng(0)
+    flat = pd.DataFrame(
+        {
+            elc.case_id: np.repeat(np.arange(0, 5), 4),
+            elc.activity: rng.choice(["submit", "approve", "pay"], 20),
+            elc.resource: rng.choice(["alice", "bob"], 20),
+            elc.timestamp: pd.date_range("2024-01-01", periods=20, freq="h"),
+        }
+    )
+    return to_event_log(flat)
+
+
+def test_string_columns_raise_actionable_error(string_log):
+    with pytest.raises(ValueError, match="Aggregation requires numeric") as e:
+        Aggregation().fit(string_log)
+
+    msg = str(e.value)
+    # names the offending columns and their dtypes...
+    assert elc.activity in msg and elc.resource in msg
+    assert "object" in msg
+    # ...and says what to do about it.
+    assert "ColumnTransformer" in msg
+
+
+def test_mixed_numeric_and_object_raises_naming_only_the_offender(string_log):
+    mixed = string_log.assign(cost=1.5).drop(columns=[elc.resource])
+    with pytest.raises(ValueError, match="Aggregation requires numeric") as e:
+        Aggregation().fit(mixed)
+
+    msg = str(e.value)
+    assert elc.activity in msg
+    # pandas would have failed on the whole frame; the numeric column is not
+    # the problem and must not be blamed.
+    assert "cost" not in msg
+
+
+@pytest.mark.parametrize(
+    "values, accepted",
+    [
+        (np.arange(20), True),  # int64
+        (np.arange(20, dtype="float32"), True),  # float32
+        (pd.array(list(range(19)) + [None], dtype="Int64"), True),  # nullable
+        (np.array([True, False] * 10), True),  # bool: select_dtypes misses it
+        (pd.to_timedelta(np.arange(20), unit="h"), False),  # select_dtypes
+        (pd.Categorical(["a", "b"] * 10), False),  # wrongly accepts timedelta
+    ],
+    ids=["int64", "float32", "Int64", "bool", "timedelta64", "category"],
+)
+def test_dtype_boundary_matches_what_pandas_can_aggregate(values, accepted):
+    """The guard must accept exactly what ``rolling().agg()`` accepts.
+
+    ``bool`` and ``timedelta64`` are the two cases where the obvious
+    ``select_dtypes("number")`` predicate disagrees with pandas' real
+    behaviour, so pin both.
+    """
+    flat = pd.DataFrame(
+        {
+            elc.case_id: np.repeat(np.arange(0, 5), 4),
+            elc.activity: 0,
+            elc.timestamp: pd.date_range("2024-01-01", periods=20, freq="h"),
+            "col": values,
+        }
+    )
+    log = to_event_log(flat)[["col"]]
+
+    if accepted:
+        out = Aggregation().fit_transform(log)
+        assert len(out) == len(log)
+    else:
+        with pytest.raises(ValueError, match="Aggregation requires numeric"):
+            Aggregation().fit(log)
+
+
 def test_methods(pd_df):
     # pandas engine across all aggregation methods (polars cross-engine
     # comparison is suspended; see _validate_log).

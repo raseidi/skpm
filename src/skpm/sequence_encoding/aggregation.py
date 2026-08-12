@@ -4,6 +4,7 @@ from typing import Literal, Union
 
 import pandas as pd
 import polars as pl
+from pandas.api.types import is_numeric_dtype
 from sklearn.base import OneToOneFeatureMixin
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.validation import check_is_fitted
@@ -31,6 +32,19 @@ class Aggregation(OneToOneFeatureMixin, BaseProcessTransformer):
     * ``"polars"`` — legacy column-based shape; expects ``case_id`` as a
       regular column (no MultiIndex). Useful when polars throughput
       matters; the output is a flat pandas DataFrame.
+
+    Every column must be numeric — aggregating a string ``activity`` has no
+    meaning, so a non-numeric column is an error naming the offending columns
+    rather than a silent drop. Encode or select columns the
+    sklearn-idiomatic way: one-hot the categoricals in a
+    :class:`~sklearn.compose.ColumnTransformer`, or slice the log
+    (``log[["duration"]]``) before this step. In a typical pipeline the
+    preceding step already emits numbers, e.g.::
+
+        Pipeline([
+            ("features", TimestampExtractor(event_features="all")),
+            ("encode", Aggregation(method="mean")),
+        ])
 
     Parameters
     ----------
@@ -66,6 +80,7 @@ class Aggregation(OneToOneFeatureMixin, BaseProcessTransformer):
         self.engine = engine
 
     def _fit(self, X, y=None):
+        self._check_numeric(X)
         # prefix_len is the (possibly None) param; prefix_len_ is the window
         # resolved at fit. Keep them distinct so the param survives
         # clone/get_params and check_is_fitted actually detects an unfitted
@@ -74,6 +89,33 @@ class Aggregation(OneToOneFeatureMixin, BaseProcessTransformer):
             self.prefix_len if self.prefix_len is not None else len(X)
         )
         return self
+
+    @staticmethod
+    def _check_numeric(X) -> None:
+        """Reject columns that cannot be aggregated, naming them.
+
+        Without this, a raw event log fails inside pandas with
+        ``DataError: Cannot aggregate non-numeric type: object`` — which names
+        neither the column nor a way forward, and is not even a ValueError
+        subclass, so callers cannot catch it alongside skpm's own errors.
+
+        The predicate is ``is_numeric_dtype``, not ``select_dtypes("number")``:
+        the latter is wrong in both directions here, excluding ``bool``
+        (which aggregates fine) and including ``timedelta64`` (which does not).
+        """
+        offenders = {
+            str(col): str(dtype)
+            for col, dtype in X.dtypes.items()
+            if not is_numeric_dtype(dtype)
+        }
+        if offenders:
+            raise ValueError(
+                f"Aggregation requires numeric columns, but "
+                f"{list(offenders)} cannot be aggregated (dtypes: "
+                f"{offenders}). Encode them first (e.g. OneHotEncoder inside "
+                f"a ColumnTransformer), or select the numeric columns before "
+                f"this step (log[['duration']])."
+            )
 
     def _transform(self, X, y=None):
         check_is_fitted(self, "prefix_len_")
