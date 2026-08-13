@@ -1,0 +1,11 @@
+/* Keep wide pandas DataFrames inside the documentation content area. */
+.output_subarea.output_html {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.output_subarea.output_html table.dataframe {
+  width: max-content;
+  min-width: 100%;
+}
