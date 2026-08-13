@@ -16,9 +16,9 @@ dist/
 
 # Sphinx documentation
 docs/build/
-docs/auto_examples/
-docs/gen_modules/
-docs/sg_execution_times.rst
+docs/source/api/
+docs/source/auto_examples/
+docs/source/sg_execution_times.rst
 
 # Jupyter Notebook
 .ipynb_checkpoints

@@ -5,17 +5,17 @@
 # Required
 version: 2
 
-# Set the OS, Python version and other tools you might need
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.12"
+
 python:
   install:
-    - requirements: docs/requirements.txt
-    - method: pip
-      path: .
-
-build:
-  os: ubuntu-22.04
-  tools:
-    python: "3.10"
+    - method: uv
+      command: sync
+      groups:
+        - docs
 
 sphinx:
   configuration: docs/source/conf.py
