@@ -187,6 +187,8 @@ Working with a public benchmark? See
    :caption: How-to
    :hidden:
 
+   auto_examples/plot_multiindex_contract
+   auto_examples/plot_to_event_log
    auto_examples/plot_download_event_logs
 
 .. toctree::
