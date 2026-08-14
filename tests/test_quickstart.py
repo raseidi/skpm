@@ -69,7 +69,7 @@ def test_quickstart_accepts_an_event_log_end_to_end():
 
     # targets, splits and accessors all take the same object...
     y = remaining_time(log, time_unit="h")
-    train, test = temporal(log, test_len=0.2)
+    train, test = temporal(log, test_size=0.2)
     assert len(train) and len(test)
     assert skpm.case_ids(log).shape == y.shape
 

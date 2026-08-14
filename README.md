@@ -20,10 +20,9 @@ SkPM is an open-source extension of the widely used [Scikit-learn](https://sciki
 ## Available examples
 
 - **NEW** [**ICPM/ML4PM 2024 Tutorial**](https://colab.research.google.com/drive/1s6TxG14bKbh2zlOENLGGd9dy_1BLEBiO?usp=sharing): A notebook highlighting all the available features in SkPM!
-- [**Predictive Monitoring**](https://skpm.readthedocs.io/en/latest/auto_examples/plot_rt_pipeline.html#): Build end-to-end applications of traditional process mining tasks, such as remaining time and next activity prediction!
-- [**Event Log Preprocessing**](https://skpm.readthedocs.io/en/latest/auto_examples/feature_extracion.html): Several feature extraction and trace encoding techniques implemented!
-- [**Download Public Event Logs**](https://skpm.readthedocs.io/en/latest/auto_examples/plot_rt_pipeline.html#download-the-example-dataset): Download well-known event logs (e.g., BPI Challenges) from the 4tu repository!
-- [**Unbiased Event Log Split**](https://skpm.readthedocs.io/en/latest/auto_examples/plot_unbiased_split.html): Temporal and unbiased split of event logs for train/validation.
+- [**Quickstart**](https://skpm.readthedocs.io/en/latest/auto_examples/plot_quickstart.html): Load an event log and extract past-looking temporal features.
+- [**Select a remaining-time model**](https://skpm.readthedocs.io/en/latest/auto_examples/plot_tiny_benchmark.html): The end-to-end pattern — download a public log, split it (temporal or unbiased), define a target, and compare models with grouped cross-validation.
+- [**Remaining time on BPI20**](https://skpm.readthedocs.io/en/latest/auto_examples/bpi20_rt.html): SkPM transformers inside a plain scikit-learn pipeline.
 
 <p align="center">
   <img src="docs/pipeline.png"/>
@@ -46,40 +45,40 @@ pip install .
 Below is an example of how to use SkPM to build a pipeline for remaining time prediction.
 
 ```python
-# skpm modules
-from skpm.encoding import Aggregation
-from skpm.event_feature_extraction import (
-    TimestampExtractor,
-    ResourcePoolExtractor,
-)
-
-# sklearn modules
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
 
-# Example pipeline for remaining time prediction
-preprocessor = ColumnTransformer(
-    transformers=[
-        ('timestamp', TimestampExtractor(), 'timestamp_column'),
-        ('activity', OneHotEncoder(), 'activity_column'),
-        ('resource', ResourcePoolExtractor(), 'resource_column'),
-    ]
-)
+from skpm.event_logs import BPI17
+from skpm.feature_extraction import TimestampExtractor
+from skpm.feature_extraction.targets import remaining_time
+from skpm.model_selection import train_test_split
+from skpm.sequence_encoding import Aggregation
 
+# 1. Split the log first — before extracting features or fitting anything.
+#    Public logs ship the published unbiased-split parameters, so the strategy
+#    reads them from the loader. Your own log works the same way:
+#    train, test = train_test_split(pd.read_csv("my_log.csv"))
+log = BPI17()
+train, test = train_test_split(log, strategy="unbiased")
+
+# 2. Choose the target. Remaining time is a regression; next_activity would be
+#    a classification over the same two logs. Build it once per side.
+y_train = remaining_time(train, time_unit="h")
+y_test = remaining_time(test, time_unit="h")
+
+# 3. Compose SkPM transformers with any sklearn estimator.
 pipeline = Pipeline(steps=[
-    ('preprocessor', preprocessor),
-    ('aggregator', TraceAggregator()),
-    ('standardization', StandardScaler()),
-    ('regressor', RandomForestRegressor())
+    ("timestamps", TimestampExtractor(time_unit="h")),
+    ("prefix_encoding", Aggregation(method="mean")),
+    ("standardization", StandardScaler()),
+    ("regressor", RandomForestRegressor()),
 ])
 
-# Fit the pipeline to your event log data
-pipeline.fit(X_train, y_train)
+# 4. Fit on the training cases only — this is what prevents leakage.
+pipeline.fit(train, y_train)
 
-# Make predictions on new cases
-predictions = pipeline.predict(X_test)
+predictions = pipeline.predict(test)
 ```
 
 ## Documentation

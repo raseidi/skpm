@@ -14,10 +14,9 @@ class BPI11(TUEventLog):
 
     Examples
     --------
-    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> from skpm.model_selection import train_test_split
     >>> log = BPI11()  # downloads and loads on construction
-    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
-    >>> log.dataframe  # the underlying DataFrame, if you need it
+    >>> train, test = train_test_split(log)  # split before anything else
     """
 
     url: tuple[str] = (
@@ -42,17 +41,17 @@ class BPI12(TUEventLog):
 
     Examples
     --------
-    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> from skpm.model_selection import train_test_split
     >>> log = BPI12()  # downloads and loads on construction
-    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
-    >>> log.dataframe  # the underlying DataFrame, if you need it
+    >>> train, test = train_test_split(log, strategy="unbiased")
+    >>> log.unbiased_split_params  # the published parameters it used
     """
 
     url: tuple[str] = (
         "https://data.4tu.nl/file/533f66a4-8911-4ac7-8612-1235d65d1f37/3276db7f-8bee-4f2b-88ee-92dbffb5a893",
     )
     file_name: tuple[str] = ("BPI_Challenge_2012.xes.gz",)
-    unbiased_split_params: dict = {
+    _unbiased_split_params: dict = {
         "start_date": None,
         "end_date": "2012-02",
         "max_days": 32.28,
@@ -73,10 +72,9 @@ class BPI13ClosedProblems(TUEventLog):
 
     Examples
     --------
-    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> from skpm.model_selection import train_test_split
     >>> log = BPI13ClosedProblems()  # downloads and loads on construction
-    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
-    >>> log.dataframe  # the underlying DataFrame, if you need it
+    >>> train, test = train_test_split(log)  # split before anything else
     """
 
     url: tuple[str] = (
@@ -100,10 +98,9 @@ class BPI13Incidents(TUEventLog):
 
     Examples
     --------
-    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> from skpm.model_selection import train_test_split
     >>> log = BPI13Incidents()  # downloads and loads on construction
-    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
-    >>> log.dataframe  # the underlying DataFrame, if you need it
+    >>> train, test = train_test_split(log)  # split before anything else
     """
 
     url: tuple[str] = (
@@ -126,10 +123,9 @@ class BPI13OpenProblems(TUEventLog):
 
     Examples
     --------
-    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> from skpm.model_selection import train_test_split
     >>> log = BPI13OpenProblems()  # downloads and loads on construction
-    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
-    >>> log.dataframe  # the underlying DataFrame, if you need it
+    >>> train, test = train_test_split(log)  # split before anything else
     """
 
     url: tuple[str] = (
@@ -191,10 +187,9 @@ class BPI15(TUEventLog):
 
     Examples
     --------
-    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> from skpm.model_selection import train_test_split
     >>> log = BPI15()  # downloads and loads on construction
-    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
-    >>> log.dataframe  # the underlying DataFrame, if you need it
+    >>> train, test = train_test_split(log)  # split before anything else
     """
 
     url: tuple[str, ...] = (
@@ -246,17 +241,17 @@ class BPI17(TUEventLog):
 
     Examples
     --------
-    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> from skpm.model_selection import train_test_split
     >>> log = BPI17()  # downloads and loads on construction
-    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
-    >>> log.dataframe  # the underlying DataFrame, if you need it
+    >>> train, test = train_test_split(log, strategy="unbiased")
+    >>> log.unbiased_split_params  # the published parameters it used
     """
 
     url: tuple[str] = (
         "https://data.4tu.nl/file/34c3f44b-3101-4ea9-8281-e38905c68b8d/f3aec4f7-d52c-4217-82f4-57d719a8298c",
     )
     file_name: tuple[str] = ("BPI Challenge 2017.xes.gz",)
-    unbiased_split_params: dict = {
+    _unbiased_split_params: dict = {
         "start_date": None,
         "end_date": "2017-01",
         "max_days": 47.81,
@@ -284,17 +279,17 @@ class BPI19(TUEventLog):
 
     Examples
     --------
-    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> from skpm.model_selection import train_test_split
     >>> log = BPI19()  # downloads and loads on construction
-    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
-    >>> log.dataframe  # the underlying DataFrame, if you need it
+    >>> train, test = train_test_split(log, strategy="unbiased")
+    >>> log.unbiased_split_params  # the published parameters it used
     """
 
     url: tuple[str] = (
         "https://data.4tu.nl/file/35ed7122-966a-484e-a0e1-749b64e3366d/864493d1-3a58-47f6-ad6f-27f95f995828",
     )
     file_name: tuple[str] = ("BPI_Challenge_2019.xes",)
-    unbiased_split_params: dict = {
+    _unbiased_split_params: dict = {
         "start_date": "2018-01",
         "end_date": "2019-02",
         "max_days": 143.33,
@@ -322,17 +317,17 @@ class BPI20PrepaidTravelCosts(TUEventLog):
 
     Examples
     --------
-    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> from skpm.model_selection import train_test_split
     >>> log = BPI20PrepaidTravelCosts()  # downloads and loads on construction
-    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
-    >>> log.dataframe  # the underlying DataFrame, if you need it
+    >>> train, test = train_test_split(log, strategy="unbiased")
+    >>> log.unbiased_split_params  # the published parameters it used
     """
 
     url: tuple[str] = (
         "https://data.4tu.nl/file/fb84cf2d-166f-4de2-87be-62ee317077e5/612068f6-14d0-4a82-b118-1b51db52e73a",
     )
     file_name: tuple[str] = ("PrepaidTravelCost.xes.gz",)
-    unbiased_split_params: dict = {
+    _unbiased_split_params: dict = {
         "start_date": None,
         "end_date": "2019-01",
         "max_days": 114.26,
@@ -360,17 +355,17 @@ class BPI20TravelPermitData(TUEventLog):
 
     Examples
     --------
-    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> from skpm.model_selection import train_test_split
     >>> log = BPI20TravelPermitData()  # downloads and loads on construction
-    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
-    >>> log.dataframe  # the underlying DataFrame, if you need it
+    >>> train, test = train_test_split(log, strategy="unbiased")
+    >>> log.unbiased_split_params  # the published parameters it used
     """
 
     url: tuple[str] = (
         "https://data.4tu.nl/file/db35afac-2133-40f3-a565-2dc77a9329a3/12b48cc1-18a8-4089-ae01-7078fc5e8f90",
     )
     file_name: tuple[str] = ("PermitLog.xes.gz",)
-    unbiased_split_params: dict = {
+    _unbiased_split_params: dict = {
         "start_date": None,
         "end_date": "2019-10",
         "max_days": 258.81,
@@ -397,17 +392,17 @@ class BPI20RequestForPayment(TUEventLog):
 
     Examples
     --------
-    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> from skpm.model_selection import train_test_split
     >>> log = BPI20RequestForPayment()  # downloads and loads on construction
-    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
-    >>> log.dataframe  # the underlying DataFrame, if you need it
+    >>> train, test = train_test_split(log, strategy="unbiased")
+    >>> log.unbiased_split_params  # the published parameters it used
     """
 
     url: tuple[str] = (
         "https://data.4tu.nl/file/a6f651a7-5ce0-4bc6-8be1-a7747effa1cc/7b1f2e56-e4a8-43ee-9a09-6e64f45a1a98",
     )
     file_name: tuple[str] = ("RequestForPayment.xes.gz",)
-    unbiased_split_params: dict = {
+    _unbiased_split_params: dict = {
         "start_date": None,
         "end_date": "2018-12",
         "max_days": 28.86,
@@ -434,10 +429,9 @@ class BPI20DomesticDeclarations(TUEventLog):
 
     Examples
     --------
-    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> from skpm.model_selection import train_test_split
     >>> log = BPI20DomesticDeclarations()  # downloads and loads on construction
-    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
-    >>> log.dataframe  # the underlying DataFrame, if you need it
+    >>> train, test = train_test_split(log)  # split before anything else
     """
 
     url: tuple[str] = (
@@ -466,10 +460,9 @@ class BPI20InternationalDeclarations(TUEventLog):
 
     Examples
     --------
-    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> from skpm.model_selection import train_test_split
     >>> log = BPI20InternationalDeclarations()  # downloads and loads on construction
-    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
-    >>> log.dataframe  # the underlying DataFrame, if you need it
+    >>> train, test = train_test_split(log)  # split before anything else
     """
 
     url: tuple[str] = (
@@ -498,10 +491,9 @@ class Sepsis(TUEventLog):
 
     Examples
     --------
-    >>> from skpm.feature_extraction import TimestampExtractor
+    >>> from skpm.model_selection import train_test_split
     >>> log = Sepsis()  # downloads and loads on construction
-    >>> TimestampExtractor().fit_transform(log)  # estimators take the log
-    >>> log.dataframe  # the underlying DataFrame, if you need it
+    >>> train, test = train_test_split(log)  # split before anything else
     """
 
     url: tuple[str] = (

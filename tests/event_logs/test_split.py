@@ -32,6 +32,9 @@ def test_unbiased():
     with TemporaryDirectory() as tmpdirname:
         bpi = BPI20PrepaidTravelCosts(cache_folder=tmpdirname)
 
+        # unbiased() is the primitive: it takes its parameters and nothing
+        # else. train_test_split(bpi, strategy="unbiased") resolves them off
+        # the loader — see tests/test_model_selection.py.
         train, test = unbiased(bpi, **bpi.unbiased_split_params)
 
         assert (

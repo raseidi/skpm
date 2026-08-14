@@ -5,7 +5,12 @@ from pandas import DataFrame
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from skpm.config import EventLogConfigMixin
-from skpm.event_logs.base import EventLog, has_event_log_index, to_event_log
+from skpm.event_logs.base import (
+    EventLog,
+    LogLike,
+    has_event_log_index,
+    to_event_log,
+)
 
 __all__ = [
     "BaseProcessEstimator",
@@ -20,12 +25,29 @@ class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
     Estimators operate on the canonical event-log shape: a DataFrame whose
     index is the ``MultiIndex(case_id, timestamp, event_id)`` (see
     :func:`skpm.event_logs.base.to_event_log`). :meth:`_validate_log` enforces
-    that shape, unwrapping an :class:`~skpm.event_logs.base.EventLog` and
-    promoting a flat DataFrame on the fly, so ad-hoc callers can hand in
-    unprocessed input::
+    that shape.
 
-        TimestampExtractor().fit(BPI17())        # EventLog
-        TimestampExtractor().fit(BPI17().dataframe)   # equivalent
+    A realistic workflow **splits first**, so estimators normally receive a
+    DataFrame::
+
+        train, test = train_test_split(BPI17(), strategy="unbiased")
+        y_train = remaining_time(train, time_unit="h")
+        pipe.fit(train, y_train)
+
+    As a convenience, :meth:`_validate_log` also unwraps an
+    :class:`~skpm.event_logs.base.EventLog` and promotes a flat DataFrame on
+    the fly, so exploratory one-liners work without ceremony::
+
+        TimestampExtractor().fit_transform(BPI17())
+
+    **This convenience stops at scikit-learn's door.** Meta-estimators such as
+    :class:`~sklearn.model_selection.GridSearchCV` and
+    :func:`~sklearn.model_selection.cross_val_score` call ``indexable`` and
+    ``_safe_indexing`` on ``X`` before any skpm code runs, and an ``EventLog``
+    satisfies neither (no ``iloc``, ``__len__`` or ``shape``), so
+    ``GridSearchCV(...).fit(BPI17(), y)`` raises inside scikit-learn. Pass a
+    DataFrame whenever cross-validation is involved — which splitting first
+    already gives you.
 
     Note this covers skpm estimators only. A plain scikit-learn estimator
     still needs a feature matrix, so put a skpm transformer in front of it
@@ -36,7 +58,7 @@ class BaseProcessEstimator(BaseEstimator, EventLogConfigMixin):
     unsupported pending a polars path.
     """
 
-    def _validate_log(self, X, copy: bool = True) -> DataFrame:
+    def _validate_log(self, X: LogLike, copy: bool = True) -> DataFrame:
         """Validate ``X`` and return it in canonical event-log form.
 
         Accepts an :class:`~skpm.event_logs.base.EventLog` (any loader in
@@ -155,14 +177,14 @@ class BaseProcessTransformer(TransformerMixin, BaseProcessEstimator):
     #: "event" (one output row per event) vs "case" (one row per case).
     _cardinality: str = "event"
 
-    def fit(self, X, y=None):
+    def fit(self, X: LogLike, y=None):
         X = self._validate_log(X)
         self._record_feature_names_in(X)
         self._fit(X, y)
         self.fitted_ = True
         return self
 
-    def transform(self, X, y=None):
+    def transform(self, X: LogLike, y=None):
         X = self._validate_log(X, copy=False)
         out = self._transform(X, y)
         self._check_feature_names_out(out)

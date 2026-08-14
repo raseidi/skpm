@@ -24,8 +24,8 @@ from sklearn.preprocessing import OneHotEncoder
 from skpm import case_ids
 from skpm.baselines import ActivityMeanRegressor
 from skpm.event_logs import BPI20RequestForPayment
-from skpm.event_logs.split import unbiased
 from skpm.feature_extraction import TimestampExtractor
+from skpm.model_selection import train_test_split
 from skpm.feature_extraction.targets import remaining_time
 from skpm.sequence_encoding import Aggregation
 
@@ -40,34 +40,33 @@ from skpm.sequence_encoding import Aggregation
 # ``BPI20RequestForPayment`` downloads the dataset the first time it is used
 # and keeps a local copy for later runs. SkPM returns its standard event-log
 # representation: case identifiers, timestamps, and event identifiers form the
-# index, while attributes such as ``activity`` remain columns. The object 
-# has some beneficial properties, but it is not the focus of this tutorial. 
-# We will use its ``dataframe`` property to get a pandas DataFrame for scikit-learn.
+# index, while attributes such as ``activity`` remain columns.
 dataset = BPI20RequestForPayment()
-log = dataset.dataframe
-
-print(f"{len(log):,} events in {case_ids(log).nunique():,} cases")
-log.head()
-
+print(dataset)
 
 # %%
-# Create an unbiased train-test split
-# -----------------------------------
+# Split before anything else
+# --------------------------
+#
+# Splitting is the first step of a SkPM workflow — before feature extraction,
+# before fitting anything. Fitting a transformer on the whole log and splitting
+# afterwards leaks information from the test cases into training.
 #
 # An event log covers a limited period of time. Cases near the end may still be
 # running when recording stops, which would make their durations incomplete.
 # A random split can also train a model on later cases and test it on earlier
-# ones. SkPM's ``unbiased`` split filters incomplete boundary cases and uses
+# ones. The ``"unbiased"`` strategy filters incomplete boundary cases and uses
 # time order to create a more realistic test set.
 #
-# Public SkPM logs provide suitable date and maximum-duration settings through
-# ``unbiased_split_params``. The split keeps every case entirely on one side.
-X_train, X_test = unbiased(dataset, **dataset.unbiased_split_params)
+# Its date and maximum-duration settings are constants published with each
+# benchmark, so ``train_test_split`` reads them from the loader automatically.
+# The split keeps every case entirely on one side, and returns two event logs.
+train, test = train_test_split(dataset, strategy="unbiased")
 
 split_summary = pd.DataFrame(
     {
-        "events": [len(X_train), len(X_test)],
-        "cases": [case_ids(X_train).nunique(), case_ids(X_test).nunique()],
+        "events": [len(train), len(test)],
+        "cases": [case_ids(train).nunique(), case_ids(test).nunique()],
     },
     index=["training", "test"],
 )
@@ -82,10 +81,14 @@ split_summary
 # event until its case finishes. In supervised machine learning this value is
 # the target, usually called ``y``. It is calculated from future events, so it
 # must stay separate from the input features to avoid target leakage.
-y_train = remaining_time(X_train, time_unit="h")
-y_test = remaining_time(X_test, time_unit="h")
+#
+# The split deliberately does not choose this for us: predicting remaining time
+# is a regression, predicting the next activity a classification, and the same
+# two logs serve either. So we build the target ourselves, once per side.
+y_train = remaining_time(train, time_unit="h")
+y_test = remaining_time(test, time_unit="h")
 
-pd.concat([X_train[["activity"]], y_train], axis="columns").head()
+pd.concat([train[["activity"]], y_train], axis="columns").head()
 
 
 # %%
@@ -196,7 +199,7 @@ search = GridSearchCV(
     scoring="neg_mean_absolute_error",
     cv=GroupKFold(n_splits=4),
 )
-search.fit(X_train, y_train, groups=case_ids(X_train))
+search.fit(train, y_train, groups=case_ids(train))
 
 cv_results = pd.DataFrame(
     {
@@ -219,7 +222,7 @@ cv_results.reset_index(drop=True)
 # The search refits the best pipeline on all training cases. We now use the
 # untouched test cases once, giving a final estimate of how the pipeline
 # performs on new process instances.
-predictions = search.predict(X_test)
+predictions = search.predict(test)
 test_mae = mean_absolute_error(y_test, predictions)
 selected_model = model_name(search.best_estimator_.named_steps["model"])
 
@@ -228,7 +231,15 @@ print(f"Cross-validation MAE: {-search.best_score_:.2f} hours")
 print(f"Test MAE: {test_mae:.2f} hours")
 
 # %%
-# This is the complete basic pattern: load an event log, create an unbiased
-# split, define a target, compose SkPM transformers in a scikit-learn pipeline,
+# This is the complete basic pattern: load an event log, split it, define a
+# target on each side, compose SkPM transformers in a scikit-learn pipeline,
 # and select a model with grouped cross-validation. On a real project, use the
 # same pattern with a representative event log and an untouched test set.
+#
+# The same call works on a log of your own, with no loader class involved::
+#
+#     train, test = train_test_split(pd.read_csv("my_log.csv"))
+#
+# ``"temporal"`` is the default strategy because it needs no per-dataset
+# constants. ``"unbiased"`` needs ``max_days`` — pass it explicitly for a log
+# that does not ship it.

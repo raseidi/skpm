@@ -43,7 +43,7 @@ The canonical shape is set by `skpm.event_logs.base.to_event_log(log, column_map
 4. assigns `event_id` as a 0-based row counter (`df.index.values` after the stable sort),
 5. moves `case_id` and `timestamp` into the MultiIndex.
 
-**One entry-point convention: `to_event_log` is the single coercion boundary, and every skpm API that takes a log accepts all three log-like inputs** — an `EventLog` (any `skpm.event_logs` loader), a flat DataFrame, or an already-canonical DataFrame. The alias `LogLike` in `event_logs/base.py` names that union. Estimators (`_validate_log`), targets, splits, and the index accessors all route through it, so `.dataframe` is available but never required:
+**One entry-point convention: `to_event_log` is the single coercion boundary, and every skpm API that takes a log accepts all three log-like inputs** — an `EventLog` (any `skpm.event_logs` loader), a flat DataFrame, or an already-canonical DataFrame. The alias `LogLike` (exported from `skpm`, defined in `event_logs/base.py`) names that union. Estimators (`_validate_log`), targets, splits, and the index accessors all route through it, so `.dataframe` is available but never required:
 
 ```python
 TimestampExtractor().fit(BPI17())            # EventLog
@@ -55,9 +55,29 @@ Two guards live at that boundary: `column_mapping` combined with an `EventLog` r
 
 This covers **skpm** estimators only. A plain sklearn estimator still needs a feature matrix — a raw log has string activities and nothing encoded — so `RandomForestRegressor().fit(BPI17())` fails by design. Put a skpm transformer in front of it, which is what a Pipeline does. Don't "fix" this by duck-typing `EventLog` as a DataFrame.
 
+**The `EventLog`-as-input convenience stops at sklearn's door, and this is a documented carve-out, not a bug to fix.** sklearn meta-estimators (`GridSearchCV`, `cross_val_score`, `cross_validate`) call `indexable(X, y, groups)` and `_safe_indexing` *before* any skpm code runs, and an `EventLog` satisfies neither — it has no `iloc`, `__len__`, or `shape`, so `indexable` raises `TypeError: Input should have at least 1 dimension`. Cross-validation therefore requires a DataFrame. That is a second reason `to_event_log` must keep returning a DataFrame, and a reason the documented workflow splits first: after a split you hold frames. Treat estimator-level `EventLog` acceptance as a convenience for exploratory one-liners, not the headline workflow.
+
 `EventLog.__init__` calls `to_event_log` on construction.
 
 **Public index accessors** (top-level `skpm.case_ids`, `skpm.timestamps`, `skpm.event_ids`, `skpm.trace_positions`, plus `skpm.to_event_log`) pull an index level out as a Series aligned to the event log. Use these instead of reaching into `df.index.get_level_values(...)` directly.
+
+### Splitting (`model_selection.py`)
+
+**Splitting comes first in a skpm workflow** — before feature extraction, before fitting anything. `skpm.model_selection.train_test_split(log, strategy=...)` is the documented door (also exported as `skpm.train_test_split`); `temporal` and `unbiased` in `event_logs/split.py` stay public as the primitives it dispatches to, and take their parameters and nothing else.
+
+```python
+train, test = train_test_split(BPI17(), strategy="unbiased")   # params from the loader
+train, test = train_test_split(pd.read_csv("mine.csv"))        # temporal, the default
+y_train = remaining_time(train, time_unit="h")                 # target, per side
+```
+
+Three deliberate properties:
+
+- **It returns two event logs, never `(X_train, X_test, y_train, y_test)`.** Which target to predict is a modelling decision (remaining time is regression, next activity is classification), and the same split also serves unsupervised work. A 4-tuple would force a `target=` argument and then absorb every target's options. It would also buy nothing: both strategies are **case-level** and all three targets in `feature_extraction/targets.py` are case-local groupbys, so computing a target before or after the split gives identical values — pinned by `tests/test_model_selection.py::test_target_is_unchanged_by_splitting_after_instead_of_before`. The leakage that is real lives on the X side (`WorkInProgress` is inter-case; `Aggregation`/`ResourcePoolExtractor`/`Bucketing` are fitted), and only fitting the Pipeline on train alone prevents it.
+- **Naming them `train`/`test` rather than `X_train`/`X_test` is intentional.** They are raw event logs with string activities, not feature matrices; `X_` would teach exactly the mental model the carve-out above warns against.
+- **The unbiased parameters are resolved from the loader, never guessed.** `start_date`/`end_date`/`max_days` are per-dataset constants published with the benchmark (Weytjens & De Weerdt) and only 6 of the 14 loaders ship them. Precedence is explicit kwarg → loader → error naming what's missing. This needs the one documented `isinstance(log, EventLog)` outside the coercion boundary, in `_loader_params`, because `to_event_log` erases the distinction. Passing an unbiased-only parameter with `strategy="temporal"` raises rather than silently ignoring it.
+
+Subclasses that publish parameters set the **private** `_unbiased_split_params`; the public `TUEventLog.unbiased_split_params` property validates and returns a **copy**. (Setting the public name directly shadows the property — that was a live bug: the property's return path was unreachable and all instances shared one mutable dict.)
 
 ### Column naming (`config.py`)
 
@@ -77,7 +97,8 @@ The canonical field names — `case_id`, `timestamp`, `activity`, `resource` —
 |---|---|
 | `feature_extraction/` | Event-level feature transformers: `TimestampExtractor` (temporal features), `ResourcePoolExtractor` (resource roles), `WorkInProgress` (inter-case concurrency). `TimestampExtractor` exposes **past-looking features only**: each feature class declares an explicit `FEATURES` registry tuple (`"all"` resolves to exactly that tuple; unknown names raise), and `TimestampCaseLevel.TARGET_ONLY` blocks future-looking computations (`execution_time`, `remaining_time`) from feature selection. To add a feature: add the classmethod *and* list it in `FEATURES`. `targets.py` holds `remaining_time` / `execution_time` / `next_activity` — **functions** (not transformers; targets are label generation, which sklearn keeps outside the X-pipeline) returning a 1-D Series aligned to the event-log index, to pass as `y` to `pipe.fit(X, y)` |
 | `sequence_encoding/` | Prefix encoders that turn each event's prefix into a fixed-length feature vector: `Aggregation` (order-agnostic summary stats), `Indexing` (absolute index-based encoding — full prefix width, no future leakage), `Windowing` (relative sliding window over the most recent `n` events), `Bucketing`. `Indexing`/`Windowing` share the private `_PositionalEncoder` base (`index.py`/`windowing.py`/`_positional.py`) and zero-pad structurally-missing cells by default so output is NaN-free. |
-| `event_logs/` | Download BPI Challenge logs from the 4TU repository (`bpi.py`), parse XES/CSV event logs (`parser.py`), `split.py` train/test splits (`temporal`, `unbiased`) which raise on an empty train/test side |
+| `event_logs/` | Download BPI Challenge logs from the 4TU repository (`bpi.py`), parse XES/CSV event logs (`parser.py`), `split.py` split primitives (`temporal`, `unbiased`) which raise on an empty train/test side — reached via `skpm.model_selection.train_test_split` |
+| `model_selection.py` | `train_test_split(log, strategy="temporal"\|"unbiased", test_size=..., ...)` — the documented splitting door; resolves the unbiased parameters from a loader and re-exports the two primitives |
 | `utils/` | Validation helpers (`validation.py`), time utilities, graph helpers |
 
 ### sklearn integration

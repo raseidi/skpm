@@ -53,7 +53,9 @@ def to_event_log(
     2. Parse timestamps to UTC datetime.
     3. Sort by ``(case_id, timestamp)`` with a stable sort, which
        preserves original document order whenever timestamps tie.
-    4. Assign ``event_id`` as the per-case 0-based sequence number.
+    4. Assign ``event_id`` as a 0-based row counter, globally unique across
+       the log (not restarted per case — for an event's position within its
+       trace use :func:`trace_positions`).
     5. Set the ``(case_id, timestamp, event_id)`` MultiIndex.
 
     Parameters
@@ -219,8 +221,11 @@ class TUEventLog(EventLog):
         Path to the event log file (will be set based on file_name and cache_folder)
     _dataframe : Optional[pd.DataFrame]
         DataFrame containing the event log data (will be set after loading)
-    unbiased_split_params : Optional[Dict[str, Any]]
-        Parameters for unbiased data splitting (should be set in subclasses)
+    _unbiased_split_params : Optional[Dict[str, Any]]
+        Per-dataset constants for the unbiased split, set in subclasses that
+        publish them. Read through the :attr:`unbiased_split_params` property,
+        which validates and copies — subclasses must set the *private* name so
+        they do not shadow it.
     """
 
     url: Optional[str] = None
@@ -356,12 +361,29 @@ class TUEventLog(EventLog):
 
     @property
     def unbiased_split_params(self) -> Dict[str, Any]:
-        """Parameters for unbiased data splitting."""
+        """Per-dataset parameters for the unbiased split, as a fresh dict.
+
+        These are constants published with the benchmark (see
+        :func:`skpm.event_logs.split.unbiased`), so only a loader can carry
+        them. :func:`skpm.model_selection.train_test_split` reads them from
+        here when given ``strategy="unbiased"``.
+
+        A **copy** is returned: the backing value is a class attribute shared
+        by every instance, so handing it out directly would let one caller
+        edit the constants for the whole process.
+
+        Raises
+        ------
+        ValueError
+            If this log ships no unbiased parameters.
+        """
         if self._unbiased_split_params is None:
             raise ValueError(
-                f"Unbiased split not available for {self.__class__.__name__}"
+                f"Unbiased split not available for {self.__class__.__name__}: "
+                f"it ships no published parameters. Pass max_days (and "
+                f"optionally start_date / end_date) explicitly."
             )
-        return self._unbiased_split_params
+        return dict(self._unbiased_split_params)
 
 
 # --- public index accessors -------------------------------------------------
