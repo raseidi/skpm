@@ -148,13 +148,25 @@ pipeline = Pipeline(
 
 
 # %%
+# Sequence encoding is optional. Without ``Aggregation``, each event is an
+# independent training sample and the feature union can feed the regressor
+# directly.
+event_pipeline = Pipeline(
+    [
+        ("features", features),
+        ("model", LinearRegression()),
+    ]
+)
+
+
+# %%
 # Compare a baseline and regression models
 # ----------------------------------------
 #
 # ``GridSearchCV`` fits every candidate on several training/validation splits.
-# ``ActivityMeanRegressor`` is a simple process mining baseline: it predicts the
-# average training-set remaining time for the current activity. A useful model
-# should improve on this straightforward reference.
+# :class:`~skpm.baselines.ActivityMeanRegressor` is a simple process mining
+# baseline: it predicts the average training-set remaining time for the current
+# activity. A useful model should improve on this straightforward reference.
 #
 # Linear regression models a straight-line relationship, while a random forest
 # and histogram gradient boosting can learn non-linear relationships. This
@@ -163,7 +175,7 @@ pipeline = Pipeline(
 #
 # ``GroupKFold`` again keeps cases intact. We score models with mean absolute
 # error (MAE), the average absolute difference between the true and predicted
-# remaining time. Lower MAE is better. 
+# remaining time. Lower MAE is better.
 candidate_models = [
     LinearRegression(),
     RandomForestRegressor(

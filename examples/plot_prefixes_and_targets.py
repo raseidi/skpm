@@ -138,11 +138,13 @@ pd.concat(
 # Encoding a prefix
 # -----------------
 #
-# A model needs a fixed number of columns, but prefixes keep growing. Resolving
-# that is what :mod:`skpm.sequence_encoding` is for, and there is more than one
-# sensible answer.
+# A training sample can represent either one event or a sequence of events. Use
+# an event's features directly when training on individual events. When training
+# a tabular model on a prefix, first encode its growing sequence as a fixed-length
+# vector.
 #
-# :class:`~skpm.sequence_encoding.Aggregation` summarizes the prefix and ignores
+# :mod:`skpm.sequence_encoding` provides three encoding strategies. For example,
+# :class:`~skpm.sequence_encoding.Aggregation` summarizes a prefix while ignoring
 # order. Applied to a one-hot activity column, its mean becomes the *relative
 # frequency* of each activity so far — a compact summary of the path taken.
 from sklearn.preprocessing import OneHotEncoder
@@ -170,65 +172,65 @@ Windowing(n=2, fill_value="<none>").fit_transform(one_case)
 
 
 # %%
-# Putting it together
-# -------------------
+# Events as independent samples
+# -----------------------------
 #
-# The pipeline runs two branches in parallel and concatenates them.
-#
-# Only the activity branch is aggregated, and the reason is worth pausing on:
-# ``accumulated_time`` is *already* a fact about the prefix, so averaging it
-# again would replace "how long has this case been running" with "how long had it
-# been running on average", discarding the model's most useful feature. Aggregate
-# what needs summarizing; pass through what is already prefix-level.
-#
-# The activity column also has to be one-hot encoded *before* aggregation —
-# averaging the string ``"pack"`` means nothing, and ``Aggregation`` says so
-# rather than dropping the column quietly.
+# Sequence encoding is optional. Without it, scikit-learn treats every event
+# as an independent training sample: the feature union can feed the model
+# directly.
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import FeatureUnion, Pipeline
 
 from skpm.feature_extraction import TimestampExtractor
 
-path_summary = Pipeline(
+activity_features = ColumnTransformer(
     [
         (
             "one_hot",
-            ColumnTransformer(
-                [
-                    (
-                        "one_hot",
-                        OneHotEncoder(
-                            handle_unknown="ignore", sparse_output=False
-                        ),
-                        ["activity"],
-                    )
-                ],
-                remainder="drop",
-                verbose_feature_names_out=False,
-            ),
-        ),
-        ("prefix", Aggregation(method="mean")),
-    ]
+            OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+            ["activity"],
+        )
+    ],
+    remainder="drop",
+    verbose_feature_names_out=False,
 )
 
 features = FeatureUnion(
     [
         (
-            "elapsed",
+            "time",
             TimestampExtractor(
                 case_features=["accumulated_time", "time_since_last_event"],
                 event_features=None,
                 time_unit="h",
             ),
         ),
-        ("path", path_summary),
+        ("activity", activity_features),
     ]
 ).set_output(transform="pandas")
+
+event_pipeline = Pipeline(
+    [
+        ("features", features),
+        ("model", HistGradientBoostingRegressor(random_state=0)),
+    ]
+)
+event_pipeline.fit(train, y_train)
+
+
+# %%
+# Putting it together
+# -------------------
+#
+# To use the observed prefix instead, add
+# :class:`~skpm.sequence_encoding.Aggregation` immediately after the feature
+# union.
 
 pipeline = Pipeline(
     [
         ("features", features),
+        ("prefix_encoding", Aggregation(method="mean")),
         ("model", HistGradientBoostingRegressor(random_state=0)),
     ]
 )
@@ -250,7 +252,9 @@ baseline_mae = mean_absolute_error(y_test, baseline.predict(test))
 
 print(f"Predict-the-mean baseline: {baseline_mae:5.1f} hours MAE")
 print(f"Model:                     {model_mae:5.1f} hours MAE")
-print(f"Improvement:               {100 * (1 - model_mae / baseline_mae):4.0f}%")
+print(
+    f"Improvement:               {100 * (1 - model_mae / baseline_mae):4.0f}%"
+)
 
 
 # %%
