@@ -18,6 +18,7 @@ dist/
 docs/build/
 docs/source/api/
 docs/source/auto_examples/
+docs/source/autoapi/
 docs/source/sg_execution_times.rst
 
 # Jupyter Notebook

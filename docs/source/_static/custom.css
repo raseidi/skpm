@@ -9,3 +9,86 @@
   width: max-content;
   min-width: 100%;
 }
+
+/* The RTD theme caps content at 800px, which wastes half a wide screen and
+   forces the DataFrame rule above to scroll more often than it needs to. */
+.wy-nav-content {
+  max-width: 1100px;
+}
+
+/* --- Landing page hero -------------------------------------------------- */
+
+/* Scoped by :has() to the one section carrying the tagline, so the ordinary
+   page titles everywhere else are untouched. */
+section:has(> .skpm-hero-tagline) > h1 {
+  text-align: center;
+  font-size: 3.4rem;
+  line-height: 1.1;
+  margin: 1.6rem 0 0;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  /* Fall back to a flat colour wherever background-clip: text is unsupported. */
+  color: #2980b9;
+  background: linear-gradient(95deg, #2980b9 15%, #16a085 85%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* The transparent text-fill above leaves the anchor glyph permanently visible,
+   and a hero title is not somewhere anyone needs to deep-link. */
+section:has(> .skpm-hero-tagline) > h1 .headerlink {
+  display: none;
+}
+
+.skpm-hero-tagline {
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 400;
+  opacity: 0.75;
+  padding-bottom: 1.6rem;
+  margin-bottom: 1.8rem;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+}
+
+/* --- Landing page cards ------------------------------------------------- */
+
+.skpm-cta {
+  margin: 1.6rem 0 2.4rem;
+}
+
+/* Octicons inline with card titles read as decoration, not content. */
+.sd-card-title .sd-octicon {
+  margin-right: 0.5rem;
+  vertical-align: -0.1em;
+  opacity: 0.7;
+}
+
+/* Cards in a row should share a height rather than ending raggedly. */
+.sd-card {
+  height: 100%;
+  border-radius: 6px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+/* Only linked cards are clickable, so only they get the affordance. */
+.sd-card:has(.sd-stretched-link):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.sd-card-title {
+  font-weight: 600;
+}
+
+/* RTD renders body copy at 16px but cards inherit a smaller size. */
+.sd-card-body p {
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sd-card:has(.sd-stretched-link):hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  }
+}

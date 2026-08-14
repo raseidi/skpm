@@ -28,6 +28,7 @@ docs = [
     "sphinx>=8.1,<9",
     "sphinx-autoapi>=3.8",
     "sphinx-autobuild>=2024.10",
+    "sphinx-design>=0.6",
     "sphinx-gallery>=0.17",
     "sphinx-rtd-theme>=3.0",
 ]

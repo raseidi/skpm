@@ -10,6 +10,7 @@ extensions = [
     "autoapi.extension",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
+    "sphinx_design",
     "sphinx_gallery.gen_gallery",
 ]
 

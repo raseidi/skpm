@@ -5,9 +5,9 @@ Every ``examples/plot_*.py`` file *executes* during the docs build (see
 Read the Docs build. Running them here surfaces the breakage in CI instead,
 where it is cheap to diagnose.
 
-``plot_tiny_benchmark.py`` is excluded: it downloads a real BPI log from 4TU and
-runs a ``GridSearchCV``, which is too slow and too network-dependent for the
-unit suite.
+Examples that reach the network are excluded — the 4TU repository being slow or
+down must not fail the unit suite. Keep :data:`_NEEDS_NETWORK` in step with the
+examples that construct a loader.
 """
 
 import runpy
@@ -17,15 +17,16 @@ import pytest
 
 EXAMPLES_DIR = Path(__file__).resolve().parents[1] / "examples"
 
-#: Examples the docs build runs but the test suite must not — network or runtime.
-_EXCLUDED = {"plot_tiny_benchmark.py"}
+#: Examples the docs build runs but the test suite must not: these construct a
+#: loader, which downloads from the 4TU repository on a cold cache.
+_NEEDS_NETWORK = {"plot_download_event_logs.py"}
 
 
 def _runnable_examples() -> list[Path]:
     return sorted(
         path
         for path in EXAMPLES_DIR.glob("plot_*.py")
-        if path.name not in _EXCLUDED
+        if path.name not in _NEEDS_NETWORK
     )
 
 

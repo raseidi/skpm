@@ -85,7 +85,7 @@ def train_test_split(
         ``"temporal"`` cuts on a timestamp derived from ``test_size`` and
         needs no other parameters, so it works on any log. ``"unbiased"``
         additionally drops cases that the recording window truncates,
-        following [1]_, and needs the three parameters below.
+        following [1], and needs the three parameters below.
     test_size : float, default=0.2
         Size of the test side, as a fraction strictly between 0 and 1. Its
         meaning follows the strategy: for ``"unbiased"`` it is a proportion of
