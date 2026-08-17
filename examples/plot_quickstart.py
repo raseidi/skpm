@@ -1,46 +1,55 @@
 """
-Quickstart: the SkPM event log
-==============================
+Quickstart
+==========
 
-SkPM extends scikit-learn to process mining. The one thing to understand first
-is how it represents an event log — every transformer, target and split in the
-package agrees on that shape.
+The whole SkPM workflow on one page: represent an event log, split it, build a
+target, fit a pipeline, and score it against a baseline.
 
-This page builds a tiny log, converts it, and extracts a first set of features.
-It uses synthetic data, so it runs anywhere in a second.
+It runs on synthetic data in a couple of seconds. Each step links to the part
+of the :ref:`user_guide` that explains it properly.
 """
 
 # %%
-# An event log is a table of events
-# ---------------------------------
+# A log of purchase orders
+# ------------------------
 #
-# Each row is one thing that happened: a **case** (the process instance), a
-# **timestamp**, and an **activity**. Here, five purchase orders moving through
-# a small fulfilment process.
+# An event log is a table of events: a **case** (the process instance), a
+# **timestamp**, and an **activity**. Here, three hundred orders moving through
+# a small fulfilment process, with two sources of variation the model is never
+# told about — *express* orders skip the quality check and move faster, and
+# some standard orders fail the check and loop back to picking.
 #
-# The column names below are XES names — the interchange format used across
-# process mining — which SkPM recognizes by default. Named your columns
-# differently? Pass ``column_mapping={"case_id": "...", ...}``, or set it once
-# globally with :func:`skpm.config.set_global_config`.
+# The column names are the XES names SkPM expects by default; see
+# :ref:`column_naming` for logs named differently.
 import numpy as np
 import pandas as pd
 
-ACTIVITIES = ["receive order", "check stock", "pick items", "pack", "ship"]
-
-rng = np.random.default_rng(7)
+rng = np.random.default_rng(3)
 records = []
-for case in range(1, 6):
-    moment = pd.Timestamp("2024-03-04 08:00") + pd.Timedelta(days=case - 1)
-    # Orders drop out at different stages, so cases have different lengths.
-    for activity in ACTIVITIES[: rng.integers(3, len(ACTIVITIES) + 1)]:
+for case in range(300):
+    moment = pd.Timestamp("2024-01-01") + pd.Timedelta(
+        hours=float(rng.uniform(0, 24 * 180))
+    )
+    express = rng.random() < 0.4
+
+    path = ["receive", "check stock", "pick items"]
+    if not express:
+        path.append("quality check")
+        if rng.random() < 0.35:  # failed the check: pick again, re-check
+            path += ["pick items", "quality check"]
+    path += ["pack", "ship"]
+
+    for stage in path:
         records.append(
             {
-                "case:concept:name": f"Order-{case}",
+                "case:concept:name": f"O{case:04d}",
                 "time:timestamp": moment,
-                "concept:name": activity,
+                "concept:name": stage,
             }
         )
-        moment += pd.Timedelta(minutes=int(rng.integers(30, 600)))
+        moment += pd.Timedelta(
+            hours=float(rng.gamma(3.0, 1.0 if express else 4.0))
+        )
 
 raw = pd.DataFrame(records)
 raw.head()
@@ -50,84 +59,172 @@ raw.head()
 # ``to_event_log`` gives it SkPM's shape
 # --------------------------------------
 #
-# :func:`skpm.to_event_log` is the single conversion boundary in SkPM. It sorts
-# the log, numbers the events, and moves ``case_id`` and ``timestamp`` into a
-# three-level index — ``(case_id, timestamp, event_id)``.
+# :func:`skpm.to_event_log` sorts the log, numbers the events, and moves
+# ``case_id`` and ``timestamp`` into a three-level index. ``activity`` stays a
+# column.
 #
-# Two consequences worth internalising:
-#
-# * **``activity`` stays a column; ``case_id`` and ``timestamp`` become keys.**
-#   Feature extraction replaces the columns, so anything kept as a column is
-#   consumed as data. Case and time are identity, not data, so they live in the
-#   index and survive every step of a pipeline.
-# * **``event_id`` makes each row addressable.** It is a plain 0-based counter
-#   over the whole log, which keeps two events distinguishable even when a case
-#   records them at the same timestamp.
-from skpm import to_event_log
+# That division is the one thing to internalise: columns are data, consumed and
+# replaced by feature extraction; index levels are identity, and survive every
+# step of a pipeline. See :ref:`event_log_shape`.
+from skpm import case_ids, to_event_log
 
 log = to_event_log(raw)
-log
+print(f"{len(log):,} events in {case_ids(log).nunique():,} cases")
+log.head()
 
 
 # %%
-# Extracting features
-# -------------------
+# Split first
+# -----------
 #
-# :class:`~skpm.feature_extraction.TimestampExtractor` derives numeric features
-# from the timestamps. Features come at two levels, and the distinction is the
-# useful part:
+# Before extracting a single feature. :func:`skpm.model_selection.train_test_split`
+# keeps every case entirely on one side, so no case has some of its events in
+# training and others in test.
 #
-# * **case-level** features describe the event's position *in its own case* —
-#   ``accumulated_time`` is how long the case has been running.
-# * **event-level** features describe the moment itself — ``hour_of_day`` and
-#   friends, normalized to roughly ±0.5 so they are model-ready (which is why
-#   9 a.m. does not read as ``9`` below).
-#
-# Passing ``"all"`` selects every feature at a level; here we name a few to keep
-# the table readable. Only **past-looking** features exist: nothing derived from
-# future events, because that would leak the very thing you want to predict.
-from skpm.feature_extraction import TimestampExtractor
+# The order matters because the steps that follow are *fitted*: an encoder
+# learns its categories, a model learns everything. Fit any of them on the whole
+# log and test information has reached the model before you call ``predict``.
+# See :ref:`train_test_split`.
+from skpm.model_selection import train_test_split
 
-features = TimestampExtractor(
-    case_features=["accumulated_time", "time_since_last_event"],
-    event_features=["hour_of_day", "day_of_week"],
-    time_unit="h",
+train, test = train_test_split(log, test_size=0.25)
+
+pd.DataFrame(
+    {
+        "events": [len(train), len(test)],
+        "cases": [case_ids(train).nunique(), case_ids(test).nunique()],
+    },
+    index=["training", "test"],
 )
-X = features.fit_transform(log)
-X.round(2)
 
 
 # %%
-# Notice the index came through untouched. That is deliberate: every SkPM
-# transformer preserves it, so downstream steps — and you, afterwards — can
-# still tell which case and which moment a row belongs to.
+# Build the target
+# ----------------
 #
-# Plotting ``accumulated_time`` against each event's position in its case shows
-# what a case-level feature means. Every line starts at zero and only ever
-# rises: at any point it summarizes what has happened *so far*.
+# The split deliberately returns two logs rather than four arrays: which target
+# to predict is your decision. We predict **remaining time** — the hours until
+# each event's case finishes.
 #
-# :func:`skpm.trace_positions` reads that position off the index, one of a few
-# accessors that save you from indexing into it by hand.
+# It is computed from future events, which is exactly why it is a target and
+# never a feature, and why it is a plain function rather than a pipeline step.
+# See :ref:`targets`.
+from skpm.feature_extraction.targets import remaining_time
+
+y_train = remaining_time(train, time_unit="h")
+y_test = remaining_time(test, time_unit="h")
+
+pd.concat([train[["activity"]], y_train.round(1)], axis="columns").head()
+
+
+# %%
+# Fit a pipeline
+# --------------
+#
+# One row per event, and each row describes the case's **prefix** — everything
+# observed up to and including that event.
+#
+# :class:`~skpm.feature_extraction.TimestampExtractor` derives past-looking
+# temporal features; the :class:`~sklearn.compose.ColumnTransformer` one-hot
+# encodes the activity; :class:`~skpm.sequence_encoding.Aggregation` then
+# summarises the prefix, turning those indicators into activity frequencies.
+# See :ref:`composing`.
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import HistGradientBoostingRegressor
+from sklearn.pipeline import FeatureUnion, Pipeline
+from sklearn.preprocessing import OneHotEncoder
+
+from skpm.feature_extraction import TimestampExtractor
+from skpm.sequence_encoding import Aggregation
+
+features = FeatureUnion(
+    [
+        (
+            "time",
+            TimestampExtractor(
+                case_features=["accumulated_time", "time_since_last_event"],
+                event_features=None,
+                time_unit="h",
+            ),
+        ),
+        (
+            "activity",
+            ColumnTransformer(
+                [
+                    (
+                        "one_hot",
+                        OneHotEncoder(
+                            handle_unknown="ignore", sparse_output=False
+                        ),
+                        ["activity"],
+                    )
+                ],
+                remainder="drop",
+                verbose_feature_names_out=False,
+            ),
+        ),
+    ]
+).set_output(transform="pandas")
+
+pipeline = Pipeline(
+    [
+        ("features", features),
+        ("prefix", Aggregation(method="mean")),
+        ("model", HistGradientBoostingRegressor(random_state=0)),
+    ]
+)
+pipeline.fit(train, y_train)
+
+
+# %%
+# Score it
+# --------
+#
+# Fitting used the training cases only, so scoring on the held-out cases is an
+# honest estimate. Comparing against a model that always predicts the training
+# mean shows whether the features earned their place.
+from sklearn.dummy import DummyRegressor
+from sklearn.metrics import mean_absolute_error
+
+predictions = pd.Series(pipeline.predict(test), index=test.index)
+
+model_mae = mean_absolute_error(y_test, predictions)
+baseline = DummyRegressor(strategy="mean").fit(train, y_train)
+baseline_mae = mean_absolute_error(y_test, baseline.predict(test))
+
+print(f"Predict-the-mean baseline: {baseline_mae:5.1f} hours MAE")
+print(f"Model:                     {model_mae:5.1f} hours MAE")
+print(f"Improvement:               {100 * (1 - model_mae / baseline_mae):4.0f}%")
+
+
+# %%
+# The index came through untouched
+# --------------------------------
+#
+# Ten transformations later, every prediction still knows which case it belongs
+# to and when it was made. That is what keeps post-hoc analysis cheap:
+# :func:`skpm.trace_positions` reads how far into its case each event is, and
+# grouping the error by it shows the shape of the problem.
+#
+# Early on, a prefix of ``[receive, check stock]`` is identical for an express
+# order and a slow one, so the model can only predict something in between.
+# Each further event resolves more of that ambiguity. Early predictions being
+# unreliable is a property of the task, not a flaw in this model.
 import matplotlib.pyplot as plt
 
 from skpm import trace_positions
 
-curves = X.assign(position=trace_positions(log))
+error_by_position = (
+    (y_test - predictions).abs().groupby(trace_positions(test)).mean()
+)
 
 fig, ax = plt.subplots(figsize=(6.5, 4))
-for case, events in curves.groupby(level="case_id", sort=False):
-    ax.plot(
-        events["position"],
-        events["accumulated_time"],
-        marker="o",
-        label=case,
-    )
-
-ax.set_xticks(range(int(curves["position"].max()) + 1))
+ax.plot(error_by_position.index, error_by_position.values, marker="o")
+ax.set_ylim(bottom=0)
+ax.set_xticks(error_by_position.index)
 ax.set_xlabel("position in case (0 = first event)")
-ax.set_ylabel("accumulated time (hours)")
-ax.set_title("A case-level feature, per case")
-ax.legend(frameon=False, fontsize="small")
+ax.set_ylabel("mean absolute error (hours)")
+ax.set_title("Predictions sharpen as the prefix grows")
 fig.tight_layout()
 
 
@@ -135,13 +232,12 @@ fig.tight_layout()
 # Where to next
 # -------------
 #
-# You now have the shape and a feature matrix. Two things stand between that
-# and a prediction, and they get their own pages:
+# That is the complete loop: represent, split, label, extract, fit, score.
 #
-# * **Prefixes and targets** — an event log is not yet a supervised problem.
-#   Each event is really a *prefix* of its case, and turning prefixes into fixed
-#   -length rows is what :mod:`skpm.sequence_encoding` does. Labels come from
-#   :mod:`skpm.feature_extraction.targets`, and the log has to be split before
-#   any of it, with :func:`skpm.model_selection.train_test_split`.
-# * **Selecting a model** — the same pattern on a real BPI Challenge log, with
-#   cross-validation that keeps cases intact.
+# * :ref:`user_guide` — each step in detail.
+# * :ref:`sphx_glr_auto_examples_plot_next_activity.py` — the same log as a
+#   classification problem.
+# * :ref:`sphx_glr_auto_examples_plot_prefix_encoding.py` — the other ways to
+#   encode a prefix.
+# * :ref:`sphx_glr_auto_examples_bpi20_remaining_time.py` — the same pattern on
+#   a real BPI Challenge log, with model selection.

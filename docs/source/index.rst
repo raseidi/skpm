@@ -29,24 +29,24 @@ all ordinary scikit-learn transformers, so they compose with the ``Pipeline``,
          :color: primary
          :expand:
 
-         Get started
+         Quickstart
 
    .. grid-item::
 
-      .. button-ref:: auto_examples/index
+      .. button-ref:: user_guide/index
          :ref-type: doc
          :color: secondary
          :outline:
          :expand:
 
-         Browse the examples
+         Read the User Guide
 
 
 From event log to prediction
 ----------------------------
 
-Six lines: download a public benchmark log, split it without leaking, build a
-target, and fit a model.
+Download a public benchmark log, split it without leaking, build a target, and
+fit a model.
 
 .. code-block:: python
 
@@ -117,28 +117,28 @@ What is in the box
    :gutter: 2
 
    .. grid-item-card:: Feature extraction
-      :link: autoapi/skpm/feature_extraction/index
+      :link: user_guide/feature_extraction
       :link-type: doc
 
       Temporal features, resource pools discovered from handover behaviour, and
       inter-case work-in-progress.
 
    .. grid-item-card:: Sequence encoding
-      :link: autoapi/skpm/sequence_encoding/index
+      :link: user_guide/sequence_encoding
       :link-type: doc
 
       Turn a growing prefix into a fixed-length vector — aggregate it, index it,
       or slide a window over it.
 
    .. grid-item-card:: Targets and splits
-      :link: autoapi/skpm/model_selection/index
+      :link: user_guide/model_selection
       :link-type: doc
 
       Remaining time, next activity and execution time; temporal and unbiased
       splitting.
 
    .. grid-item-card:: Event logs
-      :link: autoapi/skpm/event_logs/index
+      :link: user_guide/event_logs
       :link-type: doc
 
       XES and CSV parsing, column-name normalization, and the public benchmark
@@ -156,47 +156,39 @@ Python 3.10 or newer. A PyPI release is on the way; until then, install from the
 repository.
 
 
-Learn it in three pages
------------------------
+Where to start
+--------------
 
-#. :doc:`The event log <auto_examples/plot_quickstart>` — the data shape
-   everything else relies on, and your first features.
-#. :doc:`Prefixes and targets <auto_examples/plot_prefixes_and_targets>` — why
-   one case yields many training rows, and how a log becomes a supervised
-   problem.
-#. :doc:`Selecting a model <auto_examples/tiny_benchmark>` — the full loop on a
-   real log, with cross-validation that keeps cases intact.
-
-Working with a public benchmark? See
-:doc:`downloading event logs <auto_examples/plot_download_event_logs>`.
+* :doc:`Quickstart <auto_examples/plot_quickstart>` — the whole workflow on one
+  page, running on synthetic data in seconds.
+* :doc:`User Guide <user_guide/index>` — each step explained once, in order:
+  the event log, splitting, targets, features, prefix encoding, composition.
+* :doc:`Examples <auto_examples/index>` — next-activity prediction, the four
+  prefix encodings side by side, process-specific features, and the full
+  workflow on a real BPI Challenge log.
+* :doc:`API reference <autoapi/index>` — every public class and function.
 
 .. The toctrees below are hidden: they build the sidebar and the page order
    without repeating the links already written above.
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Tutorials
+   :maxdepth: 2
    :hidden:
 
-   auto_examples/plot_quickstart
-   auto_examples/plot_prefixes_and_targets
-   auto_examples/tiny_benchmark
+   user_guide/index
 
 .. toctree::
    :maxdepth: 1
-   :caption: How-to
+   :caption: Examples
    :hidden:
 
-   auto_examples/plot_multiindex_contract
-   auto_examples/plot_to_event_log
-   auto_examples/plot_download_event_logs
+   auto_examples/index
 
 .. toctree::
    :maxdepth: 1
    :caption: Reference
    :hidden:
 
-   auto_examples/index
    autoapi/index
 
 

@@ -15,14 +15,9 @@
 
 ## Overview
 
-SkPM is an open-source extension of the widely used [Scikit-learn](https://scikit-learn.org/) library, designed to meet the specific needs of Process Mining applications. It aims to provide a **standard**, **reproducible**, and **easily accessible** set of tools for PM research and practical applications.
+SkPM is an open-source extension of [scikit-learn](https://scikit-learn.org/) for process mining.
 
-## Available examples
-
-- **NEW** [**ICPM/ML4PM 2024 Tutorial**](https://colab.research.google.com/drive/1s6TxG14bKbh2zlOENLGGd9dy_1BLEBiO?usp=sharing): A notebook highlighting all the available features in SkPM!
-- [**Quickstart**](https://skpm.readthedocs.io/en/latest/auto_examples/plot_quickstart.html): Load an event log and extract past-looking temporal features.
-- [**Select a remaining-time model**](https://skpm.readthedocs.io/en/latest/auto_examples/plot_tiny_benchmark.html): The end-to-end pattern — download a public log, split it (temporal or unbiased), define a target, and compare models with grouped cross-validation.
-- [**Remaining time on BPI20**](https://skpm.readthedocs.io/en/latest/auto_examples/bpi20_rt.html): SkPM transformers inside a plain scikit-learn pipeline.
+Event logs are not tables of independent rows. Cases unfold over time, every event is a moment where a prediction could be made, and almost every convenient shortcut leaks the future into the past. **SkPM turns an event log into a supervised learning problem without leaking it** — feature extraction, prefix encoding, prediction targets and time-aware splits, all as ordinary scikit-learn transformers.
 
 <p align="center">
   <img src="docs/pipeline.png"/>
@@ -30,24 +25,21 @@ SkPM is an open-source extension of the widely used [Scikit-learn](https://sciki
 
 ## Installation
 
-**Soon available on PyPI**.
-
-To install SkPM, you can clone the repository and install the required dependencies using `pip`:
+**Soon available on PyPI.** Until then, install from the repository:
 
 ```bash
-git clone https://github.com/raseidi/skpm.git
-cd skpm
-pip install .
+pip install git+https://github.com/raseidi/skpm.git
 ```
+
+Python 3.10 or newer.
 
 ## Usage
 
-Below is an example of how to use SkPM to build a pipeline for remaining time prediction.
+A SkPM workflow always has the same five steps, in this order.
 
 ```python
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 
 from skpm.event_logs import BPI17
 from skpm.feature_extraction import TimestampExtractor
@@ -55,46 +47,68 @@ from skpm.feature_extraction.targets import remaining_time
 from skpm.model_selection import train_test_split
 from skpm.sequence_encoding import Aggregation
 
-# 1. Split the log first — before extracting features or fitting anything.
-#    Public logs ship the published unbiased-split parameters, so the strategy
-#    reads them from the loader. Your own log works the same way:
-#    train, test = train_test_split(pd.read_csv("my_log.csv"))
+# 1. Represent the log. Public loaders download and cache themselves; a
+#    DataFrame of your own works in the same places.
 log = BPI17()
+
+# 2. Split first — before extracting features, before fitting anything.
+#    The six loaders with published unbiased-split parameters carry them, so
+#    no dates need copying out of a paper.
 train, test = train_test_split(log, strategy="unbiased")
 
-# 2. Choose the target. Remaining time is a regression; next_activity would be
-#    a classification over the same two logs. Build it once per side.
+# 3. Build the target, once per side. Which one to predict is a modelling
+#    decision, so the split does not make it for you.
 y_train = remaining_time(train, time_unit="h")
 y_test = remaining_time(test, time_unit="h")
 
-# 3. Compose SkPM transformers with any sklearn estimator.
-pipeline = Pipeline(steps=[
-    ("timestamps", TimestampExtractor(time_unit="h")),
-    ("prefix_encoding", Aggregation(method="mean")),
-    ("standardization", StandardScaler()),
-    ("regressor", RandomForestRegressor()),
+# 4. Extract features and encode each prefix, inside a Pipeline.
+# 5. Fit on the training cases only — this is what prevents leakage.
+pipeline = Pipeline([
+    ("time", TimestampExtractor(time_unit="h")),
+    ("prefix", Aggregation(method="mean")),
+    ("model", RandomForestRegressor()),
 ])
-
-# 4. Fit on the training cases only — this is what prevents leakage.
 pipeline.fit(train, y_train)
 
 predictions = pipeline.predict(test)
 ```
 
+Your own log works the same way, with no loader class involved:
+
+```python
+train, test = train_test_split(pd.read_csv("my_log.csv"))
+```
+
+## What is in the box
+
+| Module | What it provides |
+| --- | --- |
+| `skpm.event_logs` | Fourteen public BPI Challenge and Sepsis loaders, XES/CSV parsing, and column normalization |
+| `skpm.model_selection` | `train_test_split` with `temporal` and `unbiased` strategies, splitting by whole cases |
+| `skpm.feature_extraction` | `TimestampExtractor` (past-looking temporal features), `ResourcePoolExtractor` (roles from behaviour), `WorkInProgress` (inter-case congestion), `VariantExtractor` |
+| `skpm.feature_extraction.targets` | `remaining_time`, `next_activity`, `execution_time` |
+| `skpm.sequence_encoding` | `Aggregation`, `Windowing`, `Indexing`, `Bucketing` — a growing prefix as a fixed-length vector |
+| `skpm.baselines` | `ActivityMeanRegressor`, a leakage-free reference to beat |
+
 ## Documentation
 
-Detailed documentation and examples can be found [here](https://skpm.readthedocs.io/en/latest/).
+Full documentation at [skpm.readthedocs.io](https://skpm.readthedocs.io/en/latest/).
+
+- [**Quickstart**](https://skpm.readthedocs.io/en/latest/auto_examples/plot_quickstart.html) — the whole workflow on one page, on synthetic data.
+- [**User Guide**](https://skpm.readthedocs.io/en/latest/user_guide/index.html) — each step explained once: the event log, splitting, targets, features, prefix encoding, composition.
+- [**Examples**](https://skpm.readthedocs.io/en/latest/auto_examples/index.html) — next-activity prediction, the four prefix encodings side by side, process-specific features, and the full workflow on a real BPI Challenge log.
+- [**ICPM/ML4PM 2024 Tutorial**](https://colab.research.google.com/drive/1s6TxG14bKbh2zlOENLGGd9dy_1BLEBiO?usp=sharing) — a Colab notebook walkthrough.
 
 ## Roadmap, next steps, and help needed!
 
-- Improving documentation by including examples.
 - Implementing new applications and writing tutorials.
 - Adding new methods (feature extraction, trace encoding, and models).
+- Re-enabling the polars backend.
 - Writing unit tests!
 
 ## Contributing
 
-We welcome contributions from the community! 
+We welcome contributions from the community!
 
 Check the [sklearn guidelines](https://scikit-learn.org/1.5/developers/contributing.html#reading-the-existing-code-base) to understand the `fit`, `predict`, and `transform` APIs!
 

@@ -2,8 +2,9 @@ from skpm.event_logs.base import TUEventLog
 
 
 class BPI11(TUEventLog):
-    """:doi:`BPI Challenge 2011 Hospital log
-    <https://doi.org/10.4121/uuid:d9769f3d-0ab0-4fb8-803b-0d1120ffcf54>`.
+    """BPI Challenge 2011 Hospital log.
+
+    :doi:`4TU dataset record <https://doi.org/10.4121/uuid:d9769f3d-0ab0-4fb8-803b-0d1120ffcf54>`
 
     Anonymized treatment data from the Gynaecology department of a Dutch
     academic hospital. Each case is a patient; events record the diagnostic
@@ -26,8 +27,9 @@ class BPI11(TUEventLog):
 
 
 class BPI12(TUEventLog):
-    """:doi:`BPI Challenge 2012 event log
-    <10.4121/uuid:3926db30-f712-4394-aebc-75976070e91f>`.
+    """BPI Challenge 2012 event log.
+
+    :doi:`4TU dataset record <https://doi.org/10.4121/uuid:3926db30-f712-4394-aebc-75976070e91f>`
 
     This dataset is from the Business Process Intelligence (BPI) Challenge
     2012 and contains event logs from a real-life financial institution. The
@@ -59,8 +61,9 @@ class BPI12(TUEventLog):
 
 
 class BPI13ClosedProblems(TUEventLog):
-    """:doi:`BPI Challenge 2013 Closed problems event log
-    <https://doi.org/10.4121/uuid:c2c3b154-ab26-4b31-a0e8-8f2350ddac11>`.
+    """BPI Challenge 2013 Closed problems event log.
+
+    :doi:`4TU dataset record <https://doi.org/10.4121/uuid:c2c3b154-ab26-4b31-a0e8-8f2350ddac11>`
 
     The BPI 2013 Closed Problems log consists of 1487 cases and 6660 events.
     It originates from the problem management process of Volvo IT Belgium,
@@ -84,8 +87,9 @@ class BPI13ClosedProblems(TUEventLog):
 
 
 class BPI13Incidents(TUEventLog):
-    """:doi:`BPI Challenge 2013 Incidents
-    <https://doi.org/10.4121/uuid:500573e6-accc-4b0c-9576-aa5468b10cee>`.
+    """BPI Challenge 2013 Incidents.
+
+    :doi:`4TU dataset record <https://doi.org/10.4121/uuid:500573e6-accc-4b0c-9576-aa5468b10cee>`
 
     The BPI 2013 Incidents log contains 7554 cases and 65533 events.
     It is part of the incident management process at Volvo IT Belgium,
@@ -110,8 +114,9 @@ class BPI13Incidents(TUEventLog):
 
 
 class BPI13OpenProblems(TUEventLog):
-    """:doi:`BPI Challenge 2013 open problems
-    <https://doi.org/10.4121/uuid:3537c19d-6c64-4b1d-815d-915ab0e479da>`.
+    """BPI Challenge 2013 open problems.
+
+    :doi:`4TU dataset record <https://doi.org/10.4121/uuid:3537c19d-6c64-4b1d-815d-915ab0e479da>`
 
     The BPI 2013 Open Problems log contains 819 cases and 2351 events.
     It originates from the problem management process of Volvo IT Belgium,
@@ -135,8 +140,9 @@ class BPI13OpenProblems(TUEventLog):
 
 
 class BPI15(TUEventLog):
-    """:doi:`BPI Challenge 2015 M5
-    <https://doi.org/10.4121/uuid:b32c6fe5-f212-4286-9774-58dd53511cf8>`.
+    """BPI Challenge 2015 M5.
+
+    :doi:`4TU dataset record <https://doi.org/10.4121/uuid:b32c6fe5-f212-4286-9774-58dd53511cf8>`
 
     The BPI 2015 event log is composed of five sub-logs (municipality 1-5).
     This class concatenates these sub-logs into a single event log.
@@ -225,8 +231,9 @@ class BPI15(TUEventLog):
 
 
 class BPI17(TUEventLog):
-    """:doi:`BPI Challenge 2017
-    <https://doi.org/10.4121/uuid:5f3067df-f10b-45da-b98b-86ae4c7a310b>`.
+    """BPI Challenge 2017.
+
+    :doi:`4TU dataset record <https://doi.org/10.4121/uuid:5f3067df-f10b-45da-b98b-86ae4c7a310b>`
 
     The BPI 2017 event log originates from a loan application process at a
     Dutch financial institution. The data encompasses all loan applications
@@ -259,8 +266,9 @@ class BPI17(TUEventLog):
 
 
 class BPI19(TUEventLog):
-    """:doi:`BPI Challenge 2019
-    <https://doi.org/10.4121/uuid:d06aff4b-79f0-45e6-8ec8-e19730c248f1>`.
+    """BPI Challenge 2019.
+
+    :doi:`4TU dataset record <https://doi.org/10.4121/uuid:d06aff4b-79f0-45e6-8ec8-e19730c248f1>`
 
 
     The BPI 2019 event log comes from a large multinational company in the
@@ -297,8 +305,9 @@ class BPI19(TUEventLog):
 
 
 class BPI20PrepaidTravelCosts(TUEventLog):
-    """:doi:`BPI2020 Prepaid Travel Costs
-    <https://doi.org/10.4121/uuid:5d2fe5e1-f91f-4a3b-ad9b-9e4126870165>`.
+    """BPI2020 Prepaid Travel Costs.
+
+    :doi:`4TU dataset record <https://doi.org/10.4121/uuid:5d2fe5e1-f91f-4a3b-ad9b-9e4126870165>`
 
 
     The BPI 2020 Prepaid Travel Costs event log records two years of travel
@@ -335,8 +344,9 @@ class BPI20PrepaidTravelCosts(TUEventLog):
 
 
 class BPI20TravelPermitData(TUEventLog):
-    """:doi:`BPI2020 Travel Permit Data
-    <https://doi.org/10.4121/uuid:ea03d361-a7cd-4f5e-83d8-5fbdf0362550>`.
+    """BPI2020 Travel Permit Data.
+
+    :doi:`4TU dataset record <https://doi.org/10.4121/uuid:ea03d361-a7cd-4f5e-83d8-5fbdf0362550>`
 
     The BPI 2020 Travel Permit event log contains 7,065 cases and 86,581
     events, covering two years of travel expense claims at a university. In
@@ -373,8 +383,9 @@ class BPI20TravelPermitData(TUEventLog):
 
 
 class BPI20RequestForPayment(TUEventLog):
-    """:doi:`BPI2020 Request For Payment
-    <https://doi.org/10.4121/uuid:895b26fb-6f25-46eb-9e48-0dca26fcd030>`.
+    """BPI2020 Request For Payment.
+
+    :doi:`4TU dataset record <https://doi.org/10.4121/uuid:895b26fb-6f25-46eb-9e48-0dca26fcd030>`
 
 
     The BPI 2020 Request for Payment event log contains 6,886 cases and 36,796
@@ -410,8 +421,9 @@ class BPI20RequestForPayment(TUEventLog):
 
 
 class BPI20DomesticDeclarations(TUEventLog):
-    """:doi:`BPI2020 Domestic Declarations
-    <https://doi.org/10.4121/uuid:3f422315-ed9d-4882-891f-e180b5b4feb5>`.
+    """BPI2020 Domestic Declarations.
+
+    :doi:`4TU dataset record <https://doi.org/10.4121/uuid:3f422315-ed9d-4882-891f-e180b5b4feb5>`
 
 
     The BPI 2020 Domestic Declarations event log contains 10,500 cases and
@@ -441,8 +453,9 @@ class BPI20DomesticDeclarations(TUEventLog):
 
 
 class BPI20InternationalDeclarations(TUEventLog):
-    """:doi:`BPI2020 International Declarations
-    <https://doi.org/10.4121/uuid:2bbf8f6a-fc50-48eb-aa9e-c4ea5ef7e8c5>`.
+    """BPI2020 International Declarations.
+
+    :doi:`4TU dataset record <https://doi.org/10.4121/uuid:2bbf8f6a-fc50-48eb-aa9e-c4ea5ef7e8c5>`
 
     The BPI 2020 International Declarations event log contains 6,449 cases and
     72,151 events, covering two years of travel expense claims at a university.
@@ -472,8 +485,9 @@ class BPI20InternationalDeclarations(TUEventLog):
 
 
 class Sepsis(TUEventLog):
-    """:doi:`Sepsis
-    <https://doi.org/10.4121/uuid:915d2bfb-7e84-49ad-a286-dc35f063a460>`.
+    """Sepsis.
+
+    :doi:`4TU dataset record <https://doi.org/10.4121/uuid:915d2bfb-7e84-49ad-a286-dc35f063a460>`
 
 
     The Sepsis event log contains real-life hospital data regarding sepsis
