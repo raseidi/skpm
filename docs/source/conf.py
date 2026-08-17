@@ -1,5 +1,9 @@
+import sys
 from importlib.metadata import version as _version
 from pathlib import Path
+
+# So sphinx-gallery can import `_gallery_order` by name (see below).
+sys.path.insert(0, str(Path(__file__).parent))
 
 project = "skpm"
 copyright = "2026, Rafael S. Oyamada"
@@ -32,6 +36,9 @@ _BACKREFERENCES_DIR = "gen_modules/backreferences"
 sphinx_gallery_conf = {
     "examples_dirs": "../../examples",
     "gallery_dirs": "auto_examples",
+    # Teaching order, not sphinx-gallery's default. Must be a dotted string,
+    # not a callable — see docs/source/_gallery_order.py.
+    "within_subsection_order": "_gallery_order.ExampleOrder",
     # Only plot_*.py EXECUTES. Heavy BPI examples render as code, unrun.
     "filename_pattern": r"/plot_",
     "ignore_pattern": r"__init__\.py",
