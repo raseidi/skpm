@@ -25,8 +25,10 @@ independent sample described only by its own features — a reasonable model, an
 the right starting point. Add an encoder when you want the model to see the
 path taken, not just the current step.
 
-All four encoders below take numeric input, so one-hot your categorical columns
-first (see :ref:`composing`).
+Only :class:`Aggregation` requires numeric input — averaging a string activity
+has no meaning, so it raises. The positional encoders shift values of any dtype,
+and :class:`Bucketing` ignores them entirely. Even so, encode categorical
+columns *before* the encoder rather than after; see :ref:`encoding_order`.
 
 .. _aggregation:
 
@@ -96,7 +98,57 @@ identical vector.
    Both positional encoders pad structurally-missing cells with ``fill_value``
    (``0`` by default), so the output is NaN-free and usable by estimators that
    reject missing values. Pass ``fill_value=None`` to keep ``NaN`` and impute
-   downstream, or a string such as ``"<none>"`` for categorical columns.
+   downstream.
+
+   ``fill_value`` is applied as-is to every column, so on a **string** column
+   the default pads with the integer ``0`` and leaves a mixed-type object
+   column that scikit-learn's encoders reject outright::
+
+       TypeError: Encoders require their input argument must be uniformly
+       strings or numbers. Got ['int', 'str']
+
+   Pass a string sentinel — ``fill_value="<pad>"`` — whenever you encode a
+   categorical column directly.
+
+.. _encoding_order:
+
+Encode categories before, not after
+===================================
+
+For a categorical column such as ``activity``, one-hot encode it *before* the
+prefix encoder. The two orders are not equivalent, and the difference is not a
+matter of taste.
+
+:class:`~sklearn.preprocessing.OneHotEncoder` learns an **independent vocabulary
+per column**. Encode after windowing and each position gets its own, discovered
+from whichever values happened to land there in training:
+
+.. code-block:: text
+
+   position 0 vocabulary: ['pick', 'receive', 'ship']
+   position 1 vocabulary: ['<pad>', 'pick', 'receive']    <- 'ship' missing
+
+Here ``ship`` never occurred as a *previous* event during fit, so at prediction
+time "the previous event was ship" has no column to land in and silently
+collapses to all zeros. The output width also varies from position to position.
+
+Encoding first avoids both: one encoder, one vocabulary, a column space that is
+identical at fit and transform, and ``handle_unknown="ignore"`` handling drift
+in one place. It is also what makes :class:`Aggregation` meaningful, since the
+mean of a one-hot column is a relative frequency.
+
+.. warning::
+
+   One consequence is worth knowing. With one-hot encoding first, an absent
+   window position is an all-zeros block — and ``handle_unknown="ignore"``
+   produces *exactly the same* all-zeros block for a category unseen at fit.
+   "No previous event" and "previous event was an activity I have never seen"
+   become indistinguishable.
+
+   A real one-hot block sums to 1, so the distinction survives in principle,
+   but a tree model cannot compute a row-sum across columns. If it matters for
+   your task, add :func:`skpm.trace_positions` as a feature so the model can
+   condition on how many positions are genuinely filled.
 
 .. _bucketing:
 

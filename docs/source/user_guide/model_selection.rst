@@ -36,12 +36,7 @@ purpose. They are raw event logs with string activities, not feature matrices.
 
    Splitting *after* computing a target gives identical values to splitting
    before. Both strategies are case-level and all three targets are case-local,
-   so nothing crosses a case boundary. The leakage that is real lives on the
-   ``X`` side: :class:`~skpm.feature_extraction.WorkInProgress` reads across
-   cases, and :class:`~skpm.sequence_encoding.Aggregation`,
-   :class:`~skpm.feature_extraction.ResourcePoolExtractor` and
-   :class:`~skpm.sequence_encoding.Bucketing` are *fitted*. Only fitting the
-   pipeline on ``train`` alone prevents it.
+   so nothing crosses a case boundary. 
 
 .. _temporal_split:
 
@@ -139,9 +134,6 @@ identifiers as groups:
 Without ``groups``, a plain :class:`~sklearn.model_selection.KFold` would put a
 case's early events in a training fold and its later events in the validation
 fold — and the model would validate against cases it has already partly seen.
-
-Pass a DataFrame, not an ``EventLog``: meta-estimators index ``X`` before any
-SkPM code runs. ``train_test_split`` already returns DataFrames.
 
 .. topic:: References
 
