@@ -111,4 +111,4 @@ Polars support is **temporarily disabled**: `_validate_log` raises `NotImplement
 
 ## CI
 
-GitHub Actions runs `uv run pytest --cov=skpm tests` on Python 3.10 and 3.12 (ubuntu-latest) on every push/PR to `main`.
+GitHub Actions runs `uv run pytest --cov=skpm tests` on Python 3.11 and 3.12 (ubuntu-latest) on every push/PR to `main`.

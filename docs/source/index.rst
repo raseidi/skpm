@@ -152,7 +152,7 @@ Install
 
    pip install git+https://github.com/raseidi/skpm.git
 
-Python 3.10 or newer. A PyPI release is on the way; until then, install from the
+Python 3.11 or newer. A PyPI release is on the way; until then, install from the
 repository.
 
 
