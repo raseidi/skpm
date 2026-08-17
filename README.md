@@ -21,24 +21,14 @@ Website: https://skpm.readthedocs.io
 
 ## Installation
 
-### Dependencies
-
-SkPM requires:
-
-- Python (>= 3.11)
-- scikit-learn (>= 1.6.1)
-- pandas (>= 2.2.0)
-- pyarrow (>= 16.0.0)
-- polars (>= 0.20.16)
-- lxml (== 5.1.0)
-
 ### User installation
 
 A PyPI release is on the way. Until then, install the latest version from the
-repository with `pip`:
+repository with `uv` or `pip`:
 
 ```bash
-pip install git+https://github.com/raseidi/skpm.git
+uv venv .venv --python 3.11 && source .venv/bin/activate
+uv pip install git+https://github.com/raseidi/skpm.git
 ```
 
 ## Getting started
@@ -56,7 +46,7 @@ from skpm.feature_extraction.targets import remaining_time
 from skpm.model_selection import train_test_split
 from skpm.sequence_encoding import Aggregation
 
-# 6,886 payment requests of a Dutch university; downloads and caches on first use.
+# Payment requests from a Dutch university; downloads and caches on first use.
 log = BPI20RequestForPayment()
 
 # Split first, before extracting features: whole cases, separated in time.
@@ -74,7 +64,6 @@ pipeline = Pipeline([
 ]).fit(train, y_train)
 
 print(mean_absolute_error(y_test, pipeline.predict(test)))
-# 109.6 hours of mean absolute error, from timestamps alone
 ```
 
 Your own log works the same way, with no loader class and no conversion step to
@@ -86,7 +75,6 @@ remember: `train_test_split(pd.read_csv("my_log.csv"))`.
 - [User Guide](https://skpm.readthedocs.io/en/latest/user_guide/index.html) — the event log, splitting, targets, features, prefix encoding, composition.
 - [Examples](https://skpm.readthedocs.io/en/latest/auto_examples/index.html) — next-activity prediction, the prefix encodings side by side, and a real BPI Challenge log end to end.
 - [API reference](https://skpm.readthedocs.io/en/latest/autoapi/index.html) — every public class and function.
-- [ICPM/ML4PM 2024 tutorial](https://colab.research.google.com/drive/1s6TxG14bKbh2zlOENLGGd9dy_1BLEBiO?usp=sharing) — a Colab walkthrough.
 
 ## Contributing
 
