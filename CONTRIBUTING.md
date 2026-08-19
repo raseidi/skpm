@@ -1,73 +1,128 @@
-# Contributing
+# Contributing to SkPM
 
-Contributions are welcome, and they are greatly appreciated! Every little bit
-helps, and credit will always be given.
+Thanks for your interest in SkPM. Bug reports, documentation fixes and pull
+requests are all welcome, and credit is always given.
 
-## Types of Contributions
+SkPM follows scikit-learn's conventions closely, so scikit-learn's
+[contributing guide](https://scikit-learn.org/stable/developers/contributing.html)
+is worth reading alongside this one — most of it applies here directly.
 
-### Report Bugs
+## Ways to contribute
 
-If you are reporting a bug, please include:
+- **Report a bug** or **request a feature** by opening an
+  [issue](https://github.com/raseidi/skpm/issues).
+- **Improve the documentation** — docstrings, the user guide, or an example for
+  the gallery. This is the easiest place to start and always useful.
+- **Contribute code** — fix a bug, or implement something discussed in an issue.
 
-* Your operating system name and version.
-* Any details about your local setup that might be helpful in troubleshooting.
-* Detailed steps to reproduce the bug.
+If you are looking for something to pick up, issues labelled `good first issue`
+or `help wanted` are a good place to start.
 
-### Fix Bugs
+## Submitting a bug report or a feature request
 
-Look through the GitHub issues for bugs. Anything tagged with "bug" and "help
-wanted" is open to whoever wants to implement it.
+Before opening an issue, please search the existing ones — it may already be
+known.
 
-### Implement Features
+A good bug report includes:
 
-Look through the GitHub issues for features. Anything tagged with "enhancement"
-and "help wanted" is open to whoever wants to implement it.
+- a **minimal reproducible example**: the shortest code that shows the problem,
+  ideally on a small synthetic log rather than a downloaded BPI Challenge log,
+  so it runs anywhere in seconds;
+- the **full traceback**, not just the last line;
+- your versions:
 
-### Write Documentation
+  ```console
+  python -c "import skpm, sklearn, pandas; print(skpm.__version__, sklearn.__version__, pandas.__version__)"
+  ```
 
-You can never have enough documentation! Please feel free to contribute to any
-part of the documentation, such as the official docs, docstrings, or even
-on the web in blog posts, articles, and such.
+For a feature request, describe the process-mining problem you are trying to
+solve, not only the API you have in mind — there may be a simpler way to get
+there with what already exists.
 
-### Submit Feedback
+## Setting up a development environment
 
-If you are proposing a feature:
+SkPM uses [uv](https://docs.astral.sh/uv/).
 
-* Explain in detail how it would work.
-* Keep the scope as narrow as possible, to make it easier to implement.
-* Remember that this is a volunteer-driven project, and that contributions
-  are welcome :)
+```console
+git clone https://github.com/raseidi/skpm.git
+cd skpm
+uv sync                                   # project + dev tools
+uv run pytest --cov=skpm tests            # run the suite
+```
 
-## Get Started!
+Some tests download small event logs from the 4TU repository, so the first run
+needs a network connection.
 
-Ready to contribute? Here's how to set up `skpm` for local development.
+For the documentation:
 
-1. Download a copy of `skpm` locally.
-2. Install `skpm` using `poetry`:
+```console
+uv sync --group docs
+uv run sphinx-build docs/source docs/build
+```
 
-    ```console
-    $ poetry install
-    ```
+## Contributing code
 
-3. Use `git` (or similar) to create a branch for local development and make your changes:
+1. Fork the repository and create a branch:
 
-    ```console
-    $ git checkout -b name-of-your-bugfix-or-feature
-    ```
+   ```console
+   git checkout -b my-fix-or-feature
+   ```
 
-4. When you're done making changes, check that your changes conform to any code formatting requirements and pass any tests.
+2. Make your change, with tests.
+3. Run the suite and the formatter:
 
-5. Commit your changes and open a pull request.
+   ```console
+   uv run pytest tests
+   uv run black src tests
+   ```
 
-## Pull Request Guidelines
+4. Push and open a pull request against `main`, describing what changed and why.
 
-Before you submit a pull request, check that it meets these guidelines:
+Keep pull requests focused on one thing — a small, self-contained change is far
+easier to review and merge than a large one touching several areas.
 
-1. The pull request should include additional tests if appropriate.
-2. If the pull request adds functionality, the docs should be updated.
-3. The pull request should work for all currently supported operating systems and versions of Python.
+## Pull request checklist
+
+- [ ] Tests cover the new behaviour, and the full suite passes.
+- [ ] Public functions and classes have docstrings, in the same style as the
+      surrounding code.
+- [ ] `black src tests` has been run.
+- [ ] The user guide or an example is updated, if the change affects how SkPM is
+      used.
+
+Continuous integration runs the suite on Python 3.11 and 3.12; a green check is
+required before merging.
+
+## Coding conventions
+
+SkPM is a scikit-learn extension, so estimators follow scikit-learn's API —
+`fit` / `transform` / `predict`, parameters stored unmodified in `__init__`, and
+everything learned from data stored in attributes ending with an underscore.
+
+A few conventions are specific to SkPM, and are worth knowing before writing a
+new transformer:
+
+- **Event logs carry a MultiIndex** of `(case_id, timestamp, event_id)`.
+  `skpm.event_logs.base.to_event_log` is the single place where a log is coerced
+  into that shape.
+- **Event-level transformers** subclass `BaseProcessTransformer` and implement
+  `_fit` / `_transform`. Do not override `fit` / `transform` — the base class
+  validates the log and checks the output columns for you.
+- **Every `_transform` must index its output by `X.index`**, so the MultiIndex
+  survives the whole pipeline.
+- **Trace-level transformers** — one row per case — subclass
+  `CaseLevelTransformer` instead.
+- **Prediction targets are functions, not transformers** (see
+  `feature_extraction/targets.py`): they return a Series aligned to the log, to
+  be passed as `y`.
+- **Features must not look into the future.** A feature computed from events
+  that have not happened yet at prediction time is leakage, and is the single
+  most common mistake in process-mining pipelines.
+
+There is more detail in the [user guide](https://skpm.readthedocs.io/), and
+`CLAUDE.md` in the repository root documents the internal contracts in depth.
 
 ## Code of Conduct
 
-Please note that the `skpm` project is released with a
-Code of Conduct. By contributing to this project you agree to abide by its terms.
+By participating in this project you agree to abide by its
+[Code of Conduct](https://github.com/raseidi/skpm/blob/main/CONDUCT.md).

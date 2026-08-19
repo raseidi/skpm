@@ -4,7 +4,7 @@
 
 [![Read the Docs](https://img.shields.io/readthedocs/skpm)](https://skpm.readthedocs.io/en/latest/)
 [![Codecov](https://img.shields.io/codecov/c/github/raseidi/skpm)](https://codecov.io/gh/raseidi/skpm)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/raseidi/skpm/blob/main/LICENSE)
 
 **SkPM** is a Python module for process mining built on top of scikit-learn and
 pandas, and distributed under the MIT license.
@@ -78,7 +78,7 @@ remember: `train_test_split(pd.read_csv("my_log.csv"))`.
 
 ## Contributing
 
-Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for how to
+Contributions are welcome — see [CONTRIBUTING.md](https://github.com/raseidi/skpm/blob/main/CONTRIBUTING.md) for how to
 open an issue or a pull request. SkPM follows scikit-learn's `fit` / `transform`
 / `predict` conventions, so its
 [contributing guide](https://scikit-learn.org/stable/developers/contributing.html)
