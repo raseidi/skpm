@@ -12,36 +12,32 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Minor-version selectors: always the latest patch release, which is
+        # what users actually run. Quoted so YAML keeps '3.10' from becoming 3.1.
         python: ['3.11', '3.12']
         os: [ubuntu-latest]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
       - name: Install uv and set up Python
         uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Install core dependencies
-        run: |
-          uv sync --locked
+      - name: Install project and test dependencies
+        # --locked fails the job if uv.lock is stale w.r.t. pyproject.toml, so
+        # CI can never resolve a different environment than the lockfile pins.
+        run: uv sync --locked --no-default-groups --group test
 
       - name: Run tests
-        run: uv run pytest --cov=skpm tests
-
-      - name: Coverage report
-        if: success()
-        run: |
-          uv run coverage report
-          uv run coverage xml
+        run: uv run pytest tests --cov=skpm --cov-report=term --cov-report=xml
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         if: always()
-        continue-on-error: true
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: coverage.xml
-          name: Coverage
+          files: coverage.xml
+          name: py${{ matrix.python }}-${{ matrix.os }}
           fail_ci_if_error: false

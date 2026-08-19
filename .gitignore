@@ -6,6 +6,7 @@ htmlcov/
 notebooks/
 
 .coverage
+coverage.xml
 notes.md
 skpm-venv/
 poetry.lock

@@ -155,19 +155,6 @@ wheels = [
 ]
 
 [[package]]
-name = "codecov"
-version = "2.1.13"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "coverage" },
-    { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/2c/bb/594b26d2c85616be6195a64289c578662678afa4910cef2d3ce8417cf73e/codecov-2.1.13.tar.gz", hash = "sha256:2362b685633caeaf45b9951a9b76ce359cd3581dd515b430c6c3f5dfb4d92a8c", size = 21416, upload-time = "2023-04-17T23:11:39.779Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/af/02/18785edcdf6266cdd6c6dc7635f1cbeefd9a5b4c3bb8aff8bd681e9dd095/codecov-2.1.13-py2.py3-none-any.whl", hash = "sha256:c2ca5e51bba9ebb43644c43d0690148a55086f7f5e6fd36170858fa4206744d5", size = 16512, upload-time = "2023-04-17T23:11:37.344Z" },
-]
-
-[[package]]
 name = "colorama"
 version = "0.4.6"
 source = { registry = "https://pypi.org/simple" }
@@ -1119,8 +1106,8 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "black" },
-    { name = "codecov" },
     { name = "coverage" },
+    { name = "matplotlib" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -1133,6 +1120,12 @@ docs = [
     { name = "sphinx-design" },
     { name = "sphinx-gallery" },
     { name = "sphinx-rtd-theme" },
+]
+test = [
+    { name = "coverage" },
+    { name = "matplotlib" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
 ]
 
 [package.metadata]
@@ -1147,8 +1140,8 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "black", specifier = ">=24.1.1" },
-    { name = "codecov", specifier = ">=2.1.13" },
     { name = "coverage", specifier = ">=7.4.1" },
+    { name = "matplotlib", specifier = ">=3.8" },
     { name = "mypy", specifier = ">=1.8.0" },
     { name = "pytest", specifier = ">=7.4.4" },
     { name = "pytest-cov", specifier = ">=4.1.0" },
@@ -1161,6 +1154,12 @@ docs = [
     { name = "sphinx-design", specifier = ">=0.6" },
     { name = "sphinx-gallery", specifier = ">=0.17" },
     { name = "sphinx-rtd-theme", specifier = ">=3.0" },
+]
+test = [
+    { name = "coverage", specifier = ">=7.4.1" },
+    { name = "matplotlib", specifier = ">=3.8" },
+    { name = "pytest", specifier = ">=7.4.4" },
+    { name = "pytest-cov", specifier = ">=4.1.0" },
 ]
 
 [[package]]

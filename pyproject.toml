@@ -15,13 +15,18 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = [
+# Minimal set needed to run the suite; CI installs only this group.
+test = [
     "pytest>=7.4.4",
     "pytest-cov>=4.1.0",
-    "black>=24.1.1",
-    "codecov>=2.1.13",
-    "mypy>=1.8.0",
     "coverage>=7.4.1",
+    # tests/test_examples.py executes the gallery examples, which plot.
+    "matplotlib>=3.8",
+]
+dev = [
+    { include-group = "test" },
+    "black>=24.1.1",
+    "mypy>=1.8.0",
 ]
 docs = [
     "matplotlib>=3.8",
