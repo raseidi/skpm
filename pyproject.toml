@@ -1,7 +1,8 @@
 [project]
 name = "skpm"
-version = "0.0.1"
-description = "A process mining library built upon scikit-learn!"
+# The version comes from the git tag; see [tool.pdm.version] below.
+dynamic = ["version"]
+description = "Process mining, the scikit-learn way."
 authors = [{ name = "Rafael Oyamada" }]
 requires-python = ">=3.11"
 readme = "README.md"
@@ -55,6 +56,11 @@ docs = [
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
+
+# Read the version from the git tag, so `git tag v0.1.0` is the only place a
+# release number is written
+[tool.pdm.version]
+source = "scm"
 
 [tool.black]
 line-length = 80

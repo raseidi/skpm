@@ -27,7 +27,7 @@ A PyPI release is on the way. Until then, install the latest version from the
 repository with `uv` or `pip`:
 
 ```bash
-uv venv .venv --python 3.11 && source .venv/bin/activate
+uv venv .venv --python 3.12 && source .venv/bin/activate
 uv pip install git+https://github.com/raseidi/skpm.git
 ```
 
