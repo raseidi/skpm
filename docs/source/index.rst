@@ -152,8 +152,7 @@ Install
 
    pip install skpm
 
-Python 3.11 or newer. A PyPI release is on the way; until then, install from the
-repository.
+Python 3.11 or newer.
 
 
 Where to start
