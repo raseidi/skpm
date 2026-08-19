@@ -15,13 +15,7 @@ is worth reading alongside this one — most of it applies here directly.
   the gallery. This is the easiest place to start and always useful.
 - **Contribute code** — fix a bug, or implement something discussed in an issue.
 
-If you are looking for something to pick up, issues labelled `good first issue`
-or `help wanted` are a good place to start.
-
 ## Submitting a bug report or a feature request
-
-Before opening an issue, please search the existing ones — it may already be
-known.
 
 A good bug report includes:
 
