@@ -5,10 +5,26 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Lets you re-run the suite from the Actions tab without pushing a commit.
+  workflow_dispatch:
+
+# Least privilege: the suite only ever needs to read the repository. Anything
+# that writes (releases, comments, OIDC) must opt in explicitly, per job.
+permissions:
+  contents: read
+
+# One run per branch. A new push supersedes an in-flight run on a pull request,
+# but runs on main are left alone so every commit there keeps its own result.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    # The suite takes ~15s; this is a runaway guard, not a target. Without it a
+    # hung download would hold the runner for GitHub's 6-hour default.
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
