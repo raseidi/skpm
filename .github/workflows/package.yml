@@ -1,0 +1,108 @@
+name: package
+
+# Validates the artifacts that would be published to PyPI. The unit suite runs
+# against the source tree, so it cannot see packaging faults — a subpackage
+# missing from the wheel, unrenderable README metadata, a broken dependency
+# list. Those only show up once the distribution is built and installed.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv and set up Python
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+
+      - name: Build the sdist and the wheel
+        run: uv build --out-dir dist
+
+      - name: Check the metadata PyPI will render
+        # --strict turns README rendering warnings into failures. PyPI uploads
+        # are immutable, so a broken project page cannot be fixed in place.
+        run: uvx twine check --strict dist/*
+
+      - name: Upload the distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+          if-no-files-found: error
+
+  install:
+    # Jobs are separate machines, so the wheel travels as an artifact. Testing
+    # the *uploaded* artifact — rather than rebuilding here — means the thing
+    # verified is byte-for-byte the thing a release would publish.
+    needs: build
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12']
+        os: [ubuntu-latest]
+
+    steps:
+      # Deliberately no checkout: with no source tree on disk, `import skpm`
+      # can only resolve to the installed wheel. A checkout here would let the
+      # repository satisfy imports that the wheel itself is missing.
+      - name: Download the distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist
+
+      - name: Install uv and set up Python
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install the wheel into a clean environment
+        run: |
+          uv venv --python ${{ matrix.python }} .venv
+          uv pip install --python .venv/bin/python dist/*.whl
+
+      - name: Import the installed package
+        run: |
+          .venv/bin/python - <<'PY'
+          import importlib
+          import pkgutil
+
+          import skpm
+
+          # __version__ reads importlib.metadata, so this also proves the
+          # distribution metadata was installed, not just the modules.
+          print("skpm", skpm.__version__, "from", skpm.__file__)
+
+          # Import every submodule: the wheel silently omitting a subpackage is
+          # the classic src-layout packaging bug, and a top-level `import skpm`
+          # would not notice.
+          modules = sorted(
+              m.name for m in pkgutil.walk_packages(skpm.__path__, "skpm.")
+          )
+          for name in modules:
+              importlib.import_module(name)
+          print(f"imported {len(modules)} submodules")
+
+          missing = [s for s in skpm.__all__ if not hasattr(skpm, s)]
+          assert not missing, f"missing from the public API: {missing}"
+          print("public API:", ", ".join(skpm.__all__))
+          PY
