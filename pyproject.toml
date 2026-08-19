@@ -5,7 +5,8 @@ description = "A process mining library built upon scikit-learn!"
 authors = [{ name = "Rafael Oyamada" }]
 requires-python = ">=3.11"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
 dependencies = [
     "scikit-learn>=1.6.1",
     "pandas>=2.2.0",
@@ -44,3 +45,7 @@ build-backend = "pdm.backend"
 
 [tool.black]
 line-length = 80
+
+[project.urls]
+Homepage = "https://github.com/raseidi/skpm"
+Docs = "https://skpm.readthedocs.io/"
