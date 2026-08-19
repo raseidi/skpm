@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ['3.11.0', '3.12.0']
+        python: ['3.11', '3.12']
         os: [ubuntu-latest]
 
     steps:
@@ -25,14 +25,7 @@ jobs:
 
       - name: Install core dependencies
         run: |
-          uv sync
-
-      - name: Add test & coverage tools
-        run: |
-          uv run pip install pytest pytest-cov coverage
-
-      - name: Check pytest
-        run: uv run pytest --version
+          uv sync --locked
 
       - name: Run tests
         run: uv run pytest --cov=skpm tests
