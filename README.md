@@ -28,7 +28,7 @@ repository with `uv` or `pip`:
 
 ```bash
 uv venv .venv --python 3.12 && source .venv/bin/activate
-uv pip install git+https://github.com/raseidi/skpm.git
+uv pip install skpm
 ```
 
 ## Getting started
