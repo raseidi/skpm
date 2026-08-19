@@ -1,0 +1,218 @@
+name: release
+
+# Publishes skpm. Two entry points, deliberately different in kind:
+#
+#   * "Run workflow" (workflow_dispatch) -> TestPyPI. A full rehearsal: same
+#     build, same upload mechanism, throwaway index. Run this before every real
+#     release, because PyPI uploads are immutable and a bad version number or
+#     unrenderable README cannot be fixed in place.
+#   * pushing a v* tag -> PyPI, behind a protected environment that requires a
+#     human to approve the deployment before the upload runs.
+#
+# Neither path uses an API token. Both authenticate with Trusted Publishing:
+# GitHub mints a short-lived OIDC token for the job, PyPI verifies it came from
+# this repository and this workflow, and trades it for a scoped upload token. So
+# there is no long-lived credential stored in the repository to leak or rotate.
+#
+# ONE-TIME SETUP, outside this file:
+#   1. TestPyPI -> Publishing -> add a pending publisher:
+#        owner: <your-org-or-user>, repo: skpm,
+#        workflow: release.yml, environment: testpypi
+#   2. PyPI -> the same, with environment: pypi
+#   3. GitHub -> Settings -> Environments -> new environment "pypi", and add
+#      yourself under "Required reviewers". That is what makes the production
+#      upload pause for approval; the `environment:` key below only subjects
+#      the job to whatever rules the environment carries.
+#   4. GitHub -> Settings -> Environments -> new environment "testpypi", no
+#      protection rules needed.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+# Never cancel a release halfway. Once PyPI has accepted a file that version is
+# spent forever, so an interrupted upload is not something you can simply retry.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv and set up Python
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+
+      - name: Build the sdist and the wheel
+        run: uv build --out-dir dist
+
+      - name: Check the metadata PyPI will render
+        run: uvx twine check --strict dist/*
+
+      - name: Read the packaged version
+        id: version
+        run: |
+          version=$(uv run --no-project python -c "import pathlib, tomllib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "packaged version: $version"
+
+      - name: Refuse a tag that disagrees with the packaged version
+        # project.version is written by hand, so nothing otherwise stops tag
+        # v0.1.0 from publishing a distribution labelled 0.0.1.
+        if: github.event_name == 'push'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$tag" != "$VERSION" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match project.version $VERSION"
+            exit 1
+          fi
+          echo "tag $GITHUB_REF_NAME matches project.version $VERSION"
+
+      - name: Upload the distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+          if-no-files-found: error
+
+  testpypi:
+    if: github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/skpm
+    permissions:
+      # Mints the OIDC token Trusted Publishing exchanges for an upload token.
+      # Scoped to this job alone: nothing else in the workflow can request one.
+      id-token: write
+
+    steps:
+      - name: Download the distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          # Re-dispatching without bumping the version is normal while
+          # rehearsing, so a collision here should not be a hard failure.
+          skip-existing: true
+
+  verify-testpypi:
+    if: github.event_name == 'workflow_dispatch'
+    needs: [build, testpypi]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12']
+        os: [ubuntu-latest]
+
+    steps:
+      # No checkout and no artifact download: the package under test has to come
+      # from the index, which is the whole point of verifying a publish.
+      - name: Install uv and set up Python
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install the published package from TestPyPI
+        env:
+          # Passed through the environment rather than interpolated into the
+          # script, so an expression can never become shell syntax.
+          VERSION: ${{ needs.build.outputs.version }}
+          PYTHON: ${{ matrix.python }}
+        run: |
+          uv venv --python "$PYTHON" .venv
+
+          # PyPI is the primary index so dependencies resolve there;
+          # unsafe-first-match falls through to TestPyPI for skpm, which is the
+          # only package that exists there. Dependencies never come from
+          # TestPyPI, where anyone can claim a familiar name.
+          install() {
+            uv pip install --python .venv/bin/python --no-cache \
+              --index-url https://pypi.org/simple/ \
+              --extra-index-url https://test.pypi.org/simple/ \
+              --index-strategy unsafe-first-match \
+              "skpm==$VERSION"
+          }
+
+          # TestPyPI's index can lag a few seconds behind an accepted upload.
+          for attempt in 1 2 3 4 5; do
+            if install; then
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              echo "::error::skpm $VERSION never became installable from TestPyPI"
+              exit 1
+            fi
+            echo "not on the index yet — retrying in 15s (attempt $attempt)"
+            sleep 15
+          done
+
+      - name: Import the installed package
+        run: |
+          .venv/bin/python - <<'PY'
+          import importlib
+          import pkgutil
+
+          import skpm
+
+          print("skpm", skpm.__version__, "from", skpm.__file__)
+          modules = sorted(
+              m.name for m in pkgutil.walk_packages(skpm.__path__, "skpm.")
+          )
+          for name in modules:
+              importlib.import_module(name)
+          print(f"imported {len(modules)} submodules")
+
+          missing = [s for s in skpm.__all__ if not hasattr(skpm, s)]
+          assert not missing, f"missing from the public API: {missing}"
+          print("public API:", ", ".join(skpm.__all__))
+          PY
+
+  pypi:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      # The gate. Protection rules live on the environment in GitHub settings,
+      # not in this file; naming it here is what subjects the job to them, so
+      # the upload waits for a reviewer to approve the deployment.
+      name: pypi
+      url: https://pypi.org/p/skpm
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download the distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist
+
+      - name: Publish to PyPI
+        # No skip-existing here: on the real index a version collision means
+        # something has gone wrong, and it must fail loudly.
+        uses: pypa/gh-action-pypi-publish@release/v1
